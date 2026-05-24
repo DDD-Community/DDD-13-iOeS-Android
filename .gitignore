@@ -1,0 +1,16 @@
+*.iml
+.gradle/
+local.properties
+.idea/
+.DS_Store
+build/
+captures/
+.cxx
+.kotlin/
+
+# 비공개 키 — 절대 커밋 금지 (secrets.defaults.properties 템플릿만 커밋)
+secrets.properties
+*.keystore
+!debug.keystore
+google-services.json
+
