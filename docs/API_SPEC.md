@@ -243,14 +243,14 @@
 
 ## Phase E-2 — 스팟 신고 (1 endpoint)
 
-### `[ ] POST /v1/spots/{spotId}/reports` — 스팟 신고
+### `[x] POST /v1/spots/{spotId}/reports` — 스팟 신고
 - **operationId**: `report`
 - **params (path)**: `*spotId: Long`
 - **request** `SpotReportRequest`:
   - `*content: String` (min 5, max 200)
 - **response 201** `ApiResponse<SpotReportResponse>`:
   - `reportId: Long`
-- **매핑**: `SpotReportService.report(spotId, content)` (**신규**)
+- **매핑**: `SpotReportService.report(spotId: Long, content: String): Long` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultSpotReportService.kt:13` + `core/network/api/SpotReportApi.kt:11`
 
 ---
 

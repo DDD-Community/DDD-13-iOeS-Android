@@ -5,6 +5,7 @@ import com.pickflow.android.core.services.impl.DefaultAuthService
 import com.pickflow.android.core.services.impl.DefaultBoardService
 import com.pickflow.android.core.services.impl.DefaultBookmarkService
 import com.pickflow.android.core.services.impl.DefaultMySpotService
+import com.pickflow.android.core.services.impl.DefaultSpotReportService
 import com.pickflow.android.core.services.impl.DefaultSocialLoginService
 import com.pickflow.android.core.services.impl.DefaultUserService
 import com.pickflow.android.core.services.impl.GridClusteringService
@@ -32,6 +33,7 @@ import com.pickflow.android.core.services.protocols.KakaoAuthProvider
 import com.pickflow.android.core.services.protocols.BoardService
 import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.MySpotService
+import com.pickflow.android.core.services.protocols.SpotReportService
 import com.pickflow.android.core.services.protocols.OnboardingCompletionStore
 import com.pickflow.android.core.services.protocols.ShareIntentService
 import com.pickflow.android.core.services.protocols.SpotListService
@@ -86,6 +88,9 @@ abstract class ServiceModule {
 
     @Binds
     abstract fun bindBoardService(impl: DefaultBoardService): BoardService
+
+    @Binds
+    abstract fun bindSpotReportService(impl: DefaultSpotReportService): SpotReportService
 
     @Binds
     abstract fun bindLocationService(impl: StubLocationService): LocationService
