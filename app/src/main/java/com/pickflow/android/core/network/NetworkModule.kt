@@ -5,6 +5,7 @@ import com.pickflow.android.BuildConfig
 import com.pickflow.android.core.network.api.AuthApi
 import com.pickflow.android.core.network.api.RefreshApi
 import com.pickflow.android.core.network.api.SpotApi
+import com.pickflow.android.core.network.api.UserApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -66,6 +67,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideSpotApi(retrofit: Retrofit): SpotApi = retrofit.create(SpotApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideUserApi(retrofit: Retrofit): UserApi = retrofit.create(UserApi::class.java)
 
     // --- Refresh 전용 (AuthInterceptor / Authenticator 미부착 OkHttpClient) ---
 

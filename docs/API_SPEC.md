@@ -117,11 +117,11 @@
 
 ## Phase D-1 — 마이페이지 / 사용자 (5 endpoints)
 
-### `[ ] GET /v1/users/me` — 마이페이지 홈탭
+### `[x] GET /v1/users/me` — 마이페이지 홈탭
 - **operationId**: `getMyPageHome`
 - **response 200** `ApiResponse<MypageHomeResponse>`:
   - `profileImageUrl, nickname(닉네임#해시태그), savedSpotCount, recordedSpotCount`
-- **매핑**: `UserService.fetchMyPage(): MyPageHome` → **수정** (현재 `fetchUserName()`만 있음)
+- **매핑**: `UserService.fetchMyPage(): MyPageHome` 신규 + `fetchUserName()`은 기본 구현이 fetchMyPage().nickname 위임 (호환 유지, 화면 전환 후 제거) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultUserService.kt:13` + `core/network/api/UserApi.kt:9`
 
 ### `[ ] PATCH /v1/users/me` — 프로필 수정
 - **operationId**: `updateProfile`
