@@ -4,6 +4,7 @@ import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFact
 import com.pickflow.android.BuildConfig
 import com.pickflow.android.core.network.api.ArchiveApi
 import com.pickflow.android.core.network.api.AuthApi
+import com.pickflow.android.core.network.api.BoardApi
 import com.pickflow.android.core.network.api.BookmarkApi
 import com.pickflow.android.core.network.api.MySpotApi
 import com.pickflow.android.core.network.api.RefreshApi
@@ -86,6 +87,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideMySpotApi(retrofit: Retrofit): MySpotApi = retrofit.create(MySpotApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideBoardApi(retrofit: Retrofit): BoardApi = retrofit.create(BoardApi::class.java)
 
     // --- Refresh 전용 (AuthInterceptor / Authenticator 미부착 OkHttpClient) ---
 

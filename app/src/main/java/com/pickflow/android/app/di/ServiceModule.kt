@@ -2,6 +2,7 @@ package com.pickflow.android.app.di
 
 import com.pickflow.android.core.services.impl.DefaultArchiveService
 import com.pickflow.android.core.services.impl.DefaultAuthService
+import com.pickflow.android.core.services.impl.DefaultBoardService
 import com.pickflow.android.core.services.impl.DefaultBookmarkService
 import com.pickflow.android.core.services.impl.DefaultMySpotService
 import com.pickflow.android.core.services.impl.DefaultSocialLoginService
@@ -28,6 +29,7 @@ import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ClusteringService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.KakaoAuthProvider
+import com.pickflow.android.core.services.protocols.BoardService
 import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.OnboardingCompletionStore
@@ -81,6 +83,9 @@ abstract class ServiceModule {
 
     @Binds
     abstract fun bindMySpotService(impl: DefaultMySpotService): MySpotService
+
+    @Binds
+    abstract fun bindBoardService(impl: DefaultBoardService): BoardService
 
     @Binds
     abstract fun bindLocationService(impl: StubLocationService): LocationService

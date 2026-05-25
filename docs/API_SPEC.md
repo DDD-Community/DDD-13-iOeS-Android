@@ -224,13 +224,13 @@
 
 ## Phase E-1 — 게시판 (2 endpoints)
 
-### `[ ] GET /v1/bbs/posts` — 게시글 목록
+### `[x] GET /v1/bbs/posts` — 게시글 목록
 - **operationId**: `getPosts`
 - **params (query)**: `*masterId: Long`, `page?: Int` (페이지당 20개, 고정 공지 상단)
 - **response 200** `ApiResponse<BbsPostListResponse>`:
   - `items: [BbsPostItem { postId, title, createdAt(date), pinned }]`
   - `page: Int`, `hasNext: Boolean`
-- **매핑**: `BoardService.posts(masterId, page)` (**신규**)
+- **매핑**: `BoardService.posts(masterId: Long, page: Int = 0): BoardPostPage` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultBoardService.kt:13` + `core/network/api/BoardApi.kt:9`
 
 ### `[ ] GET /v1/bbs/posts/{postId}` — 게시글 상세
 - **operationId**: `getPostDetail`
