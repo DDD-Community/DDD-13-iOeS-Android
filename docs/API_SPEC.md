@@ -179,12 +179,12 @@
 
 ## Phase D-3 — 북마크 & 저장된 스팟 (3 endpoints)
 
-### `[ ] POST /v1/spots/{spotId}/bookmarks` — 북마크 지정
+### `[x] POST /v1/spots/{spotId}/bookmarks` — 북마크 지정
 - **operationId**: `addBookmark`
 - **params (path)**: `*spotId: Long`
 - **response 201** `ApiResponse<BookmarkResponse>`:
   - `bookmarkCount: Long` (지정 후 현재 북마크 수)
-- **매핑**: `BookmarkService.add(spotId): Long` → **수정** (현재 in-memory toggle)
+- **매핑**: `BookmarkService.add(spotId: String): Long` 신규 (Long 변환 내부). InMemoryBookmarkService 폐기 → DefaultBookmarkService 신규. 기존 toggle/isBookmarked/bookmarkedIds는 legacy 캐시로 임시 유지 (다음 iter에 remove 통합). → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultBookmarkService.kt:24` + `core/network/api/BookmarkApi.kt:9`
 
 ### `[ ] DELETE /v1/spots/{spotId}/bookmarks` — 북마크 해제
 - **operationId**: `removeBookmark`

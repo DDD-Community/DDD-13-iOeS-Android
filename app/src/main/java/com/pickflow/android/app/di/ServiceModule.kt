@@ -2,10 +2,10 @@ package com.pickflow.android.app.di
 
 import com.pickflow.android.core.services.impl.DefaultArchiveService
 import com.pickflow.android.core.services.impl.DefaultAuthService
+import com.pickflow.android.core.services.impl.DefaultBookmarkService
 import com.pickflow.android.core.services.impl.DefaultSocialLoginService
 import com.pickflow.android.core.services.impl.DefaultUserService
 import com.pickflow.android.core.services.impl.GridClusteringService
-import com.pickflow.android.core.services.impl.InMemoryBookmarkService
 import com.pickflow.android.core.services.impl.InMemoryOnboardingCompletionStore
 import com.pickflow.android.core.services.impl.InMemoryTokenStore
 import com.pickflow.android.core.services.impl.DefaultSpotListService
@@ -75,7 +75,7 @@ abstract class ServiceModule {
     abstract fun bindSpotListService(impl: DefaultSpotListService): SpotListService
 
     @Binds
-    abstract fun bindBookmarkService(impl: InMemoryBookmarkService): BookmarkService
+    abstract fun bindBookmarkService(impl: DefaultBookmarkService): BookmarkService
 
     @Binds
     abstract fun bindLocationService(impl: StubLocationService): LocationService
