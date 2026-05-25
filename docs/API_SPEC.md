@@ -161,12 +161,12 @@
   - `archiveName, archiveImageUrl?` (presigned URL, 없으면 null)
 - **매핑**: `ArchiveService.fetch()` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultArchiveService.kt:13` + `core/network/api/ArchiveApi.kt:9`
 
-### `[ ] POST /v1/users/me/archive` — 보관함 이미지 등록/변경
+### `[x] POST /v1/users/me/archive` — 보관함 이미지 등록/변경
 - **operationId**: `updateArchiveImage`
 - **request** `multipart/form-data`:
   - `*archiveImage: binary`
 - **response 200** `ApiResponse<ArchiveImageResponse>`
-- **매핑**: `ArchiveService.updateImage(uri)` (**신규**)
+- **매핑**: `ArchiveService.updateImage(ImagePayload)` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultArchiveService.kt:21` + `core/network/api/ArchiveApi.kt:16`
 
 ### `[ ] PATCH /v1/users/me/archive/name` — 보관함 이름 수정
 - **operationId**: `updateArchiveName`

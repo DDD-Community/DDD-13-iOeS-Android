@@ -12,4 +12,10 @@ data class Archive(
 
 interface ArchiveService {
     suspend fun fetch(): Archive
+
+    /**
+     * 보관함 이미지를 업로드/교체한다. 기존 이미지가 있으면 서버에서 덮어쓰기.
+     * 반환은 갱신된 보관함 상태 (이름 + 새 presigned URL).
+     */
+    suspend fun updateImage(image: ImagePayload): Archive
 }
