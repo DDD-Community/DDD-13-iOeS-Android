@@ -32,7 +32,7 @@ class DefaultMySpotServiceTest {
             .baseUrl(server.url("/"))
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
-        service = DefaultMySpotService(retrofit.create(MySpotApi::class.java))
+        service = DefaultMySpotService(retrofit.create(MySpotApi::class.java), json)
     }
 
     @AfterEach

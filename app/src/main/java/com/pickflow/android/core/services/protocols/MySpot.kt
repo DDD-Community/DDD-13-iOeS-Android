@@ -32,10 +32,26 @@ data class MySpotPage(
 
 enum class MySpotStatus { PENDING, PUBLISHED, REJECTED }
 
+/**
+ * POST /v1/users/me/my-spots 응답 모델. 등록 직후 상태는 항상 PENDING.
+ */
+data class CreateMySpotResult(
+    val spotId: Long,
+    val status: MySpotStatus,
+    val imageUrl: String?,
+)
+
 interface MySpotService {
     /**
      * 본인이 등록한 스팟 페이지 (PENDING/PUBLISHED/REJECTED 모두 노출).
      * 좌표 전달 시 distanceKm 포함.
      */
     suspend fun list(page: Int, coordinates: Coordinates? = null): MySpotPage
+
+    /**
+     * 새 스팟 등록 (multipart). 이미지 + 메타데이터 동시 업로드. 등록 후 항상 PENDING 상태.
+     *
+     * 향후 기존 SpotService.register(SpotDraft)는 deprecated 후 본 메서드로 일원화 예정.
+     */
+    suspend fun create(draft: SpotDraft, image: ImagePayload): CreateMySpotResult
 }

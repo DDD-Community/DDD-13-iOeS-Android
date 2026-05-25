@@ -1,7 +1,9 @@
 package com.pickflow.android.core.network.mapper
 
+import com.pickflow.android.core.network.dto.myspot.CreateMySpotResponseDto
 import com.pickflow.android.core.network.dto.myspot.MySpotItemDto
 import com.pickflow.android.core.network.dto.myspot.MySpotListResponseDto
+import com.pickflow.android.core.services.protocols.CreateMySpotResult
 import com.pickflow.android.core.services.protocols.MySpot
 import com.pickflow.android.core.services.protocols.MySpotPage
 import com.pickflow.android.core.services.protocols.MySpotStatus
@@ -30,3 +32,9 @@ internal fun parseMySpotStatus(value: String): MySpotStatus = when (value.upperc
     "REJECTED" -> MySpotStatus.REJECTED
     else -> MySpotStatus.PENDING
 }
+
+fun CreateMySpotResponseDto.toCreateMySpotResult(): CreateMySpotResult = CreateMySpotResult(
+    spotId = spotId,
+    status = parseMySpotStatus(status),
+    imageUrl = imageUrl?.takeIf { it.isNotBlank() },
+)

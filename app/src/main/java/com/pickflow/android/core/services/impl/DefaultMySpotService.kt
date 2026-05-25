@@ -1,15 +1,27 @@
 package com.pickflow.android.core.services.impl
 
 import com.pickflow.android.core.network.api.MySpotApi
+import com.pickflow.android.core.network.dto.myspot.CreateMySpotMetaRequest
+import com.pickflow.android.core.network.mapper.toCreateMySpotResult
 import com.pickflow.android.core.network.mapper.toMySpotPage
 import com.pickflow.android.core.network.unwrap
 import com.pickflow.android.core.services.protocols.Coordinates
+import com.pickflow.android.core.services.protocols.CreateMySpotResult
+import com.pickflow.android.core.services.protocols.ImagePayload
 import com.pickflow.android.core.services.protocols.MySpotPage
 import com.pickflow.android.core.services.protocols.MySpotService
+import com.pickflow.android.core.services.protocols.SpotDraft
 import javax.inject.Inject
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class DefaultMySpotService @Inject constructor(
     private val mySpotApi: MySpotApi,
+    private val json: Json,
 ) : MySpotService {
     override suspend fun list(page: Int, coordinates: Coordinates?): MySpotPage =
         mySpotApi.getMySpots(
@@ -17,4 +29,38 @@ class DefaultMySpotService @Inject constructor(
             latitude = coordinates?.latitude,
             longitude = coordinates?.longitude,
         ).unwrap().toMySpotPage()
+
+    override suspend fun create(draft: SpotDraft, image: ImagePayload): CreateMySpotResult {
+        // 이미지 part
+        val imageBody = image.bytes.toRequestBody(image.mimeType.toMediaTypeOrNull())
+        val imagePart = MultipartBody.Part.createFormData(
+            name = IMAGE_PART, filename = image.filename, body = imageBody,
+        )
+        // 메타 part (JSON)
+        val meta = CreateMySpotMetaRequest(
+            name = draft.name,
+            theme = draft.theme.name,
+            latitude = draft.latitude,
+            longitude = draft.longitude,
+            address = draft.address,
+            comment = draft.comment.takeIf { it.isNotBlank() },
+            recordedDate = draft.capturedDate.takeIf { it.isNotBlank() },
+            recordedTime = draft.capturedTime.takeIf { it.isNotBlank() },
+        )
+        val metaBody = json.encodeToString(meta).toRequestBody(JSON_MEDIA)
+        val metaPart = MultipartBody.Part.createFormData(
+            name = META_PART, filename = null, body = metaBody,
+        )
+
+        return mySpotApi.createMySpot(image = imagePart, meta = metaPart)
+            .unwrap()
+            .toCreateMySpotResult()
+    }
+
+    private companion object {
+        // TODO(BE confirm): part 이름 검증 후 확정.
+        const val IMAGE_PART = "image"
+        const val META_PART = "meta"
+        val JSON_MEDIA = "application/json".toMediaType()
+    }
 }
