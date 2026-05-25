@@ -49,12 +49,12 @@
 - **response 200** `ApiResponse<TokenResponse>` (위와 동일)
 - **매핑**: `AppleAuthProvider` (**신규**, v1은 StubAppleAuthProvider) + `SocialLoginService.loginWith()` → **수정** → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultSocialLoginService.kt:28` + `core/network/api/AuthApi.kt:17` + `core/services/protocols/AppleAuthProvider.kt:3`
 
-### `[ ] POST /v1/auth/refresh` — 토큰 갱신
+### `[x] POST /v1/auth/refresh` — 토큰 갱신
 - **operationId**: `refresh`
 - **request** `RefreshRequest`:
   - `*refreshToken: String`
 - **response 200** `ApiResponse<TokenResponse>` (Refresh Token Rotation)
-- **매핑**: `AuthApi.refresh()` — 별도 Service 없이 OkHttp `TokenAuthenticator` 내부에서 호출
+- **매핑**: `RefreshApi.refresh()` — OkHttp `TokenAuthenticator`가 401 시 자동 호출 → `app/src/main/java/com/pickflow/android/core/network/TokenAuthenticator.kt:53` + `core/network/api/RefreshApi.kt:18`
 
 ### `[ ] POST /v1/auth/logout` — 로그아웃
 - **operationId**: `logout`

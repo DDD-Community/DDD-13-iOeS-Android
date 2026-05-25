@@ -8,6 +8,11 @@ data class KakaoLoginRequest(
 )
 
 @Serializable
+data class RefreshRequest(
+    val refreshToken: String,
+)
+
+@Serializable
 data class AppleLoginRequest(
     val identityToken: String,
     val user: AppleUserDto? = null,
