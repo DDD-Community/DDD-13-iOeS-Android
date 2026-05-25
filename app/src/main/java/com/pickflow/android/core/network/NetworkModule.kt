@@ -2,6 +2,7 @@ package com.pickflow.android.core.network
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.pickflow.android.BuildConfig
+import com.pickflow.android.core.network.api.ArchiveApi
 import com.pickflow.android.core.network.api.AuthApi
 import com.pickflow.android.core.network.api.RefreshApi
 import com.pickflow.android.core.network.api.SpotApi
@@ -71,6 +72,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideUserApi(retrofit: Retrofit): UserApi = retrofit.create(UserApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideArchiveApi(retrofit: Retrofit): ArchiveApi = retrofit.create(ArchiveApi::class.java)
 
     // --- Refresh 전용 (AuthInterceptor / Authenticator 미부착 OkHttpClient) ---
 

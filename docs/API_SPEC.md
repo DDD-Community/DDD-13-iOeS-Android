@@ -155,11 +155,11 @@
 
 ## Phase D-2 — 보관함 (3 endpoints)
 
-### `[ ] GET /v1/users/me/archive` — 보관함 조회
+### `[x] GET /v1/users/me/archive` — 보관함 조회
 - **operationId**: `getArchiveImage`
 - **response 200** `ApiResponse<ArchiveImageResponse>`:
   - `archiveName, archiveImageUrl?` (presigned URL, 없으면 null)
-- **매핑**: `ArchiveService.fetch()` (**신규**)
+- **매핑**: `ArchiveService.fetch()` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultArchiveService.kt:13` + `core/network/api/ArchiveApi.kt:9`
 
 ### `[ ] POST /v1/users/me/archive` — 보관함 이미지 등록/변경
 - **operationId**: `updateArchiveImage`

@@ -1,5 +1,6 @@
 package com.pickflow.android.app.di
 
+import com.pickflow.android.core.services.impl.DefaultArchiveService
 import com.pickflow.android.core.services.impl.DefaultAuthService
 import com.pickflow.android.core.services.impl.DefaultSocialLoginService
 import com.pickflow.android.core.services.impl.DefaultUserService
@@ -18,6 +19,7 @@ import com.pickflow.android.core.services.impl.DefaultSpotMapService
 import com.pickflow.android.core.services.impl.StubLocationService
 import com.pickflow.android.core.services.impl.DefaultSpotService
 import com.pickflow.android.core.services.protocols.AppleAuthProvider
+import com.pickflow.android.core.services.protocols.ArchiveService
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.AddressService
 import com.pickflow.android.core.services.protocols.AnalyticsLogger
@@ -60,6 +62,9 @@ abstract class ServiceModule {
 
     @Binds
     abstract fun bindAuthService(impl: DefaultAuthService): AuthService
+
+    @Binds
+    abstract fun bindArchiveService(impl: DefaultArchiveService): ArchiveService
 
     @Binds
     abstract fun bindOnboardingCompletionStore(
