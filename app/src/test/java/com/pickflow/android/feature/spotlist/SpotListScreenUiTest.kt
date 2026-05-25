@@ -34,7 +34,7 @@ class SpotListScreenUiTest {
         val listService = mockk<SpotListService>()
         val bookmarkService = mockk<BookmarkService>(relaxed = true)
         coEvery { listService.fetch(any(), any(), any()) } returns SpotPage(
-            items = listOf(Spot("s1", "Spot One", SpotTheme.CAFE, 0.0, 0.0)),
+            items = listOf(Spot("s1", "Spot One", SpotTheme.SUNSET, 0.0, 0.0)),
             nextCursor = null,
         )
         val vm = SpotListViewModel(listService, bookmarkService, authService())

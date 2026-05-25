@@ -67,7 +67,7 @@
 
 ## Phase C — 스팟 조회 (4 endpoints)
 
-### `[ ] GET /v1/spots/viewport` — 뷰포트 내 스팟 목록
+### `[x] GET /v1/spots/viewport` — 뷰포트 내 스팟 목록
 - **operationId**: `getSpotsInViewport`
 - **params (query)**:
   - `*topLeftLat: Double`, `*topLeftLng: Double`
@@ -77,7 +77,7 @@
   - `theme?: enum[SUNSET, YUNSEUL]`
 - **response 200** `ApiResponse<SpotViewportResponse>`:
   - `spots: [SpotSummary { spotId, spotImageUrl?, latitude, longitude, isMySpot }]`
-- **매핑**: `SpotMapService.fetchInViewport(ViewportBox, SpotTheme?)` (**신규**)
+- **매핑**: `SpotMapService.fetchInViewport(ViewportBox, SpotTheme?)` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultSpotMapService.kt:14` + `core/network/api/SpotApi.kt:11` + 동반 `SpotTheme` enum 글로벌 마이그레이션(CAFE/RESTAURANT/BAR/ACTIVITY/NATURE → SUNSET/YUNSEUL)
 
 ### `[ ] GET /v1/spots` — 스팟 리스트 조회
 - **operationId**: `getSpots`

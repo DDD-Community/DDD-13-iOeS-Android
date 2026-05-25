@@ -84,7 +84,7 @@ class SpotRegistrationViewModelTest {
 
         val vm = SpotRegistrationViewModel(spotService)
         vm.setName("Cafe")
-        vm.setTheme(SpotTheme.BAR)
+        vm.setTheme(SpotTheme.YUNSEUL)
         vm.setAddress("Seoul")
         vm.setCoordinates(37.5, 127.0)
         vm.setCapturedDate("2026.05.21")
@@ -94,7 +94,7 @@ class SpotRegistrationViewModelTest {
 
         val state = vm.submission.value as LoadState.Loaded
         assertEquals("new-1", state.value.id)
-        assertEquals(SpotTheme.BAR, state.value.theme)
+        assertEquals(SpotTheme.YUNSEUL, state.value.theme)
         coVerify(exactly = 1) { spotService.register(any()) }
     }
 }

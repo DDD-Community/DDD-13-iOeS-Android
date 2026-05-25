@@ -249,9 +249,6 @@ private fun SpotCard(
 }
 
 fun SpotTheme.label(): String = when (this) {
-    SpotTheme.CAFE -> "카페"
-    SpotTheme.RESTAURANT -> "맛집"
-    SpotTheme.BAR -> "바"
-    SpotTheme.ACTIVITY -> "액티비티"
-    SpotTheme.NATURE -> "자연"
+    SpotTheme.SUNSET -> "노을"
+    SpotTheme.YUNSEUL -> "윤슬"
 }

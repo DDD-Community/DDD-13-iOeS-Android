@@ -32,7 +32,7 @@ class SpotListViewModelTest {
     private lateinit var bookmarkService: BookmarkService
     private lateinit var authService: AuthService
 
-    private fun spot(id: String, theme: SpotTheme = SpotTheme.CAFE) =
+    private fun spot(id: String, theme: SpotTheme = SpotTheme.SUNSET) =
         Spot(id = id, name = id, theme = theme, latitude = 0.0, longitude = 0.0)
 
     @BeforeEach
@@ -86,13 +86,13 @@ class SpotListViewModelTest {
     @Test
     fun `selectTheme resets cursor and refilters`() = runTest(testDispatcher) {
         coEvery { listService.fetch(null, null, any()) } returns
-            SpotPage(listOf(spot("a", SpotTheme.CAFE)), nextCursor = null)
-        coEvery { listService.fetch(SpotTheme.BAR, null, any()) } returns
-            SpotPage(listOf(spot("b", SpotTheme.BAR)), nextCursor = null)
+            SpotPage(listOf(spot("a", SpotTheme.SUNSET)), nextCursor = null)
+        coEvery { listService.fetch(SpotTheme.YUNSEUL, null, any()) } returns
+            SpotPage(listOf(spot("b", SpotTheme.YUNSEUL)), nextCursor = null)
 
         val vm = viewModel()
         vm.refresh(); advanceUntilIdle()
-        vm.selectTheme(SpotTheme.BAR); advanceUntilIdle()
+        vm.selectTheme(SpotTheme.YUNSEUL); advanceUntilIdle()
 
         val loaded = vm.spots.value as LoadState.Loaded
         assertEquals(listOf("b"), loaded.value.map { it.id })

@@ -11,7 +11,7 @@ class StubSpotService @Inject constructor() : SpotService {
     override suspend fun spot(id: String): Spot = Spot(
         id = id,
         name = "Stub $id",
-        theme = SpotTheme.CAFE,
+        theme = SpotTheme.SUNSET,
         latitude = 37.5665,
         longitude = 126.9780,
         address = "Seoul, South Korea",

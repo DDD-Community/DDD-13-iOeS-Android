@@ -14,6 +14,7 @@ import com.pickflow.android.core.services.impl.NoopShareIntentService
 import com.pickflow.android.core.services.impl.RealKakaoAuthProvider
 import com.pickflow.android.core.services.impl.StubAddressService
 import com.pickflow.android.core.services.impl.StubAppleAuthProvider
+import com.pickflow.android.core.services.impl.DefaultSpotMapService
 import com.pickflow.android.core.services.impl.StubLocationService
 import com.pickflow.android.core.services.impl.StubSpotService
 import com.pickflow.android.core.services.protocols.AppleAuthProvider
@@ -28,6 +29,7 @@ import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.OnboardingCompletionStore
 import com.pickflow.android.core.services.protocols.ShareIntentService
 import com.pickflow.android.core.services.protocols.SpotListService
+import com.pickflow.android.core.services.protocols.SpotMapService
 import com.pickflow.android.core.services.protocols.SpotService
 import com.pickflow.android.core.services.protocols.SocialLoginService
 import com.pickflow.android.core.services.protocols.TokenStore
@@ -75,6 +77,9 @@ abstract class ServiceModule {
 
     @Binds
     abstract fun bindSpotService(impl: StubSpotService): SpotService
+
+    @Binds
+    abstract fun bindSpotMapService(impl: DefaultSpotMapService): SpotMapService
 
     @Binds
     abstract fun bindAddressService(impl: StubAddressService): AddressService

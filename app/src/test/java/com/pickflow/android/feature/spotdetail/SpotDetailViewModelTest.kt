@@ -31,7 +31,7 @@ class SpotDetailViewModelTest {
     private lateinit var bookmarkService: BookmarkService
     private lateinit var shareIntentService: ShareIntentService
 
-    private val spot = Spot("s1", "Cafe", SpotTheme.CAFE, 0.0, 0.0)
+    private val spot = Spot("s1", "Cafe", SpotTheme.SUNSET, 0.0, 0.0)
 
     @BeforeEach
     fun setUp() {

@@ -41,7 +41,7 @@ class HomeMapViewModelTest {
 
     @Test
     fun `load emits Loaded clusters`() = runTest(testDispatcher) {
-        val spot = Spot("s1", "n", SpotTheme.CAFE, 0.0, 0.0)
+        val spot = Spot("s1", "n", SpotTheme.SUNSET, 0.0, 0.0)
         coEvery { spotListService.fetch(null, null, 100) } returns
             SpotPage(listOf(spot), null)
         coEvery { clusteringService.cluster(any(), any()) } returns
@@ -75,8 +75,8 @@ class HomeMapViewModelTest {
 
     @Test
     fun `selectMood toggles and filters spots by mood`() = runTest(testDispatcher) {
-        val s0 = Spot("s0", "n0", SpotTheme.CAFE, 0.0, 0.0)
-        val s1 = Spot("s1", "n1", SpotTheme.BAR, 0.0, 0.0)
+        val s0 = Spot("s0", "n0", SpotTheme.SUNSET, 0.0, 0.0)
+        val s1 = Spot("s1", "n1", SpotTheme.YUNSEUL, 0.0, 0.0)
         coEvery { spotListService.fetch(null, null, 100) } returns SpotPage(listOf(s0, s1), null)
         coEvery { clusteringService.cluster(any(), any()) } returns
             listOf(Cluster(0.0, 0.0, 1, listOf("s0")))

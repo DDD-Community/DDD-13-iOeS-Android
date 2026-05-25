@@ -37,7 +37,7 @@ class SpotDetailScreenUiTest {
         val bookmarkService = mockk<BookmarkService>()
         val shareIntentService = mockk<ShareIntentService>(relaxed = true)
         coEvery { spotService.spot("s1") } returns
-            Spot("s1", "상세 스팟", SpotTheme.CAFE, 37.0, 127.0, address = "서울")
+            Spot("s1", "상세 스팟", SpotTheme.SUNSET, 37.0, 127.0, address = "서울")
         coEvery { bookmarkService.isBookmarked("s1") } returns false
         val vm = SpotDetailViewModel(spotService, bookmarkService, shareIntentService)
 

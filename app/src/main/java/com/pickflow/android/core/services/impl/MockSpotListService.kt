@@ -12,7 +12,7 @@ class MockSpotListService @Inject constructor() : SpotListService {
         Spot(
             id = "spot-$idx",
             name = "Mock Spot $idx",
-            theme = SpotTheme.entries[idx % SpotTheme.entries.size],
+            theme = if (idx % 2 == 0) SpotTheme.SUNSET else SpotTheme.YUNSEUL,
             latitude = 37.5 + idx * 0.001,
             longitude = 127.0 + idx * 0.001,
         )

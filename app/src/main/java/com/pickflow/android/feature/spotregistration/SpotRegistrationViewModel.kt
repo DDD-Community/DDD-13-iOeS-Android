@@ -22,7 +22,7 @@ class SpotRegistrationViewModel @Inject constructor(
     private val _name = MutableStateFlow("")
     val name: StateFlow<String> = _name.asStateFlow()
 
-    private val _theme = MutableStateFlow(SpotTheme.CAFE)
+    private val _theme = MutableStateFlow(SpotTheme.SUNSET)
     val theme: StateFlow<SpotTheme> = _theme.asStateFlow()
 
     private val _address = MutableStateFlow("")

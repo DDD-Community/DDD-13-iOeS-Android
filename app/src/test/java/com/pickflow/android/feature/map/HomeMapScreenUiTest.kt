@@ -72,7 +72,7 @@ class HomeMapScreenUiTest {
 
     @Test
     fun cluster_tap_shows_bottom_sheet() {
-        val spot = Spot("s1", "한강 노을 스팟", SpotTheme.CAFE, 37.5, 127.0)
+        val spot = Spot("s1", "한강 노을 스팟", SpotTheme.SUNSET, 37.5, 127.0)
         val cluster = Cluster(37.5, 127.0, 1, listOf("s1"))
         val vm = viewModel(spots = listOf(spot), clusters = listOf(cluster))
 

@@ -10,7 +10,12 @@ data class Spot(
     val address: String = "",
 )
 
-enum class SpotTheme { CAFE, RESTAURANT, BAR, ACTIVITY, NATURE }
+/**
+ * 서버 스펙(OpenAPI Photo API v1.0.0)과 정렬된 테마 enum.
+ * - SUNSET: 노을
+ * - YUNSEUL: 윤슬
+ */
+enum class SpotTheme { SUNSET, YUNSEUL }
 
 data class SpotPage(
     val items: List<Spot>,
