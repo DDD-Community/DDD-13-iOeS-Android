@@ -79,13 +79,5 @@ class DefaultBookmarkServiceTest {
         assertFalse(service.isBookmarked("1"))
     }
 
-    @Test
-    fun `legacy toggle still works as in-memory cache (will be replaced in remove iter)`() = runBlocking {
-        assertFalse(service.isBookmarked("9"))
-        assertTrue(service.toggle("9"))
-        assertTrue(service.isBookmarked("9"))
-        assertFalse(service.toggle("9"))
-        assertFalse(service.isBookmarked("9"))
-        assertEquals(0, server.requestCount)
-    }
+    // toggle 라우팅(add/remove)은 DefaultBookmarkServiceRemoveTest 에서 검증.
 }

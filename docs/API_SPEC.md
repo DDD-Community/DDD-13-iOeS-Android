@@ -186,11 +186,11 @@
   - `bookmarkCount: Long` (지정 후 현재 북마크 수)
 - **매핑**: `BookmarkService.add(spotId: String): Long` 신규 (Long 변환 내부). InMemoryBookmarkService 폐기 → DefaultBookmarkService 신규. 기존 toggle/isBookmarked/bookmarkedIds는 legacy 캐시로 임시 유지 (다음 iter에 remove 통합). → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultBookmarkService.kt:24` + `core/network/api/BookmarkApi.kt:9`
 
-### `[ ] DELETE /v1/spots/{spotId}/bookmarks` — 북마크 해제
+### `[x] DELETE /v1/spots/{spotId}/bookmarks` — 북마크 해제
 - **operationId**: `removeBookmark`
 - **params (path)**: `*spotId: Long`
 - **response 200** `ApiResponse<BookmarkResponse>`
-- **매핑**: `BookmarkService.remove(spotId): Long` → **수정**
+- **매핑**: `BookmarkService.remove(spotId: String): Long` 신규. toggle은 로컬 캐시 기준 add/remove 라우팅으로 전환. → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultBookmarkService.kt:29` + `core/network/api/BookmarkApi.kt:13`
 
 ### `[ ] GET /v1/users/me/saved-spots` — 저장된 스팟 목록
 - **operationId**: `getSavedSpots`
