@@ -4,6 +4,7 @@ import com.pickflow.android.core.network.ApiResponse
 import com.pickflow.android.core.network.dto.user.MypageHomeResponseDto
 import com.pickflow.android.core.network.dto.user.UpdateProfileResponseDto
 import okhttp3.MultipartBody
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.PATCH
@@ -29,4 +30,7 @@ interface UserApi {
         @Query("nickname") nickname: String? = null,
         @Part profileImage: MultipartBody.Part,
     ): ApiResponse<UpdateProfileResponseDto>
+
+    @DELETE("v1/users/me")
+    suspend fun deleteAccount(): ApiResponse<Unit>
 }

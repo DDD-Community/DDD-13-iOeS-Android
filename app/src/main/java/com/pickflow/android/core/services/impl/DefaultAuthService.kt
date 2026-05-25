@@ -1,6 +1,7 @@
 package com.pickflow.android.core.services.impl
 
 import com.pickflow.android.core.network.api.AuthApi
+import com.pickflow.android.core.network.api.UserApi
 import com.pickflow.android.core.network.dto.auth.LogoutRequest
 import com.pickflow.android.core.network.unwrapVoid
 import com.pickflow.android.core.services.protocols.AuthService
@@ -9,6 +10,7 @@ import javax.inject.Inject
 
 class DefaultAuthService @Inject constructor(
     private val authApi: AuthApi,
+    private val userApi: UserApi,
     private val tokenStore: TokenStore,
 ) : AuthService {
     override suspend fun logout() {
@@ -27,8 +29,12 @@ class DefaultAuthService @Inject constructor(
     }
 
     override suspend fun withdraw() {
-        // TODO(Phase D /v1/users/me DELETE): UserApi.deleteAccount() 추가 후 호출.
-        tokenStore.clear()
+        // 서버 호출 실패해도 로컬 토큰은 비워서 사용자가 로그인 화면으로 복귀할 수 있게 한다.
+        try {
+            userApi.deleteAccount().unwrapVoid()
+        } finally {
+            tokenStore.clear()
+        }
     }
 
     override suspend fun isLoggedIn(): Boolean = tokenStore.accessToken() != null

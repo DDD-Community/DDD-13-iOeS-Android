@@ -132,10 +132,10 @@
   - `displayName(닉네임#해시태그), profileImageUrl`
 - **매핑**: `UserService.updateProfile(nickname?, ImagePayload?)` 신규. Retrofit `@Multipart` 최소 1 part 제약으로 인해 `UserApi.updateProfileNoImage`(query만)와 `updateProfileWithImage`(multipart) 두 메서드로 분리. → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultUserService.kt:22` + `core/network/api/UserApi.kt:22`
 
-### `[ ] DELETE /v1/users/me` — 회원 탈퇴
+### `[x] DELETE /v1/users/me` — 회원 탈퇴
 - **operationId**: `deleteAccount`
 - **response 200** `ApiResponse<Void>` (소프트 삭제 + 모든 토큰/OAuth 해제)
-- **매핑**: `AuthService.withdraw()` → **수정**
+- **매핑**: `AuthService.withdraw()` → 서버 호출 후 finally TokenStore.clear → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultAuthService.kt:33` + `core/network/api/UserApi.kt:34`
 
 ### `[ ] POST /v1/users/me/withdrawal-reason` — 탈퇴 사유 등록
 - **operationId**: `saveWithdrawalReason`

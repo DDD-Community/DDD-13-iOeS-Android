@@ -3,6 +3,7 @@ package com.pickflow.android.core.services.impl
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.pickflow.android.core.network.ApiException
 import com.pickflow.android.core.network.api.AuthApi
+import com.pickflow.android.core.network.api.UserApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -20,6 +21,7 @@ class DefaultAuthServiceTest {
 
     private lateinit var server: MockWebServer
     private lateinit var api: AuthApi
+    private lateinit var userApi: UserApi
     private lateinit var tokenStore: InMemoryTokenStore
     private lateinit var service: DefaultAuthService
 
@@ -32,8 +34,9 @@ class DefaultAuthServiceTest {
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
         api = retrofit.create(AuthApi::class.java)
+        userApi = retrofit.create(UserApi::class.java)
         tokenStore = InMemoryTokenStore()
-        service = DefaultAuthService(api, tokenStore)
+        service = DefaultAuthService(api, userApi, tokenStore)
     }
 
     @AfterEach
@@ -93,5 +96,39 @@ class DefaultAuthServiceTest {
         assertEquals(false, service.isLoggedIn())
         tokenStore.save(accessToken = "A", refreshToken = null)
         assertEquals(true, service.isLoggedIn())
+    }
+
+    @Test
+    fun `withdraw calls DELETE users me and clears tokens on success`() = runBlocking {
+        tokenStore.save(accessToken = "ACC", refreshToken = "REF")
+        server.enqueue(
+            MockResponse().setResponseCode(200)
+                .setBody("""{"success":true,"code":"OK","message":"","data":null}""")
+        )
+
+        service.withdraw()
+
+        assertNull(tokenStore.accessToken())
+        assertNull(tokenStore.refreshToken())
+
+        val req = server.takeRequest()
+        assertEquals("DELETE", req.method)
+        assertEquals("/v1/users/me", req.path)
+    }
+
+    @Test
+    fun `withdraw still clears local tokens when server returns failure`() = runBlocking {
+        tokenStore.save(accessToken = "ACC", refreshToken = "REF")
+        server.enqueue(
+            MockResponse().setResponseCode(200)
+                .setBody("""{"success":false,"code":"USR_FORBIDDEN","message":"cannot delete","data":null}""")
+        )
+
+        val ex = assertThrows(ApiException::class.java) {
+            runBlocking { service.withdraw() }
+        }
+        assertEquals("USR_FORBIDDEN", ex.code)
+        assertNull(tokenStore.accessToken())
+        assertNull(tokenStore.refreshToken())
     }
 }
