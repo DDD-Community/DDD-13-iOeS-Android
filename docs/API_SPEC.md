@@ -145,11 +145,11 @@
 - **response 200** `ApiResponse<Void>`
 - **매핑**: `UserService.saveWithdrawalReason(WithdrawalReasonType, content?)` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultUserService.kt:43` + `core/network/api/UserApi.kt:39`
 
-### `[ ] PATCH /v1/users/restore` — 탈퇴 계정 복구
+### `[x] PATCH /v1/users/restore` — 탈퇴 계정 복구
 - **operationId**: `restoreAccount`
 - **params (query)**: `*restoreToken: String`
 - **response 200** `ApiResponse<Void>`
-- **매핑**: `AuthService.restore(restoreToken)` (**신규**) — 복구 후 소셜 로그인 재시도 필요
+- **매핑**: `AuthService.restore(restoreToken)` (**신규**) — 복구 후 소셜 로그인 재시도 필요 → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultAuthService.kt:47` + `core/network/api/UserApi.kt:44`
 
 ---
 

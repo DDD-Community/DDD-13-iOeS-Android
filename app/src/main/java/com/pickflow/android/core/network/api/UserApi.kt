@@ -41,4 +41,13 @@ interface UserApi {
     suspend fun saveWithdrawalReason(
         @Body request: WithdrawalReasonRequest,
     ): ApiResponse<Unit>
+
+    /**
+     * 탈퇴 계정 복구. 본인 인증 없이 restoreToken 만으로 호출하므로 Bearer 헤더는
+     * AuthInterceptor가 토큰 없을 때 자동 미부착. 복구 성공 후 소셜 로그인 재시도.
+     */
+    @PATCH("v1/users/restore")
+    suspend fun restoreAccount(
+        @Query("restoreToken") restoreToken: String,
+    ): ApiResponse<Unit>
 }

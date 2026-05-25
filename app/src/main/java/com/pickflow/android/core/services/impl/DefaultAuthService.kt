@@ -38,4 +38,8 @@ class DefaultAuthService @Inject constructor(
     }
 
     override suspend fun isLoggedIn(): Boolean = tokenStore.accessToken() != null
+
+    override suspend fun restore(restoreToken: String) {
+        userApi.restoreAccount(restoreToken).unwrapVoid()
+    }
 }

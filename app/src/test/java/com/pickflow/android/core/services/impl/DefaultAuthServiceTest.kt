@@ -117,6 +117,34 @@ class DefaultAuthServiceTest {
     }
 
     @Test
+    fun `restore calls PATCH users restore with token query`() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200)
+                .setBody("""{"success":true,"code":"OK","message":"","data":null}""")
+        )
+
+        service.restore(restoreToken = "RST-abc123")
+
+        val req = server.takeRequest()
+        assertEquals("PATCH", req.method)
+        val url = req.requestUrl!!
+        assertEquals("/v1/users/restore", url.encodedPath)
+        assertEquals("RST-abc123", url.queryParameter("restoreToken"))
+    }
+
+    @Test
+    fun `restore propagates ApiException on failure`() {
+        server.enqueue(
+            MockResponse().setResponseCode(200)
+                .setBody("""{"success":false,"code":"USR_RESTORE","message":"expired","data":null}""")
+        )
+        val ex = assertThrows(ApiException::class.java) {
+            runBlocking { service.restore("bad") }
+        }
+        assertEquals("USR_RESTORE", ex.code)
+    }
+
+    @Test
     fun `withdraw still clears local tokens when server returns failure`() = runBlocking {
         tokenStore.save(accessToken = "ACC", refreshToken = "REF")
         server.enqueue(
