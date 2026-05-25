@@ -2,14 +2,38 @@ package com.pickflow.android.core.services.impl
 
 import com.pickflow.android.core.network.api.UserApi
 import com.pickflow.android.core.network.mapper.toMyPageHome
+import com.pickflow.android.core.network.mapper.toUpdateProfileResult
 import com.pickflow.android.core.network.unwrap
+import com.pickflow.android.core.services.protocols.ImagePayload
 import com.pickflow.android.core.services.protocols.MyPageHome
+import com.pickflow.android.core.services.protocols.UpdateProfileResult
 import com.pickflow.android.core.services.protocols.UserService
 import javax.inject.Inject
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class DefaultUserService @Inject constructor(
     private val userApi: UserApi,
 ) : UserService {
     override suspend fun fetchMyPage(): MyPageHome =
         userApi.getMyPageHome().unwrap().toMyPageHome()
+
+    override suspend fun updateProfile(
+        nickname: String?,
+        profileImage: ImagePayload?,
+    ): UpdateProfileResult {
+        val dto = if (profileImage != null) {
+            val body = profileImage.bytes.toRequestBody(profileImage.mimeType.toMediaTypeOrNull())
+            val part = MultipartBody.Part.createFormData(PART_NAME, profileImage.filename, body)
+            userApi.updateProfileWithImage(nickname = nickname, profileImage = part).unwrap()
+        } else {
+            userApi.updateProfileNoImage(nickname = nickname).unwrap()
+        }
+        return dto.toUpdateProfileResult()
+    }
+
+    private companion object {
+        const val PART_NAME = "profileImage"
+    }
 }

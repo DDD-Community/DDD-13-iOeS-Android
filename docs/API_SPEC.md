@@ -123,14 +123,14 @@
   - `profileImageUrl, nickname(닉네임#해시태그), savedSpotCount, recordedSpotCount`
 - **매핑**: `UserService.fetchMyPage(): MyPageHome` 신규 + `fetchUserName()`은 기본 구현이 fetchMyPage().nickname 위임 (호환 유지, 화면 전환 후 제거) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultUserService.kt:13` + `core/network/api/UserApi.kt:9`
 
-### `[ ] PATCH /v1/users/me` — 프로필 수정
+### `[x] PATCH /v1/users/me` — 프로필 수정
 - **operationId**: `updateProfile`
 - **params (query)**: `nickname?: String`
 - **request** `multipart/form-data`:
   - `profileImage?: binary` — 프로필 이미지
 - **response 200** `ApiResponse<UpdateProfileResponse>`:
   - `displayName(닉네임#해시태그), profileImageUrl`
-- **매핑**: `UserService.updateProfile(nickname?, imageUri?)` (**신규**)
+- **매핑**: `UserService.updateProfile(nickname?, ImagePayload?)` 신규. Retrofit `@Multipart` 최소 1 part 제약으로 인해 `UserApi.updateProfileNoImage`(query만)와 `updateProfileWithImage`(multipart) 두 메서드로 분리. → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultUserService.kt:22` + `core/network/api/UserApi.kt:22`
 
 ### `[ ] DELETE /v1/users/me` — 회원 탈퇴
 - **operationId**: `deleteAccount`

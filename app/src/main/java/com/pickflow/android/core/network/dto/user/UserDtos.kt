@@ -9,3 +9,9 @@ data class MypageHomeResponseDto(
     val savedSpotCount: Long = 0L,
     val recordedSpotCount: Long = 0L,
 )
+
+@Serializable
+data class UpdateProfileResponseDto(
+    val displayName: String = "",
+    val profileImageUrl: String? = null,
+)
