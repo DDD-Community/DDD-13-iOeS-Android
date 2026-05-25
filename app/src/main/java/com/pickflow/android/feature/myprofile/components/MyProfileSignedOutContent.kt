@@ -1,8 +1,8 @@
 package com.pickflow.android.feature.myprofile.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,16 +11,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.feature.login.components.AppleLoginButton
@@ -33,7 +30,11 @@ import com.pickflow.android.feature.login.components.KakaoLoginButton
  * 워드마크는 브랜드 로고 에셋 자리라 raw 텍스트 placeholder로 자리만 잡는다.
  */
 @Composable
-fun MyProfileSignedOutContent(modifier: Modifier = Modifier) {
+fun MyProfileSignedOutContent(
+    onKakaoLogin: () -> Unit = {},
+    onAppleLogin: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -60,7 +61,7 @@ fun MyProfileSignedOutContent(modifier: Modifier = Modifier) {
                 textAlign = TextAlign.Center,
             )
             Text(
-                text = "로그인하면 내 스팟을 저장하고\n일몰 알림을 받을 수 있어요.",
+                text = "지금 로그인하고 내가 공유한 스팟들과\n활동 내역을 한눈에 확인해 보세요.",
                 style = PickflowTypography.bodyMedium,
                 color = PickflowColors.gray40,
                 textAlign = TextAlign.Center,
@@ -77,25 +78,17 @@ fun MyProfileSignedOutContent(modifier: Modifier = Modifier) {
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            KakaoLoginButton(onClick = {})
-            AppleLoginButton(onClick = {})
+            KakaoLoginButton(onClick = onKakaoLogin)
+            AppleLoginButton(onClick = onAppleLogin)
         }
     }
 }
 
-/** iOS `Image("pickflow_wordmark")`(140x32) 자리 — 브랜드 로고 에셋이라 raw 텍스트 placeholder. */
+/** iOS `Image("pickflow_wordmark")`(140x32) 자리 — 브랜드 로고 에셋. */
 @Composable
 private fun Wordmark() {
-    val density = LocalDensity.current
-    CompositionLocalProvider(
-        LocalDensity provides Density(density.density, fontScale = 1f),
-    ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = "PICKFLOW",
-                style = PickflowTypography.headingMedium.copy(fontWeight = FontWeight.Bold),
-                color = PickflowColors.gray0,
-            )
-        }
-    }
+    Image(
+        painter = painterResource(R.drawable.logo),
+        contentDescription = "PICKFLOW",
+    )
 }
