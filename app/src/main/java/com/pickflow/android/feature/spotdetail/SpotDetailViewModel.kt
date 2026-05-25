@@ -6,7 +6,7 @@ import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.SharePayload
 import com.pickflow.android.core.services.protocols.ShareIntentService
-import com.pickflow.android.core.services.protocols.Spot
+import com.pickflow.android.core.services.protocols.SpotDetail
 import com.pickflow.android.core.services.protocols.SpotService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -22,8 +22,8 @@ class SpotDetailViewModel @Inject constructor(
     private val shareIntentService: ShareIntentService,
 ) : ViewModel() {
 
-    private val _spot = MutableStateFlow<LoadState<Spot>>(LoadState.Idle)
-    val spot: StateFlow<LoadState<Spot>> = _spot.asStateFlow()
+    private val _spot = MutableStateFlow<LoadState<SpotDetail>>(LoadState.Idle)
+    val spot: StateFlow<LoadState<SpotDetail>> = _spot.asStateFlow()
 
     private val _bookmarked = MutableStateFlow(false)
     val bookmarked: StateFlow<Boolean> = _bookmarked.asStateFlow()
@@ -34,27 +34,29 @@ class SpotDetailViewModel @Inject constructor(
     fun load(spotId: String) {
         viewModelScope.launch {
             _spot.value = LoadState.Loading
-            _spot.value = runCatching { spotService.spot(spotId) }
-                .fold(
-                    onSuccess = { LoadState.Loaded(it) },
-                    onFailure = { LoadState.Failed(it) },
-                )
-            _bookmarked.value = bookmarkService.isBookmarked(spotId)
+            val result = runCatching { spotService.spot(spotId) }
+            _spot.value = result.fold(
+                onSuccess = { LoadState.Loaded(it) },
+                onFailure = { LoadState.Failed(it) },
+            )
+            _bookmarked.value = result.getOrNull()?.isBookmarked
+                ?: bookmarkService.isBookmarked(spotId)
         }
     }
 
     fun toggleBookmark() {
-        val spot = (_spot.value as? LoadState.Loaded<Spot>)?.value ?: return
+        val current = (_spot.value as? LoadState.Loaded<SpotDetail>)?.value ?: return
         viewModelScope.launch {
-            _bookmarked.value = bookmarkService.toggle(spot.id)
+            // TODO(Phase D-3): BookmarkService.add/remove로 교체 후 서버 bookmarkCount 동기화.
+            _bookmarked.value = bookmarkService.toggle(current.id.toString())
         }
     }
 
     fun share() {
-        val spot = (_spot.value as? LoadState.Loaded<Spot>)?.value ?: return
+        val current = (_spot.value as? LoadState.Loaded<SpotDetail>)?.value ?: return
         viewModelScope.launch {
             shareIntentService.share(
-                SharePayload(title = spot.name, url = "pickflow://spot/${spot.id}")
+                SharePayload(title = current.name, url = "pickflow://spot/${current.id}")
             )
         }
     }

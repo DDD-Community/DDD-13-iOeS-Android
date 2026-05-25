@@ -1,13 +1,20 @@
 package com.pickflow.android.core.network.mapper
 
+import com.pickflow.android.core.network.dto.spot.SpotDetailResponseDto
 import com.pickflow.android.core.network.dto.spot.SpotItemDto
 import com.pickflow.android.core.network.dto.spot.SpotListResponseDto
 import com.pickflow.android.core.network.dto.spot.SpotSummaryDto
+import com.pickflow.android.core.services.protocols.CongestionLevel
 import com.pickflow.android.core.services.protocols.Coordinates
+import com.pickflow.android.core.services.protocols.Precipitation
 import com.pickflow.android.core.services.protocols.Spot
+import com.pickflow.android.core.services.protocols.SpotCongestion
+import com.pickflow.android.core.services.protocols.SpotDetail
 import com.pickflow.android.core.services.protocols.SpotMapMarker
 import com.pickflow.android.core.services.protocols.SpotPage
 import com.pickflow.android.core.services.protocols.SpotTheme
+import com.pickflow.android.core.services.protocols.SpotWeather
+import com.pickflow.android.core.services.protocols.WeatherSky
 
 fun SpotSummaryDto.toMapMarker(): SpotMapMarker = SpotMapMarker(
     spotId = spotId,
@@ -36,4 +43,56 @@ fun SpotListResponseDto.toSpotPage(): SpotPage = SpotPage(
 internal fun parseTheme(value: String): SpotTheme = when (value.uppercase()) {
     "YUNSEUL" -> SpotTheme.YUNSEUL
     else -> SpotTheme.SUNSET
+}
+
+fun SpotDetailResponseDto.toSpotDetail(): SpotDetail = SpotDetail(
+    id = spotId,
+    name = name,
+    comment = comment,
+    theme = parseTheme(theme),
+    latitude = latitude,
+    longitude = longitude,
+    address = address,
+    addressRoad = addressRoad?.takeIf { it.isNotBlank() },
+    addressJibun = addressJibun?.takeIf { it.isNotBlank() },
+    imageUrl = imageUrl?.takeIf { it.isNotBlank() },
+    recordedDate = recordedDate,
+    recordedTime = recordedTime,
+    weather = weatherSky?.let { sky ->
+        SpotWeather(
+            sky = parseSky(sky),
+            precipitation = parsePrecipitation(precipitation ?: "NONE"),
+            precipitationProbability = precipitationProbability,
+        )
+    },
+    congestion = congestionLevel?.let { SpotCongestion(level = parseCongestion(it)) },
+    sunsetTime = sunsetTime?.takeIf { it.isNotBlank() },
+    astronomyDate = astronomyDate?.takeIf { it.isNotBlank() },
+    weatherUpdatedAt = weatherUpdatedAt?.takeIf { it.isNotBlank() },
+    congestionUpdatedAt = congestionUpdatedAt?.takeIf { it.isNotBlank() },
+    parkingInfo = parkingInfo?.takeIf { it.isNotBlank() },
+    bookmarkCount = bookmarkCount,
+    isBookmarked = isBookmarked,
+    isMySpot = isMySpot,
+)
+
+internal fun parseSky(value: String): WeatherSky = when (value.uppercase()) {
+    "MOSTLY_CLOUDY" -> WeatherSky.MOSTLY_CLOUDY
+    "OVERCAST" -> WeatherSky.OVERCAST
+    else -> WeatherSky.CLEAR
+}
+
+internal fun parsePrecipitation(value: String): Precipitation = when (value.uppercase()) {
+    "RAIN" -> Precipitation.RAIN
+    "RAIN_SNOW" -> Precipitation.RAIN_SNOW
+    "SNOW" -> Precipitation.SNOW
+    "SHOWER" -> Precipitation.SHOWER
+    else -> Precipitation.NONE
+}
+
+internal fun parseCongestion(value: String): CongestionLevel = when (value.uppercase()) {
+    "NORMAL" -> CongestionLevel.NORMAL
+    "SLIGHTLY_CROWDED" -> CongestionLevel.SLIGHTLY_CROWDED
+    "CROWDED" -> CongestionLevel.CROWDED
+    else -> CongestionLevel.RELAXED
 }

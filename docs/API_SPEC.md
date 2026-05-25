@@ -91,7 +91,7 @@
   - `page: Int`, `hasNext: Boolean`
 - **매핑**: `SpotListService.fetch(...)` → **수정** (cursor→page, SpotSort enum 교체 LATEST/POPULAR/DISTANCE → DISTANCE/RECOMMENDED, MockSpotListService 폐기) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultSpotListService.kt:17` + `core/network/api/SpotApi.kt:13`
 
-### `[ ] GET /v1/spots/{spotId}` — 스팟 상세 조회
+### `[x] GET /v1/spots/{spotId}` — 스팟 상세 조회
 - **operationId**: `getSpotDetail`
 - **params (path)**: `*spotId: Long`
 - **response 200** `ApiResponse<SpotDetailResponse>`:
@@ -103,7 +103,7 @@
   - `congestionLevel(RELAXED|NORMAL|SLIGHTLY_CROWDED|CROWDED)`
   - `sunsetTime, astronomyDate, weatherUpdatedAt, congestionUpdatedAt`
   - `parkingInfo, bookmarkCount, isBookmarked, isMySpot`
-- **매핑**: `SpotService.spot(Long)` → **수정** (반환 모델 `SpotDetail` 전면 확장). 비로그인 시 `isBookmarked`/`isMySpot` = false.
+- **매핑**: `SpotService.spot(String)` → **수정** (반환 모델 `SpotDetail` 22필드 전면 확장, 내부에서 Long 변환). 비로그인 시 `isBookmarked`/`isMySpot` = false. → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultSpotService.kt:18` + `core/network/api/SpotApi.kt:16`
 
 ### `[ ] GET /v1/spots/{spotId}/preview` — 스팟 미리보기
 - **operationId**: `getSpotPreview`

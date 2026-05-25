@@ -1,7 +1,7 @@
 package com.pickflow.android.core.services.protocols
 
 interface SpotService {
-    suspend fun spot(id: String): Spot
+    suspend fun spot(id: String): SpotDetail
     suspend fun register(draft: SpotDraft): Spot
 }
 

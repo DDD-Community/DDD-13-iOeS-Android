@@ -1,9 +1,11 @@
 package com.pickflow.android.core.network.api
 
 import com.pickflow.android.core.network.ApiResponse
+import com.pickflow.android.core.network.dto.spot.SpotDetailResponseDto
 import com.pickflow.android.core.network.dto.spot.SpotListResponseDto
 import com.pickflow.android.core.network.dto.spot.SpotViewportResponseDto
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface SpotApi {
@@ -16,6 +18,9 @@ interface SpotApi {
         @Query("longitude") longitude: Double? = null,
         @Query("sort") sort: String? = null,
     ): ApiResponse<SpotListResponseDto>
+
+    @GET("v1/spots/{spotId}")
+    suspend fun getSpotDetail(@Path("spotId") spotId: Long): ApiResponse<SpotDetailResponseDto>
 
     @GET("v1/spots/viewport")
     suspend fun getSpotsInViewport(

@@ -8,7 +8,7 @@ import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.ShareIntentService
-import com.pickflow.android.core.services.protocols.Spot
+import com.pickflow.android.core.services.protocols.SpotDetail
 import com.pickflow.android.core.services.protocols.SpotService
 import com.pickflow.android.core.services.protocols.SpotTheme
 import io.mockk.coEvery
@@ -36,8 +36,30 @@ class SpotDetailScreenUiTest {
         val spotService = mockk<SpotService>()
         val bookmarkService = mockk<BookmarkService>()
         val shareIntentService = mockk<ShareIntentService>(relaxed = true)
-        coEvery { spotService.spot("s1") } returns
-            Spot("s1", "상세 스팟", SpotTheme.SUNSET, 37.0, 127.0, address = "서울")
+        coEvery { spotService.spot("s1") } returns SpotDetail(
+            id = 1L,
+            name = "상세 스팟",
+            comment = "",
+            theme = SpotTheme.SUNSET,
+            latitude = 37.0,
+            longitude = 127.0,
+            address = "서울",
+            addressRoad = null,
+            addressJibun = null,
+            imageUrl = null,
+            recordedDate = "2026-05-25",
+            recordedTime = "18:00",
+            weather = null,
+            congestion = null,
+            sunsetTime = null,
+            astronomyDate = null,
+            weatherUpdatedAt = null,
+            congestionUpdatedAt = null,
+            parkingInfo = null,
+            bookmarkCount = 0L,
+            isBookmarked = false,
+            isMySpot = false,
+        )
         coEvery { bookmarkService.isBookmarked("s1") } returns false
         val vm = SpotDetailViewModel(spotService, bookmarkService, shareIntentService)
 
