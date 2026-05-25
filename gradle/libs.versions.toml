@@ -29,6 +29,7 @@ coroutinesTest = "1.9.0"
 robolectric = "4.14.1"
 androidxTestEspresso = "3.6.1"
 paparazzi = "1.3.5"
+mockwebserver = "4.12.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -86,6 +87,7 @@ junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engi
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "mockwebserver" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

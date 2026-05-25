@@ -257,6 +257,139 @@ PLAN.md 승인 후 즉시 착수할 항목.
 
 ---
 
+## §9 Backend API 통합 — Phase 구현계획 & 검증
+
+> 출처: BE OpenAPI 스펙 `https://pickflow-api.us/api/api-docs` (Title: Photo API v1.0.0)
+> 체크리스트: `docs/API_SPEC.md` (26 endpoint, admin 3개 제외)
+> 본 섹션은 **§7 Phase 0 셋업 완료 이후**의 백엔드 연동 로드맵.
+
+### §9.0 공통 검증 규약
+
+모든 Phase는 머지 전 다음 3-게이트 통과:
+
+1. **Build gate**: `./gradlew :app:assembleDebug` 성공 + `:app:lintDebug` 신규 경고 0건.
+2. **Unit test gate**: `./gradlew :app:testDebugUnitTest` 그린. 신규 Service impl은 **MockWebServer** 기반 happy/error/edge 케이스 최소 3건. 신규 매퍼 확장함수는 입력↔출력 동치 테스트 1건 이상.
+3. **체크리스트 동기화 gate**: `docs/API_SPEC.md`의 해당 endpoint 항목을 `[ ]` → `[x]`로 전환하고 매핑된 Service.method 경로(파일:라인) 명시. 미동기화 시 리뷰 반려.
+
+추가 공통:
+- 외부 라이브러리 추가 시 `gradle/libs.versions.toml` 카탈로그 경유 (직접 `implementation("...")` 금지).
+- Phase 간 PR은 분리. 한 PR = 한 Phase = 한 KAN 티켓 기준.
+
+### §9.A Phase A — 네트워크 부트스트랩
+
+**구현 항목**
+- `core/network/NetworkModule.kt`: Hilt `@Module @InstallIn(SingletonComponent)`. `Json`, `HttpLoggingInterceptor`, `AuthInterceptor`(TokenStore 주입, Bearer 헤더), `TokenAuthenticator`(401 → `AuthApi.refresh` → 원요청 재시도, Mutex로 동시 401 직렬화), `OkHttpClient`, `Retrofit` 제공.
+- `core/network/ApiResponse.kt`: `@Serializable data class ApiResponse<T>(success, code, message, data: T?)` + `fun <T> ApiResponse<T>.unwrap(): T` (실패 시 `ApiException` throw).
+- `core/network/ApiException.kt`: `class ApiException(val code: String, message: String) : RuntimeException(message)`.
+- `core/network/Multipart.kt`: `Uri → MultipartBody.Part` 유틸 (ContentResolver 기반).
+- `secrets.defaults.properties` + `app/build.gradle.kts`: `PICKFLOW_API_BASE_URL` `buildConfigField`로 노출.
+- 빈 패키지 생성: `core/network/{api, dto, mapper}/`.
+
+**검증 방법**
+- ✅ Build gate.
+- ✅ Unit test:
+    1. `ApiResponseTest`: `success=true,data=X → unwrap()=X` / `success=false → throws ApiException`.
+    2. `AuthInterceptorTest` (MockWebServer): TokenStore에 토큰 있을 때 `Authorization` 헤더 부착, 없을 때 미부착.
+    3. `TokenAuthenticatorTest` (MockWebServer): 첫 응답 401 → refresh 호출 → 새 토큰으로 재시도 → 최종 200. 두 번째 연속 401(refresh 실패) → 포기 + TokenStore.clear() 호출.
+- ✅ 수동: 디버그 빌드에서 `OkHttp` 로그가 `BODY` 레벨로 출력되는지 logcat에서 확인 (`adb logcat -s OkHttp:D`).
+- ❌ ViewModel/UI 영향 없음 (기존 스텁 그대로). 회귀 테스트는 기존 셋만 그린이면 통과.
+
+### §9.B Phase B — 인증 (4 endpoint)
+
+**구현 항목**
+- DTO: `core/network/dto/auth/` — `KakaoLoginRequest`, `AppleLoginRequest`, `RefreshRequest`, `LogoutRequest`, `TokenResponseDto`, `UserProfileDto`, `AppleUserDto`, `AppleNameDto`.
+- Api: `core/network/api/AuthApi.kt`.
+- 도메인: `core/services/protocols/UserProfile.kt`. `AuthenticatedSession(tokens: SessionTokens, profile: UserProfile)` wrapper.
+- Provider: `AppleAuthProvider` interface + `RealAppleAuthProvider` impl.
+- 서비스 수정: `DefaultSocialLoginService`(API 호출 + TokenStore.save), `DefaultAuthService.logout()`(API 호출 후 clear).
+- ServiceModule: `bindAppleAuthProvider` 추가.
+
+**검증 방법**
+- ✅ Build / 체크리스트 동기화 gate.
+- ✅ Unit test:
+    1. `DefaultSocialLoginServiceTest` (MockWebServer): kakao/apple happy → TokenStore에 access/refresh 저장 확인 + 반환 `AuthenticatedSession.profile` 매핑 확인.
+    2. 401 응답 → `ApiException` propagate, TokenStore 변경 없음.
+    3. `DefaultAuthServiceTest`: `logout()` 호출 시 `/v1/auth/logout` 발사 + 응답 후 TokenStore.clear() 호출 순서 검증.
+    4. `LoginViewModelTest` (Turbine): 기존 테스트의 mock 반환 타입을 `AuthenticatedSession`으로 갱신, `session` StateFlow가 `Idle → Loading → Loaded(...)` 흐름 유지.
+- ✅ 수동 (실제 BE 대상): 카카오 로그인 → logcat에서 `POST /v1/auth/kakao` + 200 응답 + 마이페이지 진입 가능 확인. 강제 로그아웃 후 보호 endpoint 호출 → 401 → refresh 자동 재시도 흐름 확인 (RefreshToken 만료 케이스는 BE와 협의 후 별도 시나리오).
+- ✅ 회귀: 기존 `LoginViewModelTest`, `MyProfileViewModelTest` 그린 유지.
+
+### §9.C Phase C — 스팟 조회 (4 endpoint)
+
+**구현 항목**
+- DTO: `core/network/dto/spot/` — `SpotItemDto`, `SpotListResponseDto`, `SpotDetailResponseDto`, `SpotPreviewResponseDto`, `SpotSummaryDto`, `SpotViewportResponseDto`.
+- Api: `core/network/api/SpotApi.kt`.
+- 도메인 재정의 (**broad change**): `SpotTheme` enum 교체(`SUNSET`, `YUNSEUL`), `Spot.id: String → Long`, `SpotPage(items, nextCursor)` → `SpotListPage(items, page: Int, hasNext: Boolean)`. 신규 `SpotDetail`, `SpotPreview`, `SpotMapMarker`, `ViewportBox`.
+- 서비스 신규/교체: `DefaultSpotListService`(Mock 폐기), `DefaultSpotService`(Stub 폐기, `register()` 메서드는 §9.D `MySpotService`로 이전), `SpotMapService` + `DefaultSpotMapService`.
+- ServiceModule: 3개 바인딩 교체/추가.
+
+**검증 방법**
+- ✅ Build / 체크리스트 동기화 gate.
+- ✅ Unit test:
+    1. 매퍼: `SpotItemDto.toSpot()`, `SpotDetailResponseDto.toSpotDetail()` — null/optional 필드, enum 매핑(서버 `SUNSET` → `SpotTheme.SUNSET`), nested address 분리(`address`, `addressRoad`, `addressJibun`) 검증.
+    2. `DefaultSpotListServiceTest` (MockWebServer): page+theme+sort 조합으로 query string 직렬화 확인, `hasNext=true` 응답 처리, 빈 `spots[]` 응답 → 도메인은 빈 리스트 그대로 전달 (Empty 변환은 ViewModel 책임).
+    3. `DefaultSpotMapServiceTest`: 4 꼭짓점 좌표 query 8개 누락 없이 전송.
+    4. `SpotListViewModelTest` (Turbine): cursor 누적 로직 → page 누적 로직 리팩터 후 페이지 2회 로드 시 `spots` StateFlow가 누적 결과 emit. theme 변경 시 페이지 리셋 동작.
+    5. `SpotDetailViewModelTest`: 비로그인(isBookmarked=false) / 로그인(서버 isBookmarked 반영) 시나리오.
+- ✅ 수동: 디버그 빌드 실행 → 스팟 리스트 → 무한스크롤 1회 → 상세 진입 → preview 정보(거리 표시) 확인. 지도 화면이 구현된 시점이면 viewport 호출 logcat 확인 (`pickflow-api-pingpong` 스킬 활용 가능).
+- ✅ 회귀: `feature/spotlist`, `feature/spotdetail`, `feature/map`의 모든 Compose UI 테스트 + Paparazzi 스냅샷 재생성 (theme/id 변경으로 baseline 갱신 필요 — PR에 갱신된 PNG 포함).
+
+### §9.D Phase D — 마이페이지 / 보관함 / 북마크 / 마이스팟 (13 endpoint)
+
+**구현 항목**
+- DTO 패키지: `core/network/dto/{user, archive, bookmark, myspot}/`.
+- Api: `UserApi`, `ArchiveApi`, `BookmarkApi`, `MySpotApi`.
+- 도메인 신규: `MyPageHome`, `Archive`, `SavedSpot`/`SavedSpotPage`, `MySpot`/`MySpotPage`/`MySpotStatus`, `WithdrawalReasonType`.
+- 서비스: `UserService` 확장 (5 메서드), `ArchiveService` 신규 (3), `BookmarkService` 변경 (in-memory 폐기 → 서버 add/remove + savedSpots), `MySpotService` 신규 (list, create). `SpotService.register()` 및 `SpotDraft`는 `MySpotService`로 이전 후 삭제.
+- ServiceModule: 신규 4, 변경 2.
+
+**검증 방법**
+- ✅ Build / 체크리스트 동기화 gate (13개 항목).
+- ✅ Unit test:
+    1. 각 Service impl MockWebServer 테스트 — happy + 401(refresh 흐름 위임) + 400(`ApiException.code` 보존) 케이스.
+    2. `MySpotService.create()`: multipart 빌더 테스트 — 이미지 part 이름, JSON meta part 이름이 BE 확정 명세대로 생성되는지 (Open TODO 해소 전엔 placeholder 기준).
+    3. `BookmarkService.add/remove`: 응답 `bookmarkCount` 그대로 반환 검증.
+    4. ViewModel 회귀: `MyProfileViewModel`, `SpotListViewModel`(북마크 toggle), `SpotDetailViewModel`(낙관적 토글 + 실패 롤백), `WithdrawalViewModel`, `SpotRegistrationViewModel` 갱신 + 그린.
+- ✅ 통합/수동:
+    1. 로그인 → 마이페이지 진입 → 닉네임/카운트 표시 확인.
+    2. 프로필 이미지 변경 (갤러리 선택) → multipart 업로드 → 응답 URL이 Coil로 즉시 로드되는지.
+    3. 스팟 상세에서 북마크 토글 → 서버 응답 `bookmarkCount`로 화면 갱신 → 저장된 스팟 목록에 반영.
+    4. 회원 탈퇴 사유 등록 → 탈퇴 → 토큰 클리어 + 로그인 화면 복귀.
+- ✅ 데이터 불변식: in-memory `Set<String>` 캐시 제거 후 화면 간 북마크 상태가 서버 응답만으로 일관되는지 회귀 (저장된 스팟 ↔ 상세 ↔ 리스트 카드).
+
+### §9.E Phase E — 게시판 / 신고 / 알림 (5 endpoint)
+
+**구현 항목**
+- DTO: `core/network/dto/{board, report, alarm}/`.
+- Api: `BoardApi`, `SpotReportApi`, `MySpotAlarmApi`.
+- 도메인 신규: `BoardPost`, `BoardPostDetail`, `SpotAlarm`.
+- 서비스 신규: `BoardService`, `SpotReportService`, `MySpotAlarmService`.
+- 화면 미존재 도메인은 ViewModel 작업 보류 가능 — Service/Api/DTO 단위만 머지.
+
+**검증 방법**
+- ✅ Build / 체크리스트 동기화 gate.
+- ✅ Unit test:
+    1. 각 Service impl MockWebServer 테스트 — happy + validation error(신고 content 5자 미만 → 서버 400 → `ApiException.code` 보존).
+    2. Board 페이징: `hasNext=true → false` 흐름 + `pinned` 정렬 보존 검증.
+    3. Alarm: `enabled` toggle → 응답 `SpotAlarmResponse.enabled` 그대로 반영.
+- ✅ 통합/수동: 화면 구현 시점에 추가 (별도 KAN 티켓).
+- ✅ 회귀: 신규 Service 추가만으로는 기존 화면 영향 없음 → 기존 테스트 셋 그린 유지만 확인.
+
+### §9.Z 통합 검증 (모든 Phase 완료 후)
+
+**End-to-end 시나리오** (수동, 실제 BE):
+1. 비로그인 → 스팟 리스트 → 상세(`isBookmarked=false`) → 북마크 시도 → 로그인 프롬프트 → 카카오 로그인 → 자동 북마크 → 저장된 스팟에 반영.
+2. 프로필 수정(닉네임 + 이미지) → 마이페이지 즉시 반영.
+3. 나만의 스팟 등록 → PENDING 상태로 마이스팟 리스트 노출 → 알림 구독 ON.
+4. 게시판(공지) 진입 → 페이지 2회 로드 → 상세 진입.
+5. 회원 탈퇴 → 사유 등록 → 토큰 클리어 → 로그인 화면.
+
+**스펙 변경 대응**:
+- BE 스펙 갱신 시 `curl https://pickflow-api.us/api/api-docs > /tmp/pickflow_openapi.json` → diff 후 `docs/API_SPEC.md`와 본 §9의 영향 항목 동기화. 매뉴얼 diff가 부담되면 `openapi-diff` 도구 도입 검토 (별도 TODO).
+- Open TODO (BE 확인 필요)는 `docs/API_SPEC.md` 말미 섹션에 위임. 해소될 때마다 §9.X의 관련 항목 갱신.
+
+---
+
 ## 부록 A — iOS Service Protocol → Android Interface 매핑 요약
 
 | iOS Protocol | Android interface 위치 | Scope |

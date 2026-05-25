@@ -21,6 +21,7 @@ val secrets = Properties().apply {
 }
 val naverMapClientId: String = secrets.getProperty("NAVER_MAP_CLIENT_ID", "")
 val kakaoNativeAppKey: String = secrets.getProperty("KAKAO_NATIVE_APP_KEY", "")
+val pickflowApiBaseUrl: String = secrets.getProperty("PICKFLOW_API_BASE_URL", "https://pickflow-api.us/api/")
 
 android {
     namespace = "com.pickflow.android"
@@ -38,6 +39,7 @@ android {
         manifestPlaceholders["kakaoNativeAppKey"] = kakaoNativeAppKey
         buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
         buildConfigField("String", "NAVER_MAP_CLIENT_ID", "\"$naverMapClientId\"")
+        buildConfigField("String", "PICKFLOW_API_BASE_URL", "\"$pickflowApiBaseUrl\"")
     }
 
     buildTypes {
@@ -120,6 +122,7 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.okhttp.mockwebserver)
 
     // Phase B — Compose UI test (Robolectric, JVM 실행)
     testImplementation(libs.junit4)
