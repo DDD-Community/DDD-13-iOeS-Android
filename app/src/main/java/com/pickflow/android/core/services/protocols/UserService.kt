@@ -12,6 +12,12 @@ interface UserService {
     ): UpdateProfileResult
 
     /**
+     * 탈퇴 사유 등록. content는 reasonType=OTHERS 일 때만 사용 (최대 200자).
+     * 탈퇴 본 요청(DELETE /v1/users/me) 직전에 호출.
+     */
+    suspend fun saveWithdrawalReason(type: WithdrawalReasonType, content: String? = null)
+
+    /**
      * 닉네임만 필요한 화면용 편의 메서드. 기본 구현은 fetchMyPage().nickname 위임.
      * 추후 화면이 fetchMyPage()로 전면 전환되면 제거 예정.
      */

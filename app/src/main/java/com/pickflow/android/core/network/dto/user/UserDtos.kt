@@ -15,3 +15,9 @@ data class UpdateProfileResponseDto(
     val displayName: String = "",
     val profileImageUrl: String? = null,
 )
+
+@Serializable
+data class WithdrawalReasonRequest(
+    val reasonType: String,
+    val content: String? = null,
+)

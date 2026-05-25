@@ -137,13 +137,13 @@
 - **response 200** `ApiResponse<Void>` (소프트 삭제 + 모든 토큰/OAuth 해제)
 - **매핑**: `AuthService.withdraw()` → 서버 호출 후 finally TokenStore.clear → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultAuthService.kt:33` + `core/network/api/UserApi.kt:34`
 
-### `[ ] POST /v1/users/me/withdrawal-reason` — 탈퇴 사유 등록
+### `[x] POST /v1/users/me/withdrawal-reason` — 탈퇴 사유 등록
 - **operationId**: `saveWithdrawalReason`
 - **request** `WithdrawalReasonRequest`:
   - `*reasonType: enum[OTHERS]`
   - `content?: String` (기타 사유일 때만, max 200)
 - **response 200** `ApiResponse<Void>`
-- **매핑**: `UserService.saveWithdrawalReason(type, content?)` (**신규**)
+- **매핑**: `UserService.saveWithdrawalReason(WithdrawalReasonType, content?)` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultUserService.kt:43` + `core/network/api/UserApi.kt:39`
 
 ### `[ ] PATCH /v1/users/restore` — 탈퇴 계정 복구
 - **operationId**: `restoreAccount`

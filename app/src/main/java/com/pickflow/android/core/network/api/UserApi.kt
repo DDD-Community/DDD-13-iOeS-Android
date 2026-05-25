@@ -3,11 +3,14 @@ package com.pickflow.android.core.network.api
 import com.pickflow.android.core.network.ApiResponse
 import com.pickflow.android.core.network.dto.user.MypageHomeResponseDto
 import com.pickflow.android.core.network.dto.user.UpdateProfileResponseDto
+import com.pickflow.android.core.network.dto.user.WithdrawalReasonRequest
 import okhttp3.MultipartBody
+import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.PATCH
+import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Query
 
@@ -33,4 +36,9 @@ interface UserApi {
 
     @DELETE("v1/users/me")
     suspend fun deleteAccount(): ApiResponse<Unit>
+
+    @POST("v1/users/me/withdrawal-reason")
+    suspend fun saveWithdrawalReason(
+        @Body request: WithdrawalReasonRequest,
+    ): ApiResponse<Unit>
 }

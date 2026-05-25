@@ -21,6 +21,11 @@ data class UpdateProfileResult(
 )
 
 /**
+ * 탈퇴 사유 유형. 서버는 현재 OTHERS만 정의. 추후 확장 시 enum 추가.
+ */
+enum class WithdrawalReasonType { OTHERS }
+
+/**
  * Multipart 업로드 페이로드. Service 인터페이스가 OkHttp 타입에 묶이지 않도록 추상화.
  * - bytes: 실제 이미지 데이터
  * - mimeType: image/jpeg 등
