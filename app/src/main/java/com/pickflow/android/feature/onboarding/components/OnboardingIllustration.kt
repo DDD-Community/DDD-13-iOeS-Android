@@ -6,8 +6,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.pickflow.android.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -32,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material3.Text
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pickflow.android.common.designsystem.PickflowColors
@@ -63,30 +68,41 @@ fun OnboardingIllustration(
 
         when (page.layout) {
             OnboardingLayout.TOP_ALIGNED_IMAGE -> Column(Modifier.fillMaxSize()) {
-                PhonePlaceholder(
-                    Modifier
-                        .padding(horizontal = 60.dp)
-                        .fillMaxWidth()
-                        .aspectRatio(0.52f),
+                // PNG 자연 비율 유지 — onboarding_0.png는 560x880 (ratio 0.636).
+                // aspectRatio 강제 제거, FillWidth로 폭에 맞춰 높이 자동 결정.
+                Image(
+                    painter = painterResource(R.drawable.onboarding_0),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillWidth,
+                    modifier = Modifier
+                        .padding(horizontal = 55.dp)
+                        .fillMaxWidth(),
                 )
                 Spacer(Modifier.weight(1f))
             }
 
             OnboardingLayout.BOTTOM_ALIGNED_IMAGE -> BoxWithConstraints(Modifier.fillMaxSize()) {
-                // 폰 목업은 일러스트 높이의 70%만 차지(하단 정렬) → 상단 30%를 토스트 공간으로 비운다.
-                val phoneTop = maxHeight * 0.30f
-                // 토스트 — 폰보다 먼저 그려 이미지 '뒤'에 두고, 폰 상단 -90dp에서 위로 올라오게 한다.
+                // onboarding_1.png 자연 비율(0.906) 유지, 하단 정렬.
+                val horizontalPaddingDp = 55.dp
+                val imageWidth = maxWidth - horizontalPaddingDp * 2
+                val imageHeight = imageWidth / 0.906f  // PNG 자연 비율
+
+                // 토스트 — 이미지 top에서 위로 30dp.
                 ToastSlot(
                     toastText = toastText,
                     modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .offset(y = phoneTop - 90.dp),
-                )
-                PhonePlaceholder(
-                    Modifier
                         .align(Alignment.BottomCenter)
-                        .fillMaxHeight(0.70f)
-                        .aspectRatio(0.52f, matchHeightConstraintsFirst = true),
+                        .offset(y = -(imageHeight + 30.dp)),
+                )
+
+                Image(
+                    painter = painterResource(R.drawable.onboarding_1),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillWidth,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = horizontalPaddingDp)
+                        .fillMaxWidth(),
                 )
             }
 
@@ -99,6 +115,7 @@ fun OnboardingIllustration(
                 ) {
                     page.mood?.let { OnboardingMoodHeader(header = it) }
                     OnboardingFocusedCarousel(
+                        pageId = page.id,
                         imageCount = page.carouselImageCount,
                         isAnimating = isCarouselAnimating,
                     )
@@ -127,26 +144,5 @@ private fun ToastSlot(toastText: String?, modifier: Modifier = Modifier) {
         exit = slideOutVertically(animationSpec = tween(250)) { slideFromPx } + fadeOut(tween(250)),
     ) {
         OnboardingToast(text = lastText)
-    }
-}
-
-/** iOS `Image(page.imageName)` 폰 목업 자리 — 커스텀 에셋이라 placeholder 박스. */
-@Composable
-private fun PhonePlaceholder(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(36.dp))
-            .background(PickflowColors.gray90)
-            .border(1.dp, PickflowColors.gray70, RoundedCornerShape(36.dp)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(text = "📱", fontSize = 48.sp)
-            Text(
-                text = "화면 미리보기",
-                style = PickflowTypography.labelMedium,
-                color = PickflowColors.gray40,
-            )
-        }
     }
 }

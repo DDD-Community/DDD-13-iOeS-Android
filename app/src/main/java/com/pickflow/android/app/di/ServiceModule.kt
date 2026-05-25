@@ -10,7 +10,7 @@ import com.pickflow.android.core.services.impl.DefaultSpotReportService
 import com.pickflow.android.core.services.impl.DefaultSocialLoginService
 import com.pickflow.android.core.services.impl.DefaultUserService
 import com.pickflow.android.core.services.impl.GridClusteringService
-import com.pickflow.android.core.services.impl.InMemoryOnboardingCompletionStore
+import com.pickflow.android.core.services.impl.DataStoreOnboardingCompletionStore
 import com.pickflow.android.core.services.impl.InMemoryTokenStore
 import com.pickflow.android.core.services.impl.DefaultSpotListService
 import com.pickflow.android.core.services.impl.NoopAnalyticsLogger
@@ -76,7 +76,7 @@ abstract class ServiceModule {
 
     @Binds
     abstract fun bindOnboardingCompletionStore(
-        impl: InMemoryOnboardingCompletionStore
+        impl: DataStoreOnboardingCompletionStore
     ): OnboardingCompletionStore
 
     @Binds

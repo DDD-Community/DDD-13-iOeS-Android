@@ -3,6 +3,7 @@ package com.pickflow.android.feature.onboarding
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -24,10 +25,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import com.pickflow.android.R
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -60,6 +70,7 @@ import kotlin.math.roundToInt
  * 갱신한다. 릴리스 스냅 애니메이션은 `onDragStopped` 코루틴 안에서만 돈다 — 드래그
  * 입력과 시간상 겹치지 않으므로 둘 사이의 경쟁(race)이 원천 차단된다.
  */
+@Preview
 @Composable
 fun OnboardingScreen(
     viewModel: OnboardingViewModel = hiltViewModel(),
@@ -130,7 +141,7 @@ fun OnboardingScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
+                    .weight(6f)
                     .clipToBounds(),
             ) {
                 pages.forEachIndexed { index, page ->
@@ -166,6 +177,7 @@ fun OnboardingScreen(
                 currentIndex = currentIndex,
                 pageCount = pages.size,
                 onPrimaryTap = viewModel::finish,
+                modifier = Modifier.weight(4f),
             )
         }
     }
@@ -192,7 +204,7 @@ fun OnboardingScreenContent(
             .fillMaxSize()
             .background(OnboardingPalette.panelBackground),
     ) {
-        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+        Box(modifier = Modifier.fillMaxWidth().weight(6f)) {
             OnboardingIllustration(
                 page = page,
                 isCarouselAnimating = isCarouselAnimating,
@@ -209,24 +221,19 @@ fun OnboardingScreenContent(
             currentIndex = currentIndex,
             pageCount = pageCount,
             onPrimaryTap = onPrimaryTap,
+            modifier = Modifier.weight(4f),
         )
     }
 }
 
-/** iOS `Image(.logo)` 워드마크 자리 — 브랜드 로고 에셋이라 raw 텍스트 placeholder(고정 크기). */
+/** iOS `Image(.logo)` 워드마크 — `drawable-xhdpi/logo.png` 사용. */
 @Composable
 private fun OnboardingWordmark(modifier: Modifier = Modifier) {
-    val density = LocalDensity.current
-    CompositionLocalProvider(
-        LocalDensity provides Density(density.density, fontScale = 1f),
-    ) {
-        Text(
-            text = "PICKFLOW",
-            style = PickflowTypography.headingSmall.copy(fontWeight = FontWeight.Bold),
-            color = PickflowColors.gray0,
-            modifier = modifier,
-        )
-    }
+    Image(
+        painter = painterResource(R.drawable.logo),
+        contentDescription = "PICKFLOW",
+        modifier = modifier,
+    )
 }
 
 /** 양 끝 페이지를 넘어선 드래그에 저항(0.3배)을 주는 러버밴딩. iOS `edgeRubberBand`. */
@@ -261,4 +268,23 @@ private fun snapTargetIndex(
         else -> currentIndex
     }
     return target.coerceIn(0, pageCount - 1)
+}
+
+/**
+ * 일러스트 페이저용 비대칭 클립 — 가로는 자기 box 내부로 hard-clip(인접 페이지 bleed 방지),
+ * 세로는 BOTTOM 방향으로 [BOTTOM_OVERFLOW_DP] 만큼 확장 허용.
+ * BOTTOM_ALIGNED_IMAGE 페이지의 폰 mockup이 panel 영역으로 흘러내려가 panel paint에 가려지는
+ * 효과(Figma 매칭)를 만들기 위함.
+ */
+private const val BOTTOM_OVERFLOW_DP = 80f
+
+private val BottomOverflowClipShape = object : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density,
+    ): Outline {
+        val extra = with(density) { BOTTOM_OVERFLOW_DP.dp.toPx() }
+        return Outline.Rectangle(Rect(0f, 0f, size.width, size.height + extra))
+    }
 }

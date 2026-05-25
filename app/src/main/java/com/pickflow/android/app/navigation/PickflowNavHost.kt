@@ -1,6 +1,9 @@
 package com.pickflow.android.app.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -16,10 +19,14 @@ import com.pickflow.android.feature.spotregistration.SpotRegistrationScreen
 import com.pickflow.android.feature.spotsearch.SpotSearchScreen
 
 @Composable
-fun PickflowNavHost(startDestination: String = PickflowRoute.ONBOARDING) {
+fun PickflowNavHost(
+    entryViewModel: PickflowEntryViewModel = hiltViewModel(),
+) {
+    val startDestination by entryViewModel.startDestination.collectAsStateWithLifecycle()
+    val resolved = startDestination ?: return
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(navController = navController, startDestination = resolved) {
 
         composable(PickflowRoute.ONBOARDING) {
             OnboardingScreen(

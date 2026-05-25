@@ -1,5 +1,6 @@
 package com.pickflow.android.feature.onboarding.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -16,9 +17,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.feature.onboarding.model.OnboardingMood
@@ -81,16 +83,21 @@ private fun MoodChip(
         horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
+        Image(
+            painter = painterResource(iconResFor(mood)),
+            contentDescription = null,
             modifier = Modifier.size(if (isLarge) 18.dp else 14.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(text = mood.emoji, fontSize = if (isLarge) 14.sp else 11.sp)
-        }
+        )
         Text(
             text = mood.label,
             style = if (isLarge) PickflowTypography.bodyMediumBold else PickflowTypography.bodySmall,
             color = Color.White,
         )
     }
+}
+
+@androidx.annotation.DrawableRes
+private fun iconResFor(mood: OnboardingMoodKind): Int = when (mood) {
+    OnboardingMoodKind.SUNSET -> R.drawable.ic_sunset
+    OnboardingMoodKind.RIPPLE -> R.drawable.ic_reflection
 }

@@ -1,5 +1,6 @@
 package com.pickflow.android.feature.onboarding.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -19,12 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.pickflow.android.common.designsystem.PickflowColors
+import com.pickflow.android.R
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -53,20 +55,21 @@ private const val REPEAT_COUNT = 9
  */
 @Composable
 fun OnboardingFocusedCarousel(
+    pageId: Int,
     imageCount: Int,
     isAnimating: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     if (isAnimating && imageCount > 1) {
-        AnimatedFocusedCarousel(imageCount = imageCount, modifier = modifier)
+        AnimatedFocusedCarousel(pageId = pageId, imageCount = imageCount, modifier = modifier)
     } else {
-        StaticFocusedCarousel(imageCount = imageCount, modifier = modifier)
+        StaticFocusedCarousel(pageId = pageId, imageCount = imageCount, modifier = modifier)
     }
 }
 
 /** 정지 프레임 — 중앙 1장 + (imageCount > 1이면) 양옆 0.8배 2장. iOS `isAnimating=false` 프레임과 동일. */
 @Composable
-private fun StaticFocusedCarousel(imageCount: Int, modifier: Modifier) {
+private fun StaticFocusedCarousel(pageId: Int, imageCount: Int, modifier: Modifier) {
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
@@ -77,17 +80,21 @@ private fun StaticFocusedCarousel(imageCount: Int, modifier: Modifier) {
         val unitWidth = centerWidth + CAROUSEL_SPACING
 
         if (imageCount > 1) {
-            CarouselImagePlaceholder(
+            CarouselImage(
+                pageId = pageId,
+                indexInPattern = 0,
                 size = centerWidth,
                 modifier = Modifier.offset(x = -unitWidth).scale(SIDE_SCALE),
             )
-            CarouselImagePlaceholder(
+            CarouselImage(
+                pageId = pageId,
+                indexInPattern = 2,
                 size = centerWidth,
                 modifier = Modifier.offset(x = unitWidth).scale(SIDE_SCALE),
             )
         }
         // 중앙(focused) 사진 — 마지막에 그려 최상단.
-        CarouselImagePlaceholder(size = centerWidth)
+        CarouselImage(pageId = pageId, indexInPattern = 1, size = centerWidth)
     }
 }
 
@@ -98,7 +105,7 @@ private fun StaticFocusedCarousel(imageCount: Int, modifier: Modifier) {
  * 매 프레임 갱신해도 recomposition 없이 relayout·redraw만 일어난다.
  */
 @Composable
-private fun AnimatedFocusedCarousel(imageCount: Int, modifier: Modifier) {
+private fun AnimatedFocusedCarousel(pageId: Int, imageCount: Int, modifier: Modifier) {
     val totalImages = imageCount.coerceAtLeast(1)
     val cardCount = totalImages * REPEAT_COUNT
     // 시각 정중앙에 처음 놓일 카드 인덱스. iOS `firstCenterExpandedIndex`.
@@ -128,7 +135,9 @@ private fun AnimatedFocusedCarousel(imageCount: Int, modifier: Modifier) {
 
         repeat(cardCount) { index ->
             val baseX = index * unitWidthPx + centerWidthPx / 2f
-            CarouselImagePlaceholder(
+            CarouselImage(
+                pageId = pageId,
+                indexInPattern = index % totalImages,
                 size = centerWidthDp,
                 modifier = Modifier
                     .offset {
@@ -177,17 +186,48 @@ private fun focusScale(currentX: Float, containerWidth: Float, unitWidth: Float)
 }
 
 @Composable
-private fun CarouselImagePlaceholder(
+private fun CarouselImage(
+    pageId: Int,
+    indexInPattern: Int,
     size: Dp,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier
-            .size(size)
-            .clip(RoundedCornerShape(16.dp))
-            .background(PickflowColors.gray70),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text = "🏞", fontSize = 40.sp)
+    val resId = imageResFor(pageId, indexInPattern)
+    if (resId != null) {
+        Image(
+            painter = painterResource(resId),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+                .size(size)
+                .clip(RoundedCornerShape(16.dp)),
+        )
+    } else {
+        Box(
+            modifier = modifier
+                .size(size)
+                .clip(RoundedCornerShape(16.dp))
+                .background(androidx.compose.ui.graphics.Color(0xFF3A3A3A)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(text = "")
+        }
     }
+}
+
+@androidx.annotation.DrawableRes
+private fun imageResFor(pageId: Int, indexInPattern: Int): Int? = when (pageId) {
+    2 -> when (indexInPattern) {
+        0 -> R.drawable.onboarding_2_0
+        1 -> R.drawable.onboarding_2_1
+        2 -> R.drawable.onboarding_2_2
+        else -> null
+    }
+    3 -> when (indexInPattern) {
+        0 -> R.drawable.onboarding_3_0
+        1 -> R.drawable.onboarding_3_1
+        2 -> R.drawable.onboarding_3_2
+        else -> null
+    }
+    else -> null
 }
