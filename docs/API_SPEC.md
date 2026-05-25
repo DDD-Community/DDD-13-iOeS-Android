@@ -212,13 +212,13 @@
   - `page: Int`, `hasNext: Boolean`
 - **매핑**: `MySpotService.list(page, coords?)` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultMySpotService.kt:14` + `core/network/api/MySpotApi.kt:9`
 
-### `[ ] POST /v1/users/me/my-spots` — 나만의 스팟 등록
+### `[x] POST /v1/users/me/my-spots` — 나만의 스팟 등록
 - **operationId**: `createMySpot`
 - **request** `multipart/form-data` ⚠️ **스펙 누락(integer로 표기됨), BE 확인 필요**
   - 추정: `image: binary` + `meta: application/json` (name, theme, latitude, longitude, comment, recordedDate, recordedTime 등)
 - **response 201** `ApiResponse<CreateMySpotResponse>`:
   - `spotId, status(항상 PENDING), imageUrl`
-- **매핑**: `MySpotService.create(draft, imageUri)` (**신규**, 기존 `SpotService.register()` 이전)
+- **매핑**: `MySpotService.create(SpotDraft, ImagePayload): CreateMySpotResult` (**신규**, part 이름 `image`/`meta` 추정값). 기존 `SpotService.register()` 는 deprecated 표기 후 본 메서드로 일원화 예정. → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultMySpotService.kt:34` + `core/network/api/MySpotApi.kt:24`
 
 ---
 
