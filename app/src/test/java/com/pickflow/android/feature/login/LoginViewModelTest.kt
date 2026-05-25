@@ -4,7 +4,9 @@ import app.cash.turbine.test
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.KakaoAuthProvider
 import com.pickflow.android.core.services.protocols.KakaoAuthResult
+import com.pickflow.android.core.services.protocols.AuthenticatedSession
 import com.pickflow.android.core.services.protocols.SessionTokens
+import com.pickflow.android.core.services.protocols.UserProfile
 import com.pickflow.android.core.services.protocols.SocialAuthCredential
 import com.pickflow.android.core.services.protocols.SocialLoginService
 import com.pickflow.android.core.services.protocols.SocialProvider
@@ -47,7 +49,17 @@ class LoginViewModelTest {
     fun `loginWithKakao emits Loaded session and forwards credential`() = runTest(testDispatcher) {
         coEvery { kakao.login() } returns KakaoAuthResult("k-access", "k-refresh")
         val captured = slot<SocialAuthCredential>()
-        coEvery { social.loginWith(capture(captured)) } returns SessionTokens("sess", "rf")
+        val session = AuthenticatedSession(
+            tokens = SessionTokens("sess", "rf"),
+            profile = UserProfile(
+                userId = "u1",
+                email = "kdy@example.com",
+                nickname = "pickflower",
+                profileImageUrl = null,
+                provider = SocialProvider.KAKAO,
+            ),
+        )
+        coEvery { social.loginWith(capture(captured)) } returns session
 
         val vm = LoginViewModel(kakao, social)
 
@@ -55,7 +67,7 @@ class LoginViewModelTest {
             assertEquals(LoadState.Idle, awaitItem())
             vm.loginWithKakao()
             assertEquals(LoadState.Loading, awaitItem())
-            assertEquals(LoadState.Loaded(SessionTokens("sess", "rf")), awaitItem())
+            assertEquals(LoadState.Loaded(session), awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
 

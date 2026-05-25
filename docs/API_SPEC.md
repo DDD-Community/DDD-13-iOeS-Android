@@ -31,7 +31,7 @@
 
 ## Phase B — 인증 (4 endpoints)
 
-### `[ ] POST /v1/auth/kakao` — 카카오 로그인
+### `[x] POST /v1/auth/kakao` — 카카오 로그인
 - **operationId**: `kakaoLogin`
 - **request** `KakaoLoginRequest`:
   - `*accessToken: String` — Kakao SDK 액세스 토큰
@@ -39,7 +39,7 @@
   - `accessToken: String`
   - `refreshToken: String`
   - `profile: UserProfile { userId, email, nickname, profileImageUrl, provider(APPLE|KAKAO) }`
-- **매핑**: `SocialLoginService.loginWith(SocialAuthCredential)` → **수정** (반환에 `UserProfile` 포함하도록 `AuthenticatedSession` wrapper 신설)
+- **매핑**: `SocialLoginService.loginWith(SocialAuthCredential)` → **수정** (반환에 `UserProfile` 포함하도록 `AuthenticatedSession` wrapper 신설) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultSocialLoginService.kt:20` + `core/network/api/AuthApi.kt:12`
 
 ### `[ ] POST /v1/auth/apple` — Apple 로그인
 - **operationId**: `appleLogin`

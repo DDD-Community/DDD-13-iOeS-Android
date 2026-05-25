@@ -13,6 +13,19 @@ data class SessionTokens(
     val refreshToken: String?,
 )
 
+data class UserProfile(
+    val userId: String,
+    val email: String?,
+    val nickname: String,
+    val profileImageUrl: String?,
+    val provider: SocialProvider,
+)
+
+data class AuthenticatedSession(
+    val tokens: SessionTokens,
+    val profile: UserProfile,
+)
+
 interface SocialLoginService {
-    suspend fun loginWith(credential: SocialAuthCredential): SessionTokens
+    suspend fun loginWith(credential: SocialAuthCredential): AuthenticatedSession
 }

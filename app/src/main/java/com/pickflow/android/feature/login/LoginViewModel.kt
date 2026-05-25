@@ -3,8 +3,8 @@ package com.pickflow.android.feature.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.core.services.protocols.AuthenticatedSession
 import com.pickflow.android.core.services.protocols.KakaoAuthProvider
-import com.pickflow.android.core.services.protocols.SessionTokens
 import com.pickflow.android.core.services.protocols.SocialAuthCredential
 import com.pickflow.android.core.services.protocols.SocialLoginService
 import com.pickflow.android.core.services.protocols.SocialProvider
@@ -21,8 +21,8 @@ class LoginViewModel @Inject constructor(
     private val socialLoginService: SocialLoginService,
 ) : ViewModel() {
 
-    private val _session = MutableStateFlow<LoadState<SessionTokens>>(LoadState.Idle)
-    val session: StateFlow<LoadState<SessionTokens>> = _session.asStateFlow()
+    private val _session = MutableStateFlow<LoadState<AuthenticatedSession>>(LoadState.Idle)
+    val session: StateFlow<LoadState<AuthenticatedSession>> = _session.asStateFlow()
 
     fun loginWithKakao() {
         viewModelScope.launch {
