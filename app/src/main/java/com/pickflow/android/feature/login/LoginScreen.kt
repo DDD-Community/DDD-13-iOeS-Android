@@ -1,5 +1,6 @@
 package com.pickflow.android.feature.login
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,13 +33,16 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.common.ui.LoadState
@@ -80,6 +84,7 @@ fun LoginScreen(
  *
  * iOS는 `.preferredColorScheme(.dark)`로 항상 다크를 강제하므로 라이트 분기가 없다.
  */
+@Preview
 @Composable
 fun LoginScreenContent(
     kakaoLoading: Boolean = false,
@@ -188,22 +193,12 @@ private fun LoginCenterContent(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        // iOS appLogo: 60x60 흰색 RoundedRect + ic_flare(커스텀 아이콘).
-        // 커스텀 아이콘 자리는 Material 아이콘 placeholder로 자리만 잡는다.
-        Box(
-            modifier = Modifier
-                .size(60.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(PickflowColors.gray0),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Star,
-                contentDescription = null,
-                tint = Color(red = 188, green = 59, blue = 0),
-                modifier = Modifier.size(40.dp),
-            )
-        }
+        // iOS appLogo 자리 — login_logo PNG로 교체. 기존 60x60 사이즈 유지.
+        Image(
+            painter = painterResource(R.drawable.login_logo),
+            contentDescription = "PICKFLOW",
+            modifier = Modifier.size(60.dp),
+        )
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
