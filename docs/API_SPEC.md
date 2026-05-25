@@ -168,12 +168,12 @@
 - **response 200** `ApiResponse<ArchiveImageResponse>`
 - **매핑**: `ArchiveService.updateImage(ImagePayload)` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultArchiveService.kt:21` + `core/network/api/ArchiveApi.kt:16`
 
-### `[ ] PATCH /v1/users/me/archive/name` — 보관함 이름 수정
+### `[x] PATCH /v1/users/me/archive/name` — 보관함 이름 수정
 - **operationId**: `updateArchiveName`
 - **request** `UpdateArchiveNameRequest`:
   - `*archiveName: String` (max 20)
 - **response 200** `ApiResponse<ArchiveImageResponse>`
-- **매핑**: `ArchiveService.updateName(name)` (**신규**)
+- **매핑**: `ArchiveService.updateName(name)` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultArchiveService.kt:30` + `core/network/api/ArchiveApi.kt:25`
 
 ---
 

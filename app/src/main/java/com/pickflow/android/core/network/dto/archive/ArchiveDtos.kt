@@ -7,3 +7,8 @@ data class ArchiveImageResponseDto(
     val archiveName: String = "",
     val archiveImageUrl: String? = null,
 )
+
+@Serializable
+data class UpdateArchiveNameRequest(
+    val archiveName: String,
+)

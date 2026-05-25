@@ -18,4 +18,9 @@ interface ArchiveService {
      * 반환은 갱신된 보관함 상태 (이름 + 새 presigned URL).
      */
     suspend fun updateImage(image: ImagePayload): Archive
+
+    /**
+     * 보관함 이름을 변경한다 (최대 20자). 반환은 갱신된 보관함 상태.
+     */
+    suspend fun updateName(name: String): Archive
 }
