@@ -13,8 +13,10 @@ import com.pickflow.android.core.services.impl.NoopExternalAppLauncher
 import com.pickflow.android.core.services.impl.NoopShareIntentService
 import com.pickflow.android.core.services.impl.RealKakaoAuthProvider
 import com.pickflow.android.core.services.impl.StubAddressService
+import com.pickflow.android.core.services.impl.StubAppleAuthProvider
 import com.pickflow.android.core.services.impl.StubLocationService
 import com.pickflow.android.core.services.impl.StubSpotService
+import com.pickflow.android.core.services.protocols.AppleAuthProvider
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.AddressService
 import com.pickflow.android.core.services.protocols.AnalyticsLogger
@@ -47,6 +49,9 @@ abstract class ServiceModule {
 
     @Binds
     abstract fun bindKakaoAuthProvider(impl: RealKakaoAuthProvider): KakaoAuthProvider
+
+    @Binds
+    abstract fun bindAppleAuthProvider(impl: StubAppleAuthProvider): AppleAuthProvider
 
     @Binds
     abstract fun bindSocialLoginService(impl: DefaultSocialLoginService): SocialLoginService

@@ -41,13 +41,13 @@
   - `profile: UserProfile { userId, email, nickname, profileImageUrl, provider(APPLE|KAKAO) }`
 - **매핑**: `SocialLoginService.loginWith(SocialAuthCredential)` → **수정** (반환에 `UserProfile` 포함하도록 `AuthenticatedSession` wrapper 신설) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultSocialLoginService.kt:20` + `core/network/api/AuthApi.kt:12`
 
-### `[ ] POST /v1/auth/apple` — Apple 로그인
+### `[x] POST /v1/auth/apple` — Apple 로그인
 - **operationId**: `appleLogin`
 - **request** `AppleLoginRequest`:
   - `*identityToken: String` — Apple SDK identity token (RS256 JWT)
   - `user?: AppleUser { name?: { firstName, lastName }, email? }` — 최초 로그인 시만
 - **response 200** `ApiResponse<TokenResponse>` (위와 동일)
-- **매핑**: `AppleAuthProvider` (**신규**) + `SocialLoginService.loginWith()` → **수정**
+- **매핑**: `AppleAuthProvider` (**신규**, v1은 StubAppleAuthProvider) + `SocialLoginService.loginWith()` → **수정** → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultSocialLoginService.kt:28` + `core/network/api/AuthApi.kt:17` + `core/services/protocols/AppleAuthProvider.kt:3`
 
 ### `[ ] POST /v1/auth/refresh` — 토큰 갱신
 - **operationId**: `refresh`

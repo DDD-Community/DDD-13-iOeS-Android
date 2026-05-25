@@ -1,6 +1,7 @@
 package com.pickflow.android.core.network.api
 
 import com.pickflow.android.core.network.ApiResponse
+import com.pickflow.android.core.network.dto.auth.AppleLoginRequest
 import com.pickflow.android.core.network.dto.auth.KakaoLoginRequest
 import com.pickflow.android.core.network.dto.auth.TokenResponseDto
 import retrofit2.http.Body
@@ -11,4 +12,7 @@ interface AuthApi {
     //  AuthInterceptor가 토큰 없을 때 알아서 부착 안 함.
     @POST("v1/auth/kakao")
     suspend fun kakaoLogin(@Body request: KakaoLoginRequest): ApiResponse<TokenResponseDto>
+
+    @POST("v1/auth/apple")
+    suspend fun appleLogin(@Body request: AppleLoginRequest): ApiResponse<TokenResponseDto>
 }
