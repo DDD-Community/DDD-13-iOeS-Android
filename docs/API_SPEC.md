@@ -263,13 +263,13 @@
   - `spotId, enabled` (구독 이력 없으면 enabled=false)
 - **매핑**: `MySpotAlarmService.get(spotId: Long): SpotAlarm` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultMySpotAlarmService.kt:14` + `core/network/api/MySpotAlarmApi.kt:12`
 
-### `[ ] PUT /v1/users/me/my-spots/{spotId}/alarm` — 알림 구독 변경
+### `[x] PUT /v1/users/me/my-spots/{spotId}/alarm` — 알림 구독 변경
 - **operationId**: `updateAlarm`
 - **params (path)**: `*spotId: Long`
 - **request** `UpdateSpotAlarmRequest`:
   - `*enabled: Boolean`
 - **response 200** `ApiResponse<SpotAlarmResponse>`
-- **매핑**: `MySpotAlarmService.update(spotId, enabled)` (**신규**)
+- **매핑**: `MySpotAlarmService.update(spotId: Long, enabled: Boolean): SpotAlarm` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultMySpotAlarmService.kt:17` + `core/network/api/MySpotAlarmApi.kt:15`
 
 ---
 
