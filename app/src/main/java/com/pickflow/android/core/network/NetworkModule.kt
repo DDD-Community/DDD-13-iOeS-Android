@@ -5,6 +5,7 @@ import com.pickflow.android.BuildConfig
 import com.pickflow.android.core.network.api.ArchiveApi
 import com.pickflow.android.core.network.api.AuthApi
 import com.pickflow.android.core.network.api.BookmarkApi
+import com.pickflow.android.core.network.api.MySpotApi
 import com.pickflow.android.core.network.api.RefreshApi
 import com.pickflow.android.core.network.api.SpotApi
 import com.pickflow.android.core.network.api.UserApi
@@ -81,6 +82,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideBookmarkApi(retrofit: Retrofit): BookmarkApi = retrofit.create(BookmarkApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideMySpotApi(retrofit: Retrofit): MySpotApi = retrofit.create(MySpotApi::class.java)
 
     // --- Refresh 전용 (AuthInterceptor / Authenticator 미부착 OkHttpClient) ---
 

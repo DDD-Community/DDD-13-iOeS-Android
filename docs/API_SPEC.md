@@ -204,13 +204,13 @@
 
 ## Phase D-4 — 나만의 스팟 (2 endpoints)
 
-### `[ ] GET /v1/users/me/my-spots` — 나만의 스팟 목록
+### `[x] GET /v1/users/me/my-spots` — 나만의 스팟 목록
 - **operationId**: `getMySpots`
 - **params (query)**: `page?: Int`, `latitude?: Double`, `longitude?: Double`
 - **response 200** `ApiResponse<MySpotListResponse>`:
   - `spots: [MySpotItem { spotId, name, theme, imageUrl?, latitude, longitude, distanceKm?, createdAt(date-time), status(PENDING|PUBLISHED|REJECTED), bookmarkCount }]`
   - `page: Int`, `hasNext: Boolean`
-- **매핑**: `MySpotService.list(page, coords?)` (**신규**)
+- **매핑**: `MySpotService.list(page, coords?)` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultMySpotService.kt:14` + `core/network/api/MySpotApi.kt:9`
 
 ### `[ ] POST /v1/users/me/my-spots` — 나만의 스팟 등록
 - **operationId**: `createMySpot`
