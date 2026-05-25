@@ -3,6 +3,7 @@ package com.pickflow.android.core.network.mapper
 import com.pickflow.android.core.network.dto.spot.SpotDetailResponseDto
 import com.pickflow.android.core.network.dto.spot.SpotItemDto
 import com.pickflow.android.core.network.dto.spot.SpotListResponseDto
+import com.pickflow.android.core.network.dto.spot.SpotPreviewResponseDto
 import com.pickflow.android.core.network.dto.spot.SpotSummaryDto
 import com.pickflow.android.core.services.protocols.CongestionLevel
 import com.pickflow.android.core.services.protocols.Coordinates
@@ -12,6 +13,7 @@ import com.pickflow.android.core.services.protocols.SpotCongestion
 import com.pickflow.android.core.services.protocols.SpotDetail
 import com.pickflow.android.core.services.protocols.SpotMapMarker
 import com.pickflow.android.core.services.protocols.SpotPage
+import com.pickflow.android.core.services.protocols.SpotPreview
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.core.services.protocols.SpotWeather
 import com.pickflow.android.core.services.protocols.WeatherSky
@@ -96,3 +98,16 @@ internal fun parseCongestion(value: String): CongestionLevel = when (value.upper
     "CROWDED" -> CongestionLevel.CROWDED
     else -> CongestionLevel.RELAXED
 }
+
+fun SpotPreviewResponseDto.toSpotPreview(): SpotPreview = SpotPreview(
+    id = spotId,
+    name = name,
+    isMySpot = isMySpot,
+    theme = parseTheme(theme),
+    bookmarkCount = bookmarkCount,
+    distanceKm = distanceKm,
+    imageUrl = imageUrl?.takeIf { it.isNotBlank() },
+    addressSimple = addressSimple,
+    addressRoad = addressRoad?.takeIf { it.isNotBlank() },
+    addressJibun = addressJibun?.takeIf { it.isNotBlank() },
+)

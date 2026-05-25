@@ -105,13 +105,13 @@
   - `parkingInfo, bookmarkCount, isBookmarked, isMySpot`
 - **매핑**: `SpotService.spot(String)` → **수정** (반환 모델 `SpotDetail` 22필드 전면 확장, 내부에서 Long 변환). 비로그인 시 `isBookmarked`/`isMySpot` = false. → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultSpotService.kt:18` + `core/network/api/SpotApi.kt:16`
 
-### `[ ] GET /v1/spots/{spotId}/preview` — 스팟 미리보기
+### `[x] GET /v1/spots/{spotId}/preview` — 스팟 미리보기
 - **operationId**: `getSpotPreview`
 - **params**: `*spotId(path): Long`, `latitude?: Double`, `longitude?: Double`
 - **response 200** `ApiResponse<SpotPreviewResponse>`:
   - `spotId, name, isMySpot, theme(SUNSET|YUNSEUL), bookmarkCount`
   - `distanceKm?, imageUrl?, addressSimple, addressRoad?, addressJibun?`
-- **매핑**: `SpotService.preview(Long, Coordinates?)` (**신규**)
+- **매핑**: `SpotService.preview(String, Coordinates?)` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultSpotService.kt:27` + `core/network/api/SpotApi.kt:21` + `core/services/protocols/SpotPreview.kt:13`
 
 ---
 

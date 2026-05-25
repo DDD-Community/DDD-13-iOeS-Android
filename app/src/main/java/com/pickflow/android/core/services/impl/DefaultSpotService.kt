@@ -2,10 +2,13 @@ package com.pickflow.android.core.services.impl
 
 import com.pickflow.android.core.network.api.SpotApi
 import com.pickflow.android.core.network.mapper.toSpotDetail
+import com.pickflow.android.core.network.mapper.toSpotPreview
 import com.pickflow.android.core.network.unwrap
+import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotDetail
 import com.pickflow.android.core.services.protocols.SpotDraft
+import com.pickflow.android.core.services.protocols.SpotPreview
 import com.pickflow.android.core.services.protocols.SpotService
 import com.pickflow.android.core.services.protocols.SpotTheme
 import java.util.UUID
@@ -18,6 +21,16 @@ class DefaultSpotService @Inject constructor(
         val longId = id.toLongOrNull()
             ?: throw IllegalArgumentException("spotId는 정수여야 합니다: $id")
         return spotApi.getSpotDetail(longId).unwrap().toSpotDetail()
+    }
+
+    override suspend fun preview(id: String, coordinates: Coordinates?): SpotPreview {
+        val longId = id.toLongOrNull()
+            ?: throw IllegalArgumentException("spotId는 정수여야 합니다: $id")
+        return spotApi.getSpotPreview(
+            spotId = longId,
+            latitude = coordinates?.latitude,
+            longitude = coordinates?.longitude,
+        ).unwrap().toSpotPreview()
     }
 
     /**
