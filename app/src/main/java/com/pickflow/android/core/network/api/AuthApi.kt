@@ -3,6 +3,7 @@ package com.pickflow.android.core.network.api
 import com.pickflow.android.core.network.ApiResponse
 import com.pickflow.android.core.network.dto.auth.AppleLoginRequest
 import com.pickflow.android.core.network.dto.auth.KakaoLoginRequest
+import com.pickflow.android.core.network.dto.auth.LogoutRequest
 import com.pickflow.android.core.network.dto.auth.TokenResponseDto
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -15,4 +16,7 @@ interface AuthApi {
 
     @POST("v1/auth/apple")
     suspend fun appleLogin(@Body request: AppleLoginRequest): ApiResponse<TokenResponseDto>
+
+    @POST("v1/auth/logout")
+    suspend fun logout(@Body request: LogoutRequest): ApiResponse<Unit>
 }

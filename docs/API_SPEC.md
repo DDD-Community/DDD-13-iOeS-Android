@@ -56,12 +56,12 @@
 - **response 200** `ApiResponse<TokenResponse>` (Refresh Token Rotation)
 - **매핑**: `RefreshApi.refresh()` — OkHttp `TokenAuthenticator`가 401 시 자동 호출 → `app/src/main/java/com/pickflow/android/core/network/TokenAuthenticator.kt:53` + `core/network/api/RefreshApi.kt:18`
 
-### `[ ] POST /v1/auth/logout` — 로그아웃
+### `[x] POST /v1/auth/logout` — 로그아웃
 - **operationId**: `logout`
 - **request** `LogoutRequest`:
   - `*refreshToken: String`
 - **response 200** `ApiResponse<Void>`
-- **매핑**: `AuthService.logout()` → **수정** (현재 TokenStore.clear()만 함)
+- **매핑**: `AuthService.logout()` → **수정** (API 호출 후 finally에서 TokenStore.clear) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultAuthService.kt:15`
 
 ---
 

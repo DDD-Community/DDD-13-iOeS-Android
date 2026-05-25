@@ -13,6 +13,11 @@ data class RefreshRequest(
 )
 
 @Serializable
+data class LogoutRequest(
+    val refreshToken: String,
+)
+
+@Serializable
 data class AppleLoginRequest(
     val identityToken: String,
     val user: AppleUserDto? = null,
