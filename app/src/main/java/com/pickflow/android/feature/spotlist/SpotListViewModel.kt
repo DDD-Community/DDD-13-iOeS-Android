@@ -7,6 +7,7 @@ import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
+import com.pickflow.android.core.services.protocols.SpotSort
 import com.pickflow.android.core.services.protocols.SpotTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -14,12 +15,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
-enum class SpotSort(val label: String) {
-    LATEST("최신순"),
-    DISTANCE("거리순"),
-    POPULAR("인기순"),
-}
 
 @HiltViewModel
 class SpotListViewModel @Inject constructor(
@@ -34,7 +29,7 @@ class SpotListViewModel @Inject constructor(
     private val _theme = MutableStateFlow<SpotTheme?>(null)
     val theme: StateFlow<SpotTheme?> = _theme.asStateFlow()
 
-    private val _sort = MutableStateFlow(SpotSort.LATEST)
+    private val _sort = MutableStateFlow(SpotSort.RECOMMENDED)
     val sort: StateFlow<SpotSort> = _sort.asStateFlow()
 
     private val _bookmarkedIds = MutableStateFlow<Set<String>>(emptySet())
@@ -43,12 +38,14 @@ class SpotListViewModel @Inject constructor(
     private val _showLoginPrompt = MutableStateFlow(false)
     val showLoginPrompt: StateFlow<Boolean> = _showLoginPrompt.asStateFlow()
 
-    private var nextCursor: String? = null
+    // page 기반 페이지네이션 (0-base). nextPage = 다음에 요청할 페이지 번호.
+    private var nextPage: Int = 0
+    private var hasMore: Boolean = true
     private val accumulated = mutableListOf<Spot>()
-    private val pageSize: Int = 20
 
     fun refresh() {
-        nextCursor = null
+        nextPage = 0
+        hasMore = true
         accumulated.clear()
         loadPage()
     }
@@ -60,11 +57,11 @@ class SpotListViewModel @Inject constructor(
 
     fun selectSort(sort: SpotSort) {
         _sort.value = sort
-        emitSorted()
+        refresh()
     }
 
     fun loadNextPage() {
-        if (nextCursor == null && accumulated.isNotEmpty()) return
+        if (!hasMore) return
         loadPage()
     }
 
@@ -87,27 +84,26 @@ class SpotListViewModel @Inject constructor(
         viewModelScope.launch {
             if (accumulated.isEmpty()) _spots.value = LoadState.Loading
             runCatching {
-                spotListService.fetch(_theme.value, nextCursor, pageSize)
+                spotListService.fetch(
+                    theme = _theme.value,
+                    page = nextPage,
+                    sort = _sort.value,
+                )
             }.onSuccess { page ->
                 accumulated.addAll(page.items)
-                nextCursor = page.nextCursor
-                emitSorted()
+                hasMore = page.hasNext
+                nextPage = page.page + 1
+                emitState()
             }.onFailure {
                 _spots.value = LoadState.Failed(it)
             }
         }
     }
 
-    private fun emitSorted() {
+    private fun emitState() {
         _spots.value = when {
             accumulated.isEmpty() -> LoadState.Empty
-            else -> LoadState.Loaded(sorted(accumulated))
+            else -> LoadState.Loaded(accumulated.toList())
         }
-    }
-
-    private fun sorted(spots: List<Spot>): List<Spot> = when (_sort.value) {
-        SpotSort.LATEST -> spots.sortedByDescending { it.id }
-        SpotSort.DISTANCE -> spots.sortedBy { it.latitude }
-        SpotSort.POPULAR -> spots.sortedBy { it.name }
     }
 }

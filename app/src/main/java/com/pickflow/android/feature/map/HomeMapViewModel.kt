@@ -42,7 +42,7 @@ class HomeMapViewModel @Inject constructor(
         viewModelScope.launch {
             _clusters.value = LoadState.Loading
             _clusters.value = runCatching {
-                val all: List<Spot> = spotListService.fetch(null, null, 100).items
+                val all: List<Spot> = spotListService.fetch(theme = null, page = 0).items
                 // mock 데이터엔 무드 개념이 없어 인덱스 패리티로 무드를 배정해 필터링한다.
                 val filtered = when (_selectedMood.value) {
                     null -> all

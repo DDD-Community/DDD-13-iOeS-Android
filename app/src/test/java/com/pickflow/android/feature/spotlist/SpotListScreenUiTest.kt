@@ -33,9 +33,10 @@ class SpotListScreenUiTest {
     fun loaded_state_shows_grid() {
         val listService = mockk<SpotListService>()
         val bookmarkService = mockk<BookmarkService>(relaxed = true)
-        coEvery { listService.fetch(any(), any(), any()) } returns SpotPage(
+        coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(
             items = listOf(Spot("s1", "Spot One", SpotTheme.SUNSET, 0.0, 0.0)),
-            nextCursor = null,
+            page = 0,
+            hasNext = false,
         )
         val vm = SpotListViewModel(listService, bookmarkService, authService())
 
@@ -52,7 +53,7 @@ class SpotListScreenUiTest {
     fun empty_state_shows_empty_message() {
         val listService = mockk<SpotListService>()
         val bookmarkService = mockk<BookmarkService>(relaxed = true)
-        coEvery { listService.fetch(any(), any(), any()) } returns SpotPage(emptyList(), null)
+        coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(items = emptyList(), page = 0, hasNext = false)
         val vm = SpotListViewModel(listService, bookmarkService, authService())
 
         composeRule.setContent {

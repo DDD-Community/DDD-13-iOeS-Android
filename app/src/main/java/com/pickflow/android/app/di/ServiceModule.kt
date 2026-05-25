@@ -7,7 +7,7 @@ import com.pickflow.android.core.services.impl.GridClusteringService
 import com.pickflow.android.core.services.impl.InMemoryBookmarkService
 import com.pickflow.android.core.services.impl.InMemoryOnboardingCompletionStore
 import com.pickflow.android.core.services.impl.InMemoryTokenStore
-import com.pickflow.android.core.services.impl.MockSpotListService
+import com.pickflow.android.core.services.impl.DefaultSpotListService
 import com.pickflow.android.core.services.impl.NoopAnalyticsLogger
 import com.pickflow.android.core.services.impl.NoopExternalAppLauncher
 import com.pickflow.android.core.services.impl.NoopShareIntentService
@@ -67,7 +67,7 @@ abstract class ServiceModule {
     ): OnboardingCompletionStore
 
     @Binds
-    abstract fun bindSpotListService(impl: MockSpotListService): SpotListService
+    abstract fun bindSpotListService(impl: DefaultSpotListService): SpotListService
 
     @Binds
     abstract fun bindBookmarkService(impl: InMemoryBookmarkService): BookmarkService

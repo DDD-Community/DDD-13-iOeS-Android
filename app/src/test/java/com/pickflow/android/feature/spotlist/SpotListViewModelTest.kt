@@ -7,6 +7,7 @@ import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotPage
+import com.pickflow.android.core.services.protocols.SpotSort
 import com.pickflow.android.core.services.protocols.SpotTheme
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -52,68 +53,75 @@ class SpotListViewModelTest {
     private fun viewModel() = SpotListViewModel(listService, bookmarkService, authService)
 
     @Test
-    fun `refresh loads first page and emits Loaded`() = runTest(testDispatcher) {
-        coEvery { listService.fetch(null, null, any()) } returns
-            SpotPage(listOf(spot("a"), spot("b")), nextCursor = "2")
+    fun `refresh loads page 0 and emits Loaded`() = runTest(testDispatcher) {
+        coEvery {
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("a"), spot("b")), page = 0, hasNext = true)
 
         val vm = viewModel()
         vm.refresh()
         advanceUntilIdle()
         val state = vm.spots.value
-        // 기본 정렬 LATEST = id 내림차순
-        assertTrue(state is LoadState.Loaded && state.value.map { it.id } == listOf("b", "a"))
+        assertTrue(state is LoadState.Loaded && state.value.map { it.id } == listOf("a", "b"))
     }
 
     @Test
-    fun `loadNextPage appends results and stops at null cursor`() = runTest(testDispatcher) {
-        coEvery { listService.fetch(null, null, any()) } returns
-            SpotPage(listOf(spot("a")), nextCursor = "1")
-        coEvery { listService.fetch(null, "1", any()) } returns
-            SpotPage(listOf(spot("b")), nextCursor = null)
+    fun `loadNextPage appends and stops when hasNext is false`() = runTest(testDispatcher) {
+        coEvery {
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("a")), page = 0, hasNext = true)
+        coEvery {
+            listService.fetch(theme = null, page = 1, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("b")), page = 1, hasNext = false)
 
         val vm = viewModel()
         vm.refresh(); advanceUntilIdle()
         vm.loadNextPage(); advanceUntilIdle()
-
         val loaded = vm.spots.value as LoadState.Loaded
         assertEquals(2, loaded.value.size)
 
+        // 추가 호출은 호출되지 않아야 함 (hasNext=false)
         vm.loadNextPage(); advanceUntilIdle()
-        val loaded2 = vm.spots.value as LoadState.Loaded
-        assertEquals(2, loaded2.value.size)
+        assertEquals(2, (vm.spots.value as LoadState.Loaded).value.size)
     }
 
     @Test
-    fun `selectTheme resets cursor and refilters`() = runTest(testDispatcher) {
-        coEvery { listService.fetch(null, null, any()) } returns
-            SpotPage(listOf(spot("a", SpotTheme.SUNSET)), nextCursor = null)
-        coEvery { listService.fetch(SpotTheme.YUNSEUL, null, any()) } returns
-            SpotPage(listOf(spot("b", SpotTheme.YUNSEUL)), nextCursor = null)
+    fun `selectTheme resets page and refilters`() = runTest(testDispatcher) {
+        coEvery {
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("a", SpotTheme.SUNSET)), page = 0, hasNext = false)
+        coEvery {
+            listService.fetch(theme = SpotTheme.YUNSEUL, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("b", SpotTheme.YUNSEUL)), page = 0, hasNext = false)
 
         val vm = viewModel()
         vm.refresh(); advanceUntilIdle()
         vm.selectTheme(SpotTheme.YUNSEUL); advanceUntilIdle()
-
         val loaded = vm.spots.value as LoadState.Loaded
         assertEquals(listOf("b"), loaded.value.map { it.id })
     }
 
     @Test
-    fun `selectSort reorders accumulated spots`() = runTest(testDispatcher) {
-        coEvery { listService.fetch(null, null, any()) } returns
-            SpotPage(listOf(spot("a"), spot("c"), spot("b")), nextCursor = null)
+    fun `selectSort resets page and re-fetches with new sort`() = runTest(testDispatcher) {
+        coEvery {
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("r")), page = 0, hasNext = false)
+        coEvery {
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.DISTANCE)
+        } returns SpotPage(items = listOf(spot("d")), page = 0, hasNext = false)
 
         val vm = viewModel()
         vm.refresh(); advanceUntilIdle()
-        vm.selectSort(SpotSort.POPULAR) // name 오름차순(name == id)
-        val loaded = vm.spots.value as LoadState.Loaded
-        assertEquals(listOf("a", "b", "c"), loaded.value.map { it.id })
-        assertEquals(SpotSort.POPULAR, vm.sort.value)
+        vm.selectSort(SpotSort.DISTANCE); advanceUntilIdle()
+        assertEquals(SpotSort.DISTANCE, vm.sort.value)
+        assertEquals(listOf("d"), (vm.spots.value as LoadState.Loaded).value.map { it.id })
     }
 
     @Test
     fun `empty result emits Empty`() = runTest(testDispatcher) {
-        coEvery { listService.fetch(null, null, any()) } returns SpotPage(emptyList(), null)
+        coEvery {
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = emptyList(), page = 0, hasNext = false)
         val vm = viewModel()
         vm.refresh(); advanceUntilIdle()
         assertEquals(LoadState.Empty, vm.spots.value)
@@ -122,7 +130,7 @@ class SpotListViewModelTest {
     @Test
     fun `failure emits Failed`() = runTest(testDispatcher) {
         val boom = RuntimeException("nope")
-        coEvery { listService.fetch(any(), any(), any()) } throws boom
+        coEvery { listService.fetch(any(), any(), any(), any()) } throws boom
         val vm = viewModel()
         vm.refresh(); advanceUntilIdle()
         val s = vm.spots.value

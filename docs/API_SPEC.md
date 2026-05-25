@@ -79,7 +79,7 @@
   - `spots: [SpotSummary { spotId, spotImageUrl?, latitude, longitude, isMySpot }]`
 - **매핑**: `SpotMapService.fetchInViewport(ViewportBox, SpotTheme?)` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultSpotMapService.kt:14` + `core/network/api/SpotApi.kt:11` + 동반 `SpotTheme` enum 글로벌 마이그레이션(CAFE/RESTAURANT/BAR/ACTIVITY/NATURE → SUNSET/YUNSEUL)
 
-### `[ ] GET /v1/spots` — 스팟 리스트 조회
+### `[x] GET /v1/spots` — 스팟 리스트 조회
 - **operationId**: `getSpots`
 - **params (query)**:
   - `page?: Int` (0-base)
@@ -89,7 +89,7 @@
 - **response 200** `ApiResponse<SpotListResponse>`:
   - `spots: [SpotItem { spotId, name, theme, thumbnailUrl, distanceKm? }]`
   - `page: Int`, `hasNext: Boolean`
-- **매핑**: `SpotListService.fetch(...)` → **수정** (cursor→page, theme enum 교체, sort 추가)
+- **매핑**: `SpotListService.fetch(...)` → **수정** (cursor→page, SpotSort enum 교체 LATEST/POPULAR/DISTANCE → DISTANCE/RECOMMENDED, MockSpotListService 폐기) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultSpotListService.kt:17` + `core/network/api/SpotApi.kt:13`
 
 ### `[ ] GET /v1/spots/{spotId}` — 스팟 상세 조회
 - **operationId**: `getSpotDetail`

@@ -43,6 +43,7 @@ import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.common.ui.LoadStateContent
 import com.pickflow.android.core.services.protocols.Spot
+import com.pickflow.android.core.services.protocols.SpotSort
 import com.pickflow.android.core.services.protocols.SpotTheme
 
 @Composable
@@ -125,7 +126,7 @@ private fun SortRow(selected: SpotSort, onSelect: (SpotSort) -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         SpotSort.entries.forEach { s ->
-            ThemeChip(label = s.label, active = selected == s) { onSelect(s) }
+            ThemeChip(label = s.label(), active = selected == s) { onSelect(s) }
         }
     }
 }
@@ -251,4 +252,9 @@ private fun SpotCard(
 fun SpotTheme.label(): String = when (this) {
     SpotTheme.SUNSET -> "노을"
     SpotTheme.YUNSEUL -> "윤슬"
+}
+
+fun SpotSort.label(): String = when (this) {
+    SpotSort.DISTANCE -> "거리순"
+    SpotSort.RECOMMENDED -> "추천순"
 }

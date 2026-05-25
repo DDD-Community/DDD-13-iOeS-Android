@@ -8,6 +8,7 @@ data class Spot(
     val longitude: Double,
     val imageUrl: String? = null,
     val address: String = "",
+    val distanceKm: Double? = null,
 )
 
 /**
@@ -19,5 +20,6 @@ enum class SpotTheme { SUNSET, YUNSEUL }
 
 data class SpotPage(
     val items: List<Spot>,
-    val nextCursor: String?,
+    val page: Int,
+    val hasNext: Boolean,
 )

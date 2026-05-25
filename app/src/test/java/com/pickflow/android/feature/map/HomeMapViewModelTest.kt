@@ -42,8 +42,8 @@ class HomeMapViewModelTest {
     @Test
     fun `load emits Loaded clusters`() = runTest(testDispatcher) {
         val spot = Spot("s1", "n", SpotTheme.SUNSET, 0.0, 0.0)
-        coEvery { spotListService.fetch(null, null, 100) } returns
-            SpotPage(listOf(spot), null)
+        coEvery { spotListService.fetch(theme = null, page = 0) } returns
+            SpotPage(items = listOf(spot), page = 0, hasNext = false)
         coEvery { clusteringService.cluster(any(), any()) } returns
             listOf(Cluster(0.0, 0.0, 1, listOf("s1")))
 
@@ -55,7 +55,7 @@ class HomeMapViewModelTest {
 
     @Test
     fun `load emits Empty when no clusters`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(null, null, 100) } returns SpotPage(emptyList(), null)
+        coEvery { spotListService.fetch(theme = null, page = 0) } returns SpotPage(items = emptyList(), page = 0, hasNext = false)
         coEvery { clusteringService.cluster(any(), any()) } returns emptyList()
 
         val vm = HomeMapViewModel(spotListService, clusteringService)
@@ -65,7 +65,7 @@ class HomeMapViewModelTest {
 
     @Test
     fun `setZoom updates and reloads`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(null, null, 100) } returns SpotPage(emptyList(), null)
+        coEvery { spotListService.fetch(theme = null, page = 0) } returns SpotPage(items = emptyList(), page = 0, hasNext = false)
         coEvery { clusteringService.cluster(any(), any()) } returns emptyList()
 
         val vm = HomeMapViewModel(spotListService, clusteringService)
@@ -77,7 +77,7 @@ class HomeMapViewModelTest {
     fun `selectMood toggles and filters spots by mood`() = runTest(testDispatcher) {
         val s0 = Spot("s0", "n0", SpotTheme.SUNSET, 0.0, 0.0)
         val s1 = Spot("s1", "n1", SpotTheme.YUNSEUL, 0.0, 0.0)
-        coEvery { spotListService.fetch(null, null, 100) } returns SpotPage(listOf(s0, s1), null)
+        coEvery { spotListService.fetch(theme = null, page = 0) } returns SpotPage(items = listOf(s0, s1), page = 0, hasNext = false)
         coEvery { clusteringService.cluster(any(), any()) } returns
             listOf(Cluster(0.0, 0.0, 1, listOf("s0")))
 

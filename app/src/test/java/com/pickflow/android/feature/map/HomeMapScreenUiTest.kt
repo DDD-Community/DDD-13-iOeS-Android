@@ -34,7 +34,7 @@ class HomeMapScreenUiTest {
     ): HomeMapViewModel {
         val listService = mockk<SpotListService>()
         val clusteringService = mockk<ClusteringService>()
-        coEvery { listService.fetch(any(), any(), any()) } returns SpotPage(spots, null)
+        coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(items = spots, page = 0, hasNext = false)
         coEvery { clusteringService.cluster(any(), any()) } returns clusters
         return HomeMapViewModel(listService, clusteringService)
     }
