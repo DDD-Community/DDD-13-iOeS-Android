@@ -1,8 +1,11 @@
 package com.pickflow.android.core.services.impl
 
 import com.pickflow.android.core.network.api.BookmarkApi
+import com.pickflow.android.core.network.mapper.toSavedSpotPage
 import com.pickflow.android.core.network.unwrap
 import com.pickflow.android.core.services.protocols.BookmarkService
+import com.pickflow.android.core.services.protocols.Coordinates
+import com.pickflow.android.core.services.protocols.SavedSpotPage
 import java.util.Collections
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -45,6 +48,13 @@ class DefaultBookmarkService @Inject constructor(
     }
 
     override suspend fun bookmarkedIds(): Set<String> = synchronized(store) { store.toSet() }
+
+    override suspend fun savedSpots(page: Int, coordinates: Coordinates?): SavedSpotPage =
+        bookmarkApi.getSavedSpots(
+            page = page,
+            latitude = coordinates?.latitude,
+            longitude = coordinates?.longitude,
+        ).unwrap().toSavedSpotPage()
 
     private fun String.toLongIdOrThrow(): Long = toLongOrNull()
         ?: throw IllegalArgumentException("spotId는 정수여야 합니다: $this")

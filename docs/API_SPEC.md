@@ -192,13 +192,13 @@
 - **response 200** `ApiResponse<BookmarkResponse>`
 - **매핑**: `BookmarkService.remove(spotId: String): Long` 신규. toggle은 로컬 캐시 기준 add/remove 라우팅으로 전환. → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultBookmarkService.kt:29` + `core/network/api/BookmarkApi.kt:13`
 
-### `[ ] GET /v1/users/me/saved-spots` — 저장된 스팟 목록
+### `[x] GET /v1/users/me/saved-spots` — 저장된 스팟 목록
 - **operationId**: `getSavedSpots`
 - **params (query)**: `page?: Int`, `latitude?: Double`, `longitude?: Double`
 - **response 200** `ApiResponse<SavedSpotListResponse>`:
   - `spots: [SavedSpotItem { spotId, name, theme, imageUrl?, latitude, longitude, distanceKm?, savedAt(date-time), deleted }]`
   - `page: Int`, `hasNext: Boolean`
-- **매핑**: `BookmarkService.savedSpots(page, coords?): SavedSpotPage` → **수정**
+- **매핑**: `BookmarkService.savedSpots(page: Int, coords?): SavedSpotPage` 신규. SavedSpot/SavedSpotPage 도메인 추가. → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultBookmarkService.kt:55` + `core/network/api/BookmarkApi.kt:20`
 
 ---
 

@@ -13,7 +13,13 @@ interface BookmarkService {
      */
     suspend fun remove(spotId: String): Long
 
-    // ---- Legacy (Phase D-3 진행 중 — savedSpots 통합 후 제거 예정) ----
+    /**
+     * 저장된 스팟 페이지 조회. 좌표 전달 시 distanceKm 포함.
+     * page: 0-base.
+     */
+    suspend fun savedSpots(page: Int, coordinates: Coordinates? = null): SavedSpotPage
+
+    // ---- Legacy (in-memory 캐시 기반; 화면이 savedSpots 전환 후 제거 예정) ----
     suspend fun isBookmarked(spotId: String): Boolean
     suspend fun toggle(spotId: String): Boolean
     suspend fun bookmarkedIds(): Set<String>
