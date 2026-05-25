@@ -232,12 +232,12 @@
   - `page: Int`, `hasNext: Boolean`
 - **매핑**: `BoardService.posts(masterId: Long, page: Int = 0): BoardPostPage` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultBoardService.kt:13` + `core/network/api/BoardApi.kt:9`
 
-### `[ ] GET /v1/bbs/posts/{postId}` — 게시글 상세
+### `[x] GET /v1/bbs/posts/{postId}` — 게시글 상세
 - **operationId**: `getPostDetail`
 - **params**: `*postId(path): Long`, `*masterId(query): Long`
 - **response 200** `ApiResponse<BbsPostDetailResponse>`:
   - `masterId, postId, title, createdAt(date), content`
-- **매핑**: `BoardService.detail(masterId, postId)` (**신규**)
+- **매핑**: `BoardService.detail(masterId: Long, postId: Long): BoardPostDetail` (**신규**) → `app/src/main/java/com/pickflow/android/core/services/impl/DefaultBoardService.kt:18` + `core/network/api/BoardApi.kt:16`
 
 ---
 

@@ -1,8 +1,10 @@
 package com.pickflow.android.core.network.mapper
 
+import com.pickflow.android.core.network.dto.board.BbsPostDetailResponseDto
 import com.pickflow.android.core.network.dto.board.BbsPostItemDto
 import com.pickflow.android.core.network.dto.board.BbsPostListResponseDto
 import com.pickflow.android.core.services.protocols.BoardPost
+import com.pickflow.android.core.services.protocols.BoardPostDetail
 import com.pickflow.android.core.services.protocols.BoardPostPage
 
 fun BbsPostItemDto.toBoardPost(): BoardPost = BoardPost(
@@ -16,4 +18,12 @@ fun BbsPostListResponseDto.toBoardPostPage(): BoardPostPage = BoardPostPage(
     items = items.map { it.toBoardPost() },
     page = page,
     hasNext = hasNext,
+)
+
+fun BbsPostDetailResponseDto.toBoardPostDetail(): BoardPostDetail = BoardPostDetail(
+    masterId = masterId,
+    postId = postId,
+    title = title,
+    createdAt = createdAt,
+    content = content,
 )

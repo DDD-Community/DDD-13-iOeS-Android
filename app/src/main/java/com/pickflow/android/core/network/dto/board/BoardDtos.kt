@@ -16,3 +16,12 @@ data class BbsPostItemDto(
     val createdAt: String = "",
     val pinned: Boolean = false,
 )
+
+@Serializable
+data class BbsPostDetailResponseDto(
+    val masterId: Long = 0L,
+    val postId: Long = 0L,
+    val title: String = "",
+    val createdAt: String = "",
+    val content: String = "",
+)

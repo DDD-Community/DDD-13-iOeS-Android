@@ -20,10 +20,26 @@ data class BoardPostPage(
     val hasNext: Boolean,
 )
 
+/**
+ * 게시글 상세 (제목·작성일·본문).
+ */
+data class BoardPostDetail(
+    val masterId: Long,
+    val postId: Long,
+    val title: String,
+    val createdAt: String,
+    val content: String,
+)
+
 interface BoardService {
     /**
      * 게시판 목록 (20개/page). 고정 공지가 최신순 상단.
      * page: 0-base.
      */
     suspend fun posts(masterId: Long, page: Int = 0): BoardPostPage
+
+    /**
+     * 게시글 상세 본문 조회. masterId와 postId 모두 필요.
+     */
+    suspend fun detail(masterId: Long, postId: Long): BoardPostDetail
 }
