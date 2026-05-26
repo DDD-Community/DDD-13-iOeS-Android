@@ -16,14 +16,15 @@ class DefaultSpotMapService @Inject constructor(
         box: ViewportBox,
         theme: SpotTheme?,
     ): List<SpotMapMarker> = spotApi.getSpotsInViewport(
-        topLeftLat = box.topLeft.latitude,
-        topLeftLng = box.topLeft.longitude,
-        topRightLat = box.topRight.latitude,
-        topRightLng = box.topRight.longitude,
-        bottomLeftLat = box.bottomLeft.latitude,
-        bottomLeftLng = box.bottomLeft.longitude,
-        bottomRightLat = box.bottomRight.latitude,
-        bottomRightLng = box.bottomRight.longitude,
+        // 서버 검증: 위/경도 소수점 6자리 한도.
+        topLeftLat = box.topLeft.latitude.toSixDecimal(),
+        topLeftLng = box.topLeft.longitude.toSixDecimal(),
+        topRightLat = box.topRight.latitude.toSixDecimal(),
+        topRightLng = box.topRight.longitude.toSixDecimal(),
+        bottomLeftLat = box.bottomLeft.latitude.toSixDecimal(),
+        bottomLeftLng = box.bottomLeft.longitude.toSixDecimal(),
+        bottomRightLat = box.bottomRight.latitude.toSixDecimal(),
+        bottomRightLng = box.bottomRight.longitude.toSixDecimal(),
         theme = theme?.name,
     ).unwrap().spots.map { it.toMapMarker() }
 }

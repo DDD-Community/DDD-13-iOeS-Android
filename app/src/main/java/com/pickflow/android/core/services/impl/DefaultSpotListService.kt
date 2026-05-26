@@ -21,8 +21,14 @@ class DefaultSpotListService @Inject constructor(
     ): SpotPage = spotApi.getSpots(
         page = page,
         theme = theme?.name,
-        latitude = coordinates?.latitude,
-        longitude = coordinates?.longitude,
+        // 서버 검증: 위/경도는 소수점 6자리까지 허용 → truncate.
+        latitude = coordinates?.latitude?.toSixDecimal(),
+        longitude = coordinates?.longitude?.toSixDecimal(),
         sort = sort.name,
     ).unwrap().toSpotPage()
 }
+
+/** 소수점 6자리로 잘라낸 좌표(서버 위/경도 검증 6자리 한도용). */
+internal fun Double.toSixDecimal(): Double =
+    kotlin.math.floor(this * 1_000_000.0) / 1_000_000.0
+

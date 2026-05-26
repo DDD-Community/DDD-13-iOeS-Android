@@ -42,8 +42,10 @@ fun SpotListResponseDto.toSpotPage(): SpotPage = SpotPage(
     hasNext = hasNext,
 )
 
+// 서버는 endpoint 에 따라 2글자 코드("YS"/"SS") 또는 풀네임("YUNSEUL"/"SUNSET")으로 응답한다.
 internal fun parseTheme(value: String): SpotTheme = when (value.uppercase()) {
-    "YUNSEUL" -> SpotTheme.YUNSEUL
+    "YS", "YUNSEUL" -> SpotTheme.YUNSEUL
+    "SS", "SUNSET" -> SpotTheme.SUNSET
     else -> SpotTheme.SUNSET
 }
 
