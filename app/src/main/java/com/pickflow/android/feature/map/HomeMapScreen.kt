@@ -1,5 +1,9 @@
 package com.pickflow.android.feature.map
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
@@ -34,10 +38,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pickflow.android.R
@@ -50,14 +55,38 @@ import com.pickflow.android.core.services.protocols.Cluster
 fun HomeMapScreen(
     onOpenSpotDetail: (String) -> Unit,
     onOpenRegistration: () -> Unit,
+    onRequireLogin: () -> Unit = {},
     viewModel: HomeMapViewModel = hiltViewModel(),
 ) {
     val clusters by viewModel.clusters.collectAsStateWithLifecycle()
     val selectedMood by viewModel.selectedMood.collectAsStateWithLifecycle()
     val mapListMode by viewModel.mapListMode.collectAsStateWithLifecycle()
     val selectedCluster by viewModel.selectedCluster.collectAsStateWithLifecycle()
+    val cameraTarget by viewModel.cameraTarget.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.load() }
+
+    val context = LocalContext.current
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { grants ->
+        if (grants.values.any { it }) viewModel.moveToCurrentLocation()
+    }
+    val onMyLocationClick = {
+        val granted = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_COARSE_LOCATION,
+            ) == PackageManager.PERMISSION_GRANTED
+        if (granted) viewModel.moveToCurrentLocation()
+        else locationPermissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+            ),
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -72,25 +101,36 @@ fun HomeMapScreen(
                     clusters = items,
                     onClusterTap = viewModel::selectCluster,
                     modifier = Modifier.fillMaxSize(),
+                    onViewportChanged = viewModel::onViewportChanged,
+                    cameraTarget = cameraTarget,
+                    onCameraTargetConsumed = viewModel::consumeCameraTarget,
                 )
             }
-            MapListMode.LIST -> ClusterList(clusters, onOpenSpotDetail)
+            MapListMode.LIST -> com.pickflow.android.feature.spotlist.SpotListScreen(
+                onOpenSpotDetail = onOpenSpotDetail,
+                onRequireLogin = onRequireLogin,
+            )
         }
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .padding(top = 12.dp),
-        ) {
-            Text(
-                text = "PICKFLOW",
-                style = PickflowTypography.labelMedium,
-                color = PickflowColors.gray20,
-                modifier = Modifier.padding(start = 20.dp),
-            )
-            Spacer(Modifier.height(8.dp))
-            MoodFilterRow(selected = selectedMood, onSelect = viewModel::selectMood)
+        // MAP 모드에서만 지도 위에 헤더를 그린다. LIST 모드의 헤더(PICKFLOW + 정렬 + 무드)는
+        // SpotListScreen 이 자체적으로 갖고 있다.
+        if (mapListMode == MapListMode.MAP) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.logo),
+                    contentDescription = "PICKFLOW",
+                    modifier = Modifier
+                        .padding(start = 20.dp)
+                        .height(24.dp),
+                )
+                Spacer(Modifier.height(8.dp))
+                MoodFilterRow(selected = selectedMood, onSelect = viewModel::selectMood)
+            }
         }
 
         MapListToggle(
@@ -115,12 +155,14 @@ fun HomeMapScreen(
                 onClick = onOpenRegistration,
                 modifier = Modifier.testTag("homemap-register"),
             )
-            MapCircleButton(
-                iconRes = R.drawable.ic_my_location,
-                contentDescription = "현재 위치",
-                onClick = { /* TODO: 현재 위치로 이동 */ },
-                modifier = Modifier.testTag("homemap-mylocation"),
-            )
+            if (mapListMode == MapListMode.MAP) {
+                MapCircleButton(
+                    iconRes = R.drawable.ic_my_location,
+                    contentDescription = "현재 위치",
+                    onClick = onMyLocationClick,
+                    modifier = Modifier.testTag("homemap-mylocation"),
+                )
+            }
         }
     }
 
@@ -179,7 +221,11 @@ private fun MoodCapsule(mood: MoodFilter, selected: Boolean, onClick: () -> Unit
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(text = mood.emoji, fontSize = 14.sp)
+        Image(
+            painter = painterResource(mood.iconRes),
+            contentDescription = mood.displayName,
+            modifier = Modifier.size(16.dp),
+        )
         Text(
             text = mood.displayName,
             style = PickflowTypography.bodyMediumBold,
@@ -206,6 +252,7 @@ private fun MapListToggle(
             .height(49.dp)
             .clip(CircleShape)
             .background(PickflowColors.gray95)
+            .border(1.dp, PickflowColors.gray80, CircleShape)
             .padding(6.dp),
     ) {
         val segmentWidth = maxWidth / modes.size
@@ -266,6 +313,7 @@ private fun MapCircleButton(
             .size(56.dp)
             .clip(CircleShape)
             .background(PickflowColors.gray95)
+            .border(1.dp, PickflowColors.gray80, CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

@@ -20,7 +20,7 @@ import com.pickflow.android.core.services.impl.RealKakaoAuthProvider
 import com.pickflow.android.core.services.impl.StubAddressService
 import com.pickflow.android.core.services.impl.StubAppleAuthProvider
 import com.pickflow.android.core.services.impl.DefaultSpotMapService
-import com.pickflow.android.core.services.impl.StubLocationService
+import com.pickflow.android.core.services.impl.DefaultLocationService
 import com.pickflow.android.core.services.impl.DefaultSpotService
 import com.pickflow.android.core.services.protocols.AppleAuthProvider
 import com.pickflow.android.core.services.protocols.ArchiveService
@@ -98,7 +98,7 @@ abstract class ServiceModule {
     abstract fun bindMySpotAlarmService(impl: DefaultMySpotAlarmService): MySpotAlarmService
 
     @Binds
-    abstract fun bindLocationService(impl: StubLocationService): LocationService
+    abstract fun bindLocationService(impl: DefaultLocationService): LocationService
 
     @Binds
     abstract fun bindSpotService(impl: DefaultSpotService): SpotService

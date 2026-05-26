@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
+import com.pickflow.android.core.services.protocols.Coordinates
+import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotSort
@@ -21,6 +23,7 @@ class SpotListViewModel @Inject constructor(
     private val spotListService: SpotListService,
     private val bookmarkService: BookmarkService,
     private val authService: AuthService,
+    private val locationService: LocationService,
 ) : ViewModel() {
 
     private val _spots = MutableStateFlow<LoadState<List<Spot>>>(LoadState.Idle)
@@ -29,7 +32,7 @@ class SpotListViewModel @Inject constructor(
     private val _theme = MutableStateFlow<SpotTheme?>(null)
     val theme: StateFlow<SpotTheme?> = _theme.asStateFlow()
 
-    private val _sort = MutableStateFlow(SpotSort.RECOMMENDED)
+    private val _sort = MutableStateFlow(SpotSort.DISTANCE)
     val sort: StateFlow<SpotSort> = _sort.asStateFlow()
 
     private val _bookmarkedIds = MutableStateFlow<Set<String>>(emptySet())
@@ -42,6 +45,7 @@ class SpotListViewModel @Inject constructor(
     private var nextPage: Int = 0
     private var hasMore: Boolean = true
     private val accumulated = mutableListOf<Spot>()
+    private var currentCoordinates: Coordinates? = null
 
     fun refresh() {
         nextPage = 0
@@ -83,10 +87,15 @@ class SpotListViewModel @Inject constructor(
     private fun loadPage() {
         viewModelScope.launch {
             if (accumulated.isEmpty()) _spots.value = LoadState.Loading
+            // iOS와 동일하게 매 호출마다 최신 위치 시도. 권한 없으면 null.
+            if (currentCoordinates == null) {
+                currentCoordinates = runCatching { locationService.currentLocation() }.getOrNull()
+            }
             runCatching {
                 spotListService.fetch(
                     theme = _theme.value,
                     page = nextPage,
+                    coordinates = currentCoordinates,
                     sort = _sort.value,
                 )
             }.onSuccess { page ->

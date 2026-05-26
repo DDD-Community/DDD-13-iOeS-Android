@@ -1,50 +1,65 @@
 package com.pickflow.android.feature.spotlist
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.common.ui.LoadStateContent
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotSort
 import com.pickflow.android.core.services.protocols.SpotTheme
+import com.pickflow.android.feature.map.MoodFilter
 
 @Composable
 fun SpotListScreen(
@@ -76,20 +91,24 @@ fun SpotListScreen(
             .background(PickflowColors.gray95)
             .testTag("spotlist-screen"),
     ) {
-        Text(
-            text = "저장한 스팟",
-            style = PickflowTypography.headingLarge,
-            color = PickflowColors.gray0,
-            modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 12.dp),
+        SpotListHeader(
+            sort = sort,
+            onSelectSort = viewModel::selectSort,
         )
-        ThemeFilterRow(selected = theme, onSelect = viewModel::selectTheme)
-        SortRow(selected = sort, onSelect = viewModel::selectSort)
+        MoodFilterRow(
+            selected = theme.toMood(),
+            onSelect = { mood ->
+                val current = theme.toMood()
+                viewModel.selectTheme(if (current == mood) null else mood.toTheme())
+            },
+        )
+        Spacer(Modifier.height(8.dp))
         LoadStateContent(
             state = spots,
             emptyMessage = "아직 저장한 스팟이 없어요.",
             onRetry = viewModel::refresh,
         ) { list ->
-            SpotGrid(
+            SpotMasonryGrid(
                 spots = list,
                 bookmarkedIds = bookmarkedIds,
                 onClick = onOpenSpotDetail,
@@ -100,33 +119,334 @@ fun SpotListScreen(
     }
 }
 
+/** iOS `HomeMapView.headerBar` + `SpotListSortDropdownHeader` 1:1 — 로고 + 정렬 드롭다운. */
 @Composable
-private fun ThemeFilterRow(selected: SpotTheme?, onSelect: (SpotTheme?) -> Unit) {
+private fun SpotListHeader(sort: SpotSort, onSelectSort: (SpotSort) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+    ) {
+        Image(
+            painter = painterResource(R.drawable.logo),
+            contentDescription = "PICKFLOW",
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .height(24.dp),
+        )
+        Row(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { expanded = !expanded }
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .testTag("spotlist-sort-toggle"),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = sort.displayName(),
+                style = PickflowTypography.bodyLargeBold,
+                color = PickflowColors.gray0,
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Filled.KeyboardArrowUp
+                else Icons.Filled.KeyboardArrowDown,
+                contentDescription = null,
+                tint = PickflowColors.gray0,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        if (expanded) {
+            // Popup 으로 띄워 헤더 레이아웃에 영향을 주지 않도록 한다.
+            Popup(
+                alignment = Alignment.TopEnd,
+                offset = IntOffset(0, 0),
+                onDismissRequest = { expanded = false },
+                properties = PopupProperties(focusable = true),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(top = 44.dp, end = 20.dp)
+                        .width(180.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(PickflowColors.gray90)
+                        .testTag("spotlist-sort-options"),
+                ) {
+                    SORT_OPTIONS.forEachIndexed { index, option ->
+                        if (index > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(PickflowColors.gray80),
+                            )
+                        }
+                        SortRow(
+                            option = option,
+                            selected = option == sort,
+                            onClick = {
+                                onSelectSort(option)
+                                expanded = false
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// iOS 매핑: "북마크 순" 의 서버 코드는 RECOMMENDED. BOOKMARK 라는 enum 값은 존재하지 않는다.
+private val SORT_OPTIONS = listOf(SpotSort.DISTANCE, SpotSort.RECOMMENDED)
+
+@Composable
+private fun SortRow(option: SpotSort, selected: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .clickable(onClick = onClick)
+            .background(
+                if (selected) PickflowColors.sunsetOrange.copy(alpha = 0.2f)
+                else PickflowColors.gray90,
+            )
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        ThemeChip(label = "전체", active = selected == null) { onSelect(null) }
-        SpotTheme.entries.forEach { t ->
-            ThemeChip(label = t.label(), active = selected == t) { onSelect(t) }
+        Text(
+            text = option.displayName(),
+            style = PickflowTypography.bodyLarge,
+            color = if (selected) PickflowColors.sunsetOrange else PickflowColors.gray0,
+            modifier = Modifier.weight(1f),
+        )
+        if (selected) {
+            Text(
+                text = "✓",
+                style = PickflowTypography.bodyLargeBold,
+                color = PickflowColors.sunsetOrange,
+            )
+        }
+    }
+}
+
+/** iOS `HomeMapView.MoodFilterRow` 와 동일한 무드 캡슐 — 아이콘 + 라벨. */
+@Composable
+private fun MoodFilterRow(selected: MoodFilter?, onSelect: (MoodFilter) -> Unit) {
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 20.dp, vertical = 4.dp)
+            .testTag("spotlist-mood"),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        MoodFilter.entries.forEach { mood ->
+            MoodCapsule(mood = mood, selected = selected == mood) { onSelect(mood) }
         }
     }
 }
 
 @Composable
-private fun SortRow(selected: SpotSort, onSelect: (SpotSort) -> Unit) {
+private fun MoodCapsule(mood: MoodFilter, selected: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .testTag("spotlist-sort"),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .clip(RoundedCornerShape(8.dp))
+            .then(
+                if (selected) {
+                    Modifier.border(1.dp, PickflowColors.sunsetOrange, RoundedCornerShape(8.dp))
+                } else Modifier,
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        SpotSort.entries.forEach { s ->
-            ThemeChip(label = s.label(), active = selected == s) { onSelect(s) }
+        Image(
+            painter = painterResource(mood.iconRes),
+            contentDescription = mood.displayName,
+            modifier = Modifier.size(20.dp),
+        )
+        Text(
+            text = mood.displayName,
+            style = PickflowTypography.bodyLargeBold,
+            color = if (selected) PickflowColors.gray0 else PickflowColors.gray10,
+        )
+    }
+}
+
+@Composable
+private fun SpotMasonryGrid(
+    spots: List<Spot>,
+    bookmarkedIds: Set<String>,
+    onClick: (String) -> Unit,
+    onBookmark: (String) -> Unit,
+    onReachEnd: () -> Unit,
+) {
+    val gridState = rememberLazyStaggeredGridState()
+    val reachedEnd by remember {
+        derivedStateOf {
+            val last = gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            spots.isNotEmpty() && last >= spots.size - 3
+        }
+    }
+    LaunchedEffect(reachedEnd) { if (reachedEnd) onReachEnd() }
+
+    LazyVerticalStaggeredGrid(
+        columns = StaggeredGridCells.Fixed(2),
+        state = gridState,
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalItemSpacing = 12.dp,
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag("spotlist-grid"),
+    ) {
+        items(spots, key = { it.id }) { spot ->
+            SpotListCell(
+                spot = spot,
+                bookmarked = spot.id in bookmarkedIds,
+                onClick = { onClick(spot.id) },
+                onBookmark = { onBookmark(spot.id) },
+            )
+        }
+    }
+}
+
+/** iOS `SpotListCell` 1:1 — 썸네일 + 오버레이 배지(무드/거리) + 메타 행. */
+@Composable
+private fun SpotListCell(
+    spot: Spot,
+    bookmarked: Boolean,
+    onClick: () -> Unit,
+    onBookmark: () -> Unit,
+) {
+    // 짝/홀 spotId 로 종횡비 분기 → masonry 효과.
+    val idHash = spot.id.hashCode()
+    val aspect = if (idHash % 2 == 0) 1.2f else 0.9f
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f / aspect)
+                .clip(RoundedCornerShape(12.dp))
+                .background(PickflowColors.gray90),
+        ) {
+            if (!spot.imageUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = spot.imageUrl,
+                    contentDescription = spot.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                MoodBadge(theme = spot.theme)
+                spot.distanceKm?.let { DistanceBadge(it) }
+            }
+        }
+        MetaRow(
+            spot = spot,
+            bookmarked = bookmarked,
+            bookmarkCount = null, // FIXME(BE-API): 응답 추가 시 전달
+            onBookmark = onBookmark,
+        )
+    }
+}
+
+@Composable
+private fun MoodBadge(theme: SpotTheme) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(PickflowColors.gray95)
+            .padding(4.dp),
+    ) {
+        Image(
+            painter = painterResource(theme.iconRes()),
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+        )
+    }
+}
+
+@Composable
+private fun DistanceBadge(km: Double) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(PickflowColors.gray95)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Text(
+            text = "%.1fkm".format(km),
+            style = PickflowTypography.labelMedium,
+            color = PickflowColors.gray10,
+        )
+    }
+}
+
+@Composable
+private fun MetaRow(
+    spot: Spot,
+    bookmarked: Boolean,
+    bookmarkCount: Int?,
+    onBookmark: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = spot.name,
+                style = PickflowTypography.bodyMediumBold,
+                color = PickflowColors.gray0,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = spot.theme.label(),
+                    style = PickflowTypography.labelSmall,
+                    color = PickflowColors.gray10,
+                )
+                bookmarkCount?.let { count ->
+                    Text(
+                        text = "·",
+                        style = PickflowTypography.labelSmall,
+                        color = PickflowColors.gray50,
+                    )
+                    Text(
+                        text = "북마크 $count",
+                        style = PickflowTypography.labelSmall,
+                        color = PickflowColors.gray10,
+                    )
+                }
+            }
+        }
+        IconButton(onClick = onBookmark) {
+            Image(
+                painter = painterResource(
+                    if (bookmarked) R.drawable.ic_bookmark_selected
+                    else R.drawable.ic_bookmark,
+                ),
+                contentDescription = "북마크",
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }
@@ -147,106 +467,9 @@ private fun LoginPromptDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     )
 }
 
-@Composable
-private fun ThemeChip(label: String, active: Boolean, onClick: () -> Unit) {
-    FilterChip(
-        selected = active,
-        onClick = onClick,
-        label = { Text(label, style = PickflowTypography.labelMedium) },
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = PickflowColors.surfaceChip,
-            labelColor = PickflowColors.gray30,
-            selectedContainerColor = PickflowColors.sunsetOrange,
-            selectedLabelColor = PickflowColors.gray0,
-        ),
-    )
-}
-
-@Composable
-private fun SpotGrid(
-    spots: List<Spot>,
-    bookmarkedIds: Set<String>,
-    onClick: (String) -> Unit,
-    onBookmark: (String) -> Unit,
-    onReachEnd: () -> Unit,
-) {
-    val gridState = rememberLazyGridState()
-    val reachedEnd by remember {
-        derivedStateOf {
-            val last = gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            last >= spots.size - 3
-        }
-    }
-    LaunchedEffect(reachedEnd) { if (reachedEnd) onReachEnd() }
-
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        state = gridState,
-        contentPadding = PaddingValues(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.testTag("spotlist-grid"),
-    ) {
-        items(spots, key = { it.id }) { spot ->
-            SpotCard(
-                spot = spot,
-                bookmarked = spot.id in bookmarkedIds,
-                onClick = { onClick(spot.id) },
-                onBookmark = { onBookmark(spot.id) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun SpotCard(
-    spot: Spot,
-    bookmarked: Boolean,
-    onClick: () -> Unit,
-    onBookmark: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(PickflowColors.gray90)
-            .clickable(onClick = onClick)
-            .padding(12.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(PickflowColors.gray80),
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column {
-                Text(
-                    text = spot.name,
-                    style = PickflowTypography.bodyMediumBold,
-                    color = PickflowColors.gray0,
-                )
-                Text(
-                    text = spot.theme.label(),
-                    style = PickflowTypography.labelSmall,
-                    color = PickflowColors.gray40,
-                )
-            }
-            IconButton(onClick = onBookmark) {
-                Icon(
-                    imageVector = if (bookmarked) Icons.Filled.Favorite
-                    else Icons.Filled.FavoriteBorder,
-                    contentDescription = "북마크",
-                    tint = if (bookmarked) PickflowColors.sunsetOrange else PickflowColors.gray40,
-                )
-            }
-        }
-    }
+private fun SpotTheme.iconRes(): Int = when (this) {
+    SpotTheme.SUNSET -> R.drawable.ic_sunset
+    SpotTheme.YUNSEUL -> R.drawable.ic_reflection
 }
 
 fun SpotTheme.label(): String = when (this) {
@@ -254,7 +477,18 @@ fun SpotTheme.label(): String = when (this) {
     SpotTheme.YUNSEUL -> "윤슬"
 }
 
-fun SpotSort.label(): String = when (this) {
-    SpotSort.DISTANCE -> "거리순"
-    SpotSort.RECOMMENDED -> "추천순"
+private fun SpotTheme?.toMood(): MoodFilter? = when (this) {
+    SpotTheme.SUNSET -> MoodFilter.Sunset
+    SpotTheme.YUNSEUL -> MoodFilter.Reflection
+    null -> null
+}
+
+private fun MoodFilter.toTheme(): SpotTheme = when (this) {
+    MoodFilter.Sunset -> SpotTheme.SUNSET
+    MoodFilter.Reflection -> SpotTheme.YUNSEUL
+}
+
+fun SpotSort.displayName(): String = when (this) {
+    SpotSort.DISTANCE -> "가까운 순"
+    SpotSort.RECOMMENDED -> "북마크 순"
 }
