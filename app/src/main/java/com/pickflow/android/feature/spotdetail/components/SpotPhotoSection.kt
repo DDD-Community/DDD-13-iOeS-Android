@@ -1,7 +1,11 @@
 package com.pickflow.android.feature.spotdetail.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,7 +38,11 @@ private val RecordedTimeColor = Color(0xFFFFA100)
  * 사진은 사용자 업로드 에셋 자리라 gray90 박스로 자리만 잡는다.
  */
 @Composable
-fun SpotPhotoSection(spot: SpotDetailData, modifier: Modifier = Modifier) {
+fun SpotPhotoSection(
+    spot: SpotDetailData,
+    modifier: Modifier = Modifier,
+    onImageClick: () -> Unit = {},
+) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -44,19 +52,35 @@ fun SpotPhotoSection(spot: SpotDetailData, modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .height(200.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(PickflowColors.gray90),
+                .background(PickflowColors.gray90)
+                .then(
+                    if (!spot.imageUrl.isNullOrBlank()) Modifier.clickable(onClick = onImageClick)
+                    else Modifier,
+                ),
         ) {
-            if (spot.hasImage) {
-                Text(
-                    text = spot.recordedTime,
-                    style = PickflowTypography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = RecordedTimeColor,
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Color.Black.copy(alpha = 0.5f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+            if (!spot.imageUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = spot.imageUrl,
+                    contentDescription = spot.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
                 )
+            }
+            Column(
+                modifier = Modifier.padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                if (spot.recordedTime.isNotBlank()) {
+                    Text(
+                        text = spot.recordedTime,
+                        style = PickflowTypography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = RecordedTimeColor,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color.Black.copy(alpha = 0.5f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
             }
         }
         Row(
