@@ -2,6 +2,7 @@ package com.pickflow.android.feature.spotdetail.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
@@ -34,13 +36,16 @@ fun SpotActionButtons(
     isMine: Boolean,
     isBookmarked: Boolean,
     modifier: Modifier = Modifier,
+    onRoute: () -> Unit = {},
+    onBookmark: () -> Unit = {},
+    onOpenSpot: () -> Unit = {},
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         val routeHeight = if (isMine) 52.dp else 56.dp
-        RouteButton(height = routeHeight, modifier = Modifier.weight(1f))
+        RouteButton(height = routeHeight, modifier = Modifier.weight(1f), onClick = onRoute)
 
         if (isMine) {
             Box(
@@ -49,7 +54,9 @@ fun SpotActionButtons(
                     .height(52.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(PickflowColors.gray95)
-                    .border(1.dp, PickflowColors.gray80, RoundedCornerShape(8.dp)),
+                    .border(1.dp, PickflowColors.gray80, RoundedCornerShape(8.dp))
+                    .clickable(onClick = onOpenSpot)
+                    .testTag("detail-open-spot"),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -63,7 +70,9 @@ fun SpotActionButtons(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(PickflowColors.gray0),
+                    .background(PickflowColors.gray0)
+                    .clickable(onClick = onBookmark)
+                    .testTag("detail-bookmark"),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -78,12 +87,18 @@ fun SpotActionButtons(
 }
 
 @Composable
-private fun RouteButton(height: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
+private fun RouteButton(
+    height: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
     Box(
         modifier = modifier
             .height(height)
             .clip(RoundedCornerShape(8.dp))
-            .background(PickflowColors.sunsetOrange),
+            .background(PickflowColors.sunsetOrange)
+            .clickable(onClick = onClick)
+            .testTag("detail-route"),
         contentAlignment = Alignment.Center,
     ) {
         Row(

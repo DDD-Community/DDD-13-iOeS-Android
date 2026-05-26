@@ -1,6 +1,7 @@
 package com.pickflow.android.feature.spotdetail.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -47,7 +48,10 @@ fun SpotDetailLoadingContent(modifier: Modifier = Modifier) {
 
 /** iOS `errorScreen()` 대응 — gray95 위 중앙 실패 안내. */
 @Composable
-fun SpotDetailErrorContent(modifier: Modifier = Modifier) {
+fun SpotDetailErrorContent(
+    modifier: Modifier = Modifier,
+    message: String = "오류 메시지",
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -63,7 +67,7 @@ fun SpotDetailErrorContent(modifier: Modifier = Modifier) {
             color = PickflowColors.gray0,
         )
         Text(
-            text = "오류 메시지",
+            text = message,
             style = PickflowTypography.bodySmall,
             color = PickflowColors.gray50,
             textAlign = TextAlign.Center,
@@ -73,9 +77,15 @@ fun SpotDetailErrorContent(modifier: Modifier = Modifier) {
 
 /** iOS `ReportButton` 1:1 — 신고 버튼(밑줄 텍스트). */
 @Composable
-fun ReportButton(modifier: Modifier = Modifier) {
+fun ReportButton(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
+) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .testTag("detail-report"),
         horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -101,6 +111,12 @@ fun SpotDetailLoadedContent(
     spot: SpotDetailData,
     isBookmarked: Boolean,
     modifier: Modifier = Modifier,
+    onShare: () -> Unit = {},
+    onClose: () -> Unit = {},
+    onRoute: () -> Unit = {},
+    onBookmark: () -> Unit = {},
+    onOpenSpot: () -> Unit = {},
+    onReport: () -> Unit = {},
 ) {
     Column(
         modifier = modifier
@@ -108,7 +124,7 @@ fun SpotDetailLoadedContent(
             .background(PickflowColors.gray95)
             .testTag("spotdetail-loaded"),
     ) {
-        SpotDetailNavBar()
+        SpotDetailNavBar(onShare = onShare, onClose = onClose)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -119,9 +135,15 @@ fun SpotDetailLoadedContent(
         ) {
             SpotHeaderSection(spot = spot)
             SpotPhotoSection(spot = spot)
-            SpotActionButtons(isMine = spot.isMine, isBookmarked = isBookmarked)
+            SpotActionButtons(
+                isMine = spot.isMine,
+                isBookmarked = isBookmarked,
+                onRoute = onRoute,
+                onBookmark = onBookmark,
+                onOpenSpot = onOpenSpot,
+            )
             SpotRealTimeInfoSection(spot = spot)
-            ReportButton()
+            ReportButton(onClick = onReport)
         }
     }
 }
