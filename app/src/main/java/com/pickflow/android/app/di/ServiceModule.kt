@@ -14,8 +14,8 @@ import com.pickflow.android.core.services.impl.DataStoreOnboardingCompletionStor
 import com.pickflow.android.core.services.impl.InMemoryTokenStore
 import com.pickflow.android.core.services.impl.DefaultSpotListService
 import com.pickflow.android.core.services.impl.NoopAnalyticsLogger
-import com.pickflow.android.core.services.impl.NoopExternalAppLauncher
-import com.pickflow.android.core.services.impl.NoopShareIntentService
+import com.pickflow.android.core.services.impl.AndroidExternalAppLauncher
+import com.pickflow.android.core.services.impl.AndroidShareIntentService
 import com.pickflow.android.core.services.impl.RealKakaoAuthProvider
 import com.pickflow.android.core.services.impl.StubAddressService
 import com.pickflow.android.core.services.impl.StubAppleAuthProvider
@@ -110,10 +110,10 @@ abstract class ServiceModule {
     abstract fun bindAddressService(impl: StubAddressService): AddressService
 
     @Binds
-    abstract fun bindShareIntentService(impl: NoopShareIntentService): ShareIntentService
+    abstract fun bindShareIntentService(impl: AndroidShareIntentService): ShareIntentService
 
     @Binds
-    abstract fun bindExternalAppLauncher(impl: NoopExternalAppLauncher): ExternalAppLauncher
+    abstract fun bindExternalAppLauncher(impl: AndroidExternalAppLauncher): ExternalAppLauncher
 
     @Binds
     abstract fun bindClusteringService(impl: GridClusteringService): ClusteringService

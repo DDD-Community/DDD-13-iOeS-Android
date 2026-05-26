@@ -55,8 +55,12 @@ class SpotDetailViewModel @Inject constructor(
     fun share() {
         val current = (_spot.value as? LoadState.Loaded<SpotDetail>)?.value ?: return
         viewModelScope.launch {
+            // iOS `share()` 와 동일 포맷: "이름 - 코멘트\nhttps://pickflow.app/spot/{id}"
             shareIntentService.share(
-                SharePayload(title = current.name, url = "pickflow://spot/${current.id}")
+                SharePayload(
+                    title = "${current.name} - ${current.comment}",
+                    url = "https://pickflow.app/spot/${current.id}",
+                )
             )
         }
     }
