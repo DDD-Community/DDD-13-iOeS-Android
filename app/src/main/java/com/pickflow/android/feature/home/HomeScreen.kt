@@ -23,9 +23,9 @@ import androidx.compose.ui.unit.dp
 import com.pickflow.android.R
 import com.pickflow.android.app.navigation.HomeTab
 import com.pickflow.android.common.designsystem.PickflowColors
+import com.pickflow.android.feature.archive.ArchiveScreen
 import com.pickflow.android.feature.map.HomeMapScreen
 import com.pickflow.android.feature.myprofile.MyProfileScreen
-import com.pickflow.android.feature.spotlist.SpotListScreen
 
 @Composable
 fun HomeScreen(
@@ -78,9 +78,11 @@ fun HomeScreen(
                     onOpenSpotDetail = onOpenSpotDetail,
                     onOpenRegistration = onOpenRegistration,
                 )
-                HomeTab.SAVED -> SpotListScreen(
+                HomeTab.SAVED -> ArchiveScreen(
                     onOpenSpotDetail = onOpenSpotDetail,
                     onRequireLogin = onRequireLogin,
+                    onExploreClick = { selectedTab = HomeTab.EXPLORE },
+                    onOpenRegistration = onOpenRegistration,
                 )
                 HomeTab.MY -> MyProfileScreen(
                     onRequireLogin = onRequireLogin,
