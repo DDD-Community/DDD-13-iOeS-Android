@@ -72,6 +72,8 @@ fun ArchiveScreen(
     onRequireLogin: () -> Unit,
     onExploreClick: () -> Unit = {},
     onOpenRegistration: () -> Unit = {},
+    initialTab: ArchiveTab? = null,
+    onInitialTabConsumed: () -> Unit = {},
     viewModel: ArchiveViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -83,6 +85,13 @@ fun ArchiveScreen(
     val mySpotState by viewModel.mySpots.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.onAppear() }
+    // 마이페이지 카드에서 특정 탭으로 진입 요청 시 1회 적용.
+    LaunchedEffect(initialTab) {
+        initialTab?.let {
+            viewModel.tabChanged(it)
+            onInitialTabConsumed()
+        }
+    }
 
     var showRenameDialog by remember { mutableStateOf(false) }
     val pickCover = rememberCoverImagePickerLauncher(onPicked = viewModel::updateCoverImage)
@@ -203,6 +212,10 @@ private fun ArchiveScrollableContent(
             gridState.firstVisibleItemIndex > 0 || gridState.firstVisibleItemScrollOffset > 400
         }
     }
+    // 커버(헤더, index 0)를 지나치면 2탭바를 상단(타이틀 아래)에 고정.
+    val tabBarPinned by remember {
+        derivedStateOf { gridState.firstVisibleItemIndex >= 1 }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         ArchiveTopBar(
@@ -211,6 +224,11 @@ private fun ArchiveScrollableContent(
             onRenameClick = onRenameClick,
             onCoverImageClick = onCoverImageClick,
         )
+
+        // 스티키 탭바 — 커버가 스크롤로 사라지면 상단에 고정 노출.
+        if (tabBarPinned) {
+            ArchiveTabBar(selectedTab = selectedTab, onTabChange = onTabChange)
+        }
 
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(2),

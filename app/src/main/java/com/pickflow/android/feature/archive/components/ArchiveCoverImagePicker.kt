@@ -1,14 +1,16 @@
 package com.pickflow.android.feature.archive.components
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.pickflow.android.core.services.protocols.ImagePayload
+import java.io.ByteArrayOutputStream
 
 /**
  * iOS `ArchiveCoverImagePickerView` 의 Android 대응 — 시스템 PickVisualMedia 사용.
@@ -35,10 +37,26 @@ fun rememberCoverImagePickerLauncher(
         }
         runCatching {
             val resolver = context.contentResolver
-            val mime = resolver.getType(uri) ?: "image/jpeg"
-            val bytes = resolver.openInputStream(uri)?.use { it.readBytes() } ?: ByteArray(0)
-            val filename = uri.lastPathSegment?.substringAfterLast('/') ?: "cover.jpg"
-            ImagePayload(bytes = bytes, mimeType = mime, filename = filename)
+            val raw = resolver.openInputStream(uri)?.use { it.readBytes() }
+                ?: error("이미지를 읽을 수 없습니다.")
+            // 서버는 image/png 또는 image/jpeg 만 허용. PNG 헤더를 sniff 해서 PNG 면 그대로 전송하고,
+            // 그 외(HEIC/WebP/확장자 없는 파일명 등)는 Bitmap 으로 decode 후 JPEG 으로 re-encode 한다.
+            val isPng = raw.size >= 4 &&
+                raw[0] == 0x89.toByte() &&
+                raw[1] == 0x50.toByte() &&
+                raw[2] == 0x4E.toByte() &&
+                raw[3] == 0x47.toByte()
+            if (isPng) {
+                ImagePayload(bytes = raw, mimeType = "image/png", filename = "archive.png")
+            } else {
+                val bitmap = BitmapFactory.decodeByteArray(raw, 0, raw.size)
+                    ?: error("이미지 디코딩에 실패했습니다.")
+                val jpegBytes = ByteArrayOutputStream().use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
+                    out.toByteArray()
+                }
+                ImagePayload(bytes = jpegBytes, mimeType = "image/jpeg", filename = "archive.jpg")
+            }
         }.onSuccess(onPicked).onFailure { onCancel() }
     }
     return remember(launcher) {
@@ -49,3 +67,5 @@ fun rememberCoverImagePickerLauncher(
         }
     }
 }
+
+private const val JPEG_QUALITY = 90
