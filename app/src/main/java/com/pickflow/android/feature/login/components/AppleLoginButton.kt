@@ -27,7 +27,7 @@ import com.pickflow.android.common.designsystem.PickflowTypography
  * Apple 로그인 CTA 버튼. iOS `AppleLoginButton` 1:1 이식.
  *
  * iOS 원본은 `apple.logo` SF Symbol을 쓰지만, Android에서는
- * `R.drawable.ic_apple` PNG 에셋으로 치환한다.
+ * `R.drawable.ic_apple` 벡터 드로어블 에셋으로 치환한다.
  */
 @Composable
 fun AppleLoginButton(

@@ -27,7 +27,7 @@ import com.pickflow.android.common.designsystem.PickflowTypography
  * 카카오 로그인 CTA 버튼. iOS `KakaoLoginButton` 1:1 이식.
  *
  * iOS 원본은 `message.fill` SF Symbol을 쓰지만, Android에서는
- * `R.drawable.ic_kakao` PNG 에셋으로 브랜드 아이콘을 렌더한다.
+ * `R.drawable.ic_kakao` 벡터 드로어블 에셋으로 브랜드 아이콘을 렌더한다.
  */
 @Composable
 fun KakaoLoginButton(
@@ -64,7 +64,8 @@ fun KakaoLoginButton(
                 Image(
                     painter = painterResource(R.drawable.ic_kakao),
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp),
+                    // 애플 버튼과 동일하게 24dp 로 통일 (피그마 ic_kakao/ic_apple viewBox 24x24 기준).
+                    modifier = Modifier.size(24.dp),
                 )
                 Text(
                     text = title,
