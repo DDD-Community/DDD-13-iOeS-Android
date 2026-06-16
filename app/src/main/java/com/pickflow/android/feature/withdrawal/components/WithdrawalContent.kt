@@ -2,6 +2,7 @@ package com.pickflow.android.feature.withdrawal.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,8 +14,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -25,7 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.pickflow.android.common.designsystem.PickflowColors
@@ -33,9 +38,9 @@ import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.feature.withdrawal.model.WithdrawalReason
 
 /**
- * iOS `WithdrawalPreviewView` 1:1 이식 — 회원탈퇴 화면.
+ * iOS `WithdrawalView` 1:1 — 회원탈퇴 화면 본체 (stateless).
  *
- * navBar + (유의사항 박스 / 사유 선택 / 동의 체크 / 제출 버튼) 스크롤 영역.
+ * navBar + (유의사항 박스 / 사유 dropdown / Other 입력 / 동의 체크 / 제출 버튼).
  */
 @Composable
 fun WithdrawalContent(
@@ -43,6 +48,12 @@ fun WithdrawalContent(
     isDropdownOpen: Boolean = false,
     otherFeedback: String = "",
     didAgree: Boolean = false,
+    onBack: () -> Unit = {},
+    onToggleDropdown: () -> Unit = {},
+    onSelectReason: (WithdrawalReason) -> Unit = {},
+    onOtherFeedbackChange: (String) -> Unit = {},
+    onToggleAgree: () -> Unit = {},
+    onSubmit: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val canSubmit = run {
@@ -56,32 +67,46 @@ fun WithdrawalContent(
         modifier = modifier
             .fillMaxSize()
             .background(PickflowColors.gray95)
+            .statusBarsPadding()
             .testTag("withdrawal-content"),
     ) {
-        NavBar()
+        NavBar(onBack = onBack)
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
-                .padding(top = 24.dp, bottom = 40.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+                .padding(top = 8.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(28.dp),
         ) {
             CautionBox()
             ReasonSection(
                 selectedReason = selectedReason,
                 isDropdownOpen = isDropdownOpen,
                 otherFeedback = otherFeedback,
+                onToggleDropdown = onToggleDropdown,
+                onSelectReason = onSelectReason,
+                onOtherFeedbackChange = onOtherFeedbackChange,
             )
-            AgreementRow(didAgree = didAgree)
-            SubmitButton(canSubmit = canSubmit)
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(top = 16.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            AgreementRow(didAgree = didAgree, onToggle = onToggleAgree)
+            SubmitButton(canSubmit = canSubmit, onSubmit = onSubmit)
         }
     }
 }
 
 @Composable
-private fun NavBar() {
+private fun NavBar(onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -89,7 +114,13 @@ private fun NavBar() {
             .padding(top = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(modifier = Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clickable(onClick = onBack)
+                .testTag("withdrawal-back"),
+            contentAlignment = Alignment.Center,
+        ) {
             Icon(
                 imageVector = Icons.Filled.KeyboardArrowLeft,
                 contentDescription = "뒤로",
@@ -112,35 +143,33 @@ private fun NavBar() {
 private fun CautionBox() {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(PickflowColors.gray80)
-            .border(
-                width = 1.dp,
-                color = PickflowColors.sunsetOrange.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(12.dp),
-            )
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
-            text = "탈퇴 전 꼭 확인해주세요",
-            style = PickflowTypography.bodyMediumBold,
-            color = PickflowColors.sunsetOrange,
+            text = "탈퇴 유의사항 안내",
+            style = PickflowTypography.headingSmall,
+            color = PickflowColors.gray0,
         )
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            CautionRow("탈퇴 시 저장한 스팟, 활동 기록이 모두 삭제돼요.")
-            CautionRow("삭제된 데이터는 복구할 수 없어요.")
-            CautionRow("동일한 소셜 계정으로 재가입할 수 있어요.")
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(PickflowColors.gray80)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "계정을 삭제하면 저장한 스팟과 기록이 모두 삭제됩니다.",
+                style = PickflowTypography.bodyMedium,
+                color = PickflowColors.gray0,
+            )
+            Text(
+                text = "삭제된 정보는 복구할 수 없으니 신중하게 결정해주세요.",
+                style = PickflowTypography.bodyMedium,
+                color = PickflowColors.sunsetOrange,
+            )
         }
-    }
-}
-
-@Composable
-private fun CautionRow(text: String) {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(text = "•", style = PickflowTypography.bodySmall, color = PickflowColors.gray40)
-        Text(text = text, style = PickflowTypography.bodySmall, color = PickflowColors.gray40)
     }
 }
 
@@ -149,28 +178,58 @@ private fun ReasonSection(
     selectedReason: WithdrawalReason?,
     isDropdownOpen: Boolean,
     otherFeedback: String,
+    onToggleDropdown: () -> Unit,
+    onSelectReason: (WithdrawalReason) -> Unit,
+    onOtherFeedbackChange: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = "어떤 점이 아쉬우셨나요?",
-            style = PickflowTypography.headingSmall,
-            color = PickflowColors.gray0,
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = "어떤 점이 아쉬우셨나요?",
+                style = PickflowTypography.headingSmall,
+                color = PickflowColors.gray0,
+            )
+            Text(
+                text = "소중한 의견을 바탕으로\n더 나은 서비스 경험을 만들어가겠습니다.",
+                style = PickflowTypography.bodySmall,
+                color = PickflowColors.gray40,
+            )
+        }
+
+        WithdrawalReasonDropdown(
+            selectedReason = selectedReason,
+            isOpen = isDropdownOpen,
+            onToggle = onToggleDropdown,
+            onSelect = onSelectReason,
         )
-        WithdrawalReasonDropdown(selectedReason = selectedReason, isOpen = isDropdownOpen)
 
         if (selectedReason == WithdrawalReason.Other) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 52.dp)
+                    .heightIn(min = 100.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(PickflowColors.gray80)
                     .padding(horizontal = 16.dp, vertical = 14.dp),
             ) {
-                Text(
-                    text = otherFeedback.ifEmpty { "의견을 자유롭게 남겨주세요" },
-                    style = PickflowTypography.bodyMedium,
-                    color = if (otherFeedback.isEmpty()) PickflowColors.gray50 else PickflowColors.gray0,
+                if (otherFeedback.isEmpty()) {
+                    Text(
+                        text = "사용하시면서 아쉬웠던 점을 알려주세요",
+                        style = PickflowTypography.bodyMedium,
+                        color = PickflowColors.gray50,
+                    )
+                }
+                BasicTextField(
+                    value = otherFeedback,
+                    onValueChange = onOtherFeedbackChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("withdrawal-other-feedback"),
+                    textStyle = TextStyle(
+                        color = PickflowColors.gray0,
+                        fontSize = PickflowTypography.bodyMedium.fontSize,
+                    ),
+                    cursorBrush = SolidColor(PickflowColors.sunsetOrange),
                 )
             }
         }
@@ -178,9 +237,12 @@ private fun ReasonSection(
 }
 
 @Composable
-private fun AgreementRow(didAgree: Boolean) {
+private fun AgreementRow(didAgree: Boolean, onToggle: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle)
+            .testTag("withdrawal-agree-row"),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -207,7 +269,7 @@ private fun AgreementRow(didAgree: Boolean) {
             }
         }
         Text(
-            text = "위 유의사항을 모두 확인했으며 동의합니다.",
+            text = "안내사항을 모두 확인하였으며 이에 동의합니다.",
             style = PickflowTypography.bodyMedium,
             color = PickflowColors.gray20,
             modifier = Modifier.weight(1f),
@@ -216,13 +278,15 @@ private fun AgreementRow(didAgree: Boolean) {
 }
 
 @Composable
-private fun SubmitButton(canSubmit: Boolean) {
+private fun SubmitButton(canSubmit: Boolean, onSubmit: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(if (canSubmit) PickflowColors.sunsetOrange else PickflowColors.gray70),
+            .background(if (canSubmit) PickflowColors.sunsetOrange else PickflowColors.gray70)
+            .clickable(enabled = canSubmit, onClick = onSubmit)
+            .testTag("withdrawal-submit"),
         contentAlignment = Alignment.Center,
     ) {
         Text(

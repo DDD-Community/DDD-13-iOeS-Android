@@ -1,6 +1,7 @@
 package com.pickflow.android.feature.withdrawal.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
@@ -35,6 +37,8 @@ import com.pickflow.android.feature.withdrawal.model.WithdrawalReason
 fun WithdrawalReasonDropdown(
     selectedReason: WithdrawalReason?,
     isOpen: Boolean,
+    onToggle: () -> Unit = {},
+    onSelect: (WithdrawalReason) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -47,7 +51,9 @@ fun WithdrawalReasonDropdown(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .clickable { onToggle() }
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .testTag("withdrawal-dropdown-header"),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -67,7 +73,11 @@ fun WithdrawalReasonDropdown(
         if (isOpen) {
             Divider()
             WithdrawalReason.entries.forEachIndexed { index, reason ->
-                ReasonRow(reason = reason, selected = reason == selectedReason)
+                ReasonRow(
+                    reason = reason,
+                    selected = reason == selectedReason,
+                    onClick = { onSelect(reason) },
+                )
                 if (index != WithdrawalReason.entries.lastIndex) Divider()
             }
         }
@@ -75,11 +85,17 @@ fun WithdrawalReasonDropdown(
 }
 
 @Composable
-private fun ReasonRow(reason: WithdrawalReason, selected: Boolean) {
+private fun ReasonRow(
+    reason: WithdrawalReason,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp)
+            .testTag("withdrawal-reason-${reason.name}"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
