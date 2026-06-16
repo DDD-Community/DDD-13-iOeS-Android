@@ -1,17 +1,19 @@
 package com.pickflow.android.feature.spotlist.components
 
+import com.pickflow.android.R
+
 /**
  * iOS SpotList 스냅샷 도메인 1:1 대응 모델.
  *
  * 프로덕션 `core.services.protocols.SpotTheme`(CAFE/RESTAURANT/...)와는 별개의
  * iOS `SpotTheme`(노을/윤슬) 대응이라 이름 충돌을 피해 별도 타입으로 둔다.
  */
-enum class SpotListMood(val displayName: String, val emoji: String) {
-    /** iOS `.sunset` — overlay 에셋(커스텀 드로잉)은 이모지로 치환. */
-    Sunset("노을", "🌅"),
+enum class SpotListMood(val displayName: String, val iconRes: Int) {
+    /** iOS `.sunset` — 탐색 탭 노을 필터와 동일한 아이콘 사용. */
+    Sunset("노을", R.drawable.ic_sunset),
 
-    /** iOS `.reflection` — 윤슬. overlay 에셋은 이모지로 치환. */
-    Reflection("윤슬", "🌊"),
+    /** iOS `.reflection` — 탐색 탭 윤슬 필터와 동일한 아이콘 사용. */
+    Reflection("윤슬", R.drawable.ic_reflection),
 }
 
 /** iOS `SpotListItem` 1:1 대응. */
