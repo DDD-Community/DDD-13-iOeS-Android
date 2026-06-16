@@ -4,6 +4,7 @@ import com.pickflow.android.core.network.api.MySpotApi
 import com.pickflow.android.core.network.dto.myspot.CreateMySpotMetaRequest
 import com.pickflow.android.core.network.mapper.toCreateMySpotResult
 import com.pickflow.android.core.network.mapper.toMySpotPage
+import com.pickflow.android.core.network.toMultipartPart
 import com.pickflow.android.core.network.unwrap
 import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.CreateMySpotResult
@@ -15,7 +16,6 @@ import javax.inject.Inject
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 
@@ -32,11 +32,8 @@ class DefaultMySpotService @Inject constructor(
         ).unwrap().toMySpotPage()
 
     override suspend fun create(draft: SpotDraft, image: ImagePayload): CreateMySpotResult {
-        // 이미지 part
-        val imageBody = image.bytes.toRequestBody(image.mimeType.toMediaTypeOrNull())
-        val imagePart = MultipartBody.Part.createFormData(
-            name = IMAGE_PART, filename = image.filename, body = imageBody,
-        )
+        // 이미지 part (공통 변환기 사용)
+        val imagePart = image.toMultipartPart(IMAGE_PART)
         // 메타 part (JSON)
         val meta = CreateMySpotMetaRequest(
             name = draft.name,
