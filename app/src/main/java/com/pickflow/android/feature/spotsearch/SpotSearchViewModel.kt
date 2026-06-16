@@ -5,9 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.AddressService
 import com.pickflow.android.core.services.protocols.AddressSuggestion
+import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.LocationService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.math.cos
+import kotlin.math.sqrt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +28,8 @@ class SpotSearchViewModel @Inject constructor(
     private val _suggestions = MutableStateFlow<LoadState<List<AddressSuggestion>>>(LoadState.Idle)
     val suggestions: StateFlow<LoadState<List<AddressSuggestion>>> = _suggestions.asStateFlow()
 
+    private var currentCoordinates: Coordinates? = null
+
     fun onQueryChanged(text: String) {
         _query.value = text
         if (text.isBlank()) {
@@ -33,6 +38,9 @@ class SpotSearchViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _suggestions.value = LoadState.Loading
+            if (currentCoordinates == null) {
+                currentCoordinates = runCatching { locationService.currentLocation() }.getOrNull()
+            }
             _suggestions.value = runCatching { addressService.search(text) }
                 .fold(
                     onSuccess = { if (it.isEmpty()) LoadState.Empty else LoadState.Loaded(it) },
@@ -41,18 +49,12 @@ class SpotSearchViewModel @Inject constructor(
         }
     }
 
-    fun useCurrentLocation(onResolved: (AddressSuggestion?) -> Unit) {
-        viewModelScope.launch {
-            val coords = locationService.currentLocation() ?: run {
-                onResolved(null); return@launch
-            }
-            onResolved(
-                AddressSuggestion(
-                    displayName = "현재 위치",
-                    latitude = coords.latitude,
-                    longitude = coords.longitude,
-                )
-            )
-        }
+    /** 현재 위치 기준 거리. 위치 미보유 시 null(미표시). iOS `distanceText(for:)` 1:1. */
+    fun distanceText(item: AddressSuggestion): String? {
+        val current = currentCoordinates ?: return null
+        val dLatKm = (item.latitude - current.latitude) * 111.0
+        val dLngKm = (item.longitude - current.longitude) * 111.0 * cos(Math.toRadians(current.latitude))
+        val km = sqrt(dLatKm * dLatKm + dLngKm * dLngKm)
+        return "%.1fkm".format(km)
     }
 }
