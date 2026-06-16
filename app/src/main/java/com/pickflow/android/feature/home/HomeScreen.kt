@@ -34,6 +34,7 @@ fun HomeScreen(
     onRequireLogin: () -> Unit,
     onOpenDebug: () -> Unit,
     onOpenAccount: () -> Unit,
+    onOpenNotice: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableStateOf(HomeTab.EXPLORE) }
 
@@ -77,6 +78,7 @@ fun HomeScreen(
                 HomeTab.EXPLORE -> HomeMapScreen(
                     onOpenSpotDetail = onOpenSpotDetail,
                     onOpenRegistration = onOpenRegistration,
+                    onRequireLogin = onRequireLogin,
                 )
                 HomeTab.SAVED -> ArchiveScreen(
                     onOpenSpotDetail = onOpenSpotDetail,
@@ -87,6 +89,7 @@ fun HomeScreen(
                 HomeTab.MY -> MyProfileScreen(
                     onRequireLogin = onRequireLogin,
                     onOpenAccount = onOpenAccount,
+                    onOpenNotice = onOpenNotice,
                 )
             }
         }
