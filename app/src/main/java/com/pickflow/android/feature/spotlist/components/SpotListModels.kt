@@ -23,6 +23,8 @@ data class SpotListGridItem(
     val mood: SpotListMood,
     val hasThumbnail: Boolean = true,
     val distanceKm: Double? = 1.2,
+    /** 셀 썸네일 이미지 URL. null/blank 면 gray90 플레이스홀더만 표시. */
+    val imageUrl: String? = null,
 )
 
 /** iOS `SpotListSort` 1:1 대응. */

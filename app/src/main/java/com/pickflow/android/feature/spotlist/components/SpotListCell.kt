@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
+import coil.compose.AsyncImage
 
 /**
  * iOS `SpotListCell` 1:1 이식 — 리스트 셀(썸네일 + 메타).
@@ -52,13 +54,21 @@ private fun ThumbnailBox(item: SpotListGridItem) {
     // iOS: spotId 짝수 → aspect 1.2(세로 김), 홀수 → 0.9. ContentScale 비율 = width/height.
     val ratio = if (item.spotId % 2L == 0L) 1f / 1.2f else 1f / 0.9f
     Box {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(ratio)
-                .clip(RoundedCornerShape(12.dp))
-                .background(PickflowColors.gray90),
-        )
+        val thumbModifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(ratio)
+            .clip(RoundedCornerShape(12.dp))
+            .background(PickflowColors.gray90)
+        if (!item.imageUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = item.imageUrl,
+                contentDescription = item.name,
+                contentScale = ContentScale.Crop,
+                modifier = thumbModifier,
+            )
+        } else {
+            Box(modifier = thumbModifier)
+        }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
