@@ -14,13 +14,16 @@ import com.pickflow.android.feature.accountmanagement.AccountManagementScreen
 import com.pickflow.android.feature.debug.DebugScreen
 import com.pickflow.android.feature.home.HomeScreen
 import com.pickflow.android.feature.login.LoginScreen
+import com.pickflow.android.feature.myprofile.termsandpolicy.TermsAndPolicyListScreen
 import com.pickflow.android.feature.notice.NoticeDetailScreen
 import com.pickflow.android.feature.notice.NoticeListScreen
 import com.pickflow.android.feature.onboarding.OnboardingScreen
 import com.pickflow.android.feature.spotdetail.SpotDetailScreen
 import com.pickflow.android.feature.spotregistration.SpotRegistrationScreen
+import com.pickflow.android.feature.spotregistration.SpotRegistrationViewModel
 import com.pickflow.android.feature.forceupdate.ForceUpdateScreen
 import com.pickflow.android.feature.forceupdate.ForceUpdateViewModel
+import com.pickflow.android.feature.spotsearch.SpotLocationDetailScreen
 import com.pickflow.android.feature.spotsearch.SpotSearchScreen
 import com.pickflow.android.feature.withdrawal.WithdrawalScreen
 
@@ -86,6 +89,7 @@ fun PickflowNavHost(
                 onOpenDebug = { navController.navigate(PickflowRoute.DEBUG) },
                 onOpenAccount = { navController.navigate(PickflowRoute.ACCOUNT_MANAGEMENT) },
                 onOpenNotice = { navController.navigate(PickflowRoute.NOTICE_LIST) },
+                onOpenTermsAndPolicy = { navController.navigate(PickflowRoute.TERMS_AND_POLICY) },
             )
         }
 
@@ -120,6 +124,10 @@ fun PickflowNavHost(
             )
         }
 
+        composable(PickflowRoute.TERMS_AND_POLICY) {
+            TermsAndPolicyListScreen(onBack = navController::popBackStack)
+        }
+
         composable(PickflowRoute.WITHDRAWAL) {
             WithdrawalScreen(
                 onBack = navController::popBackStack,
@@ -146,12 +154,39 @@ fun PickflowNavHost(
         }
 
         composable(PickflowRoute.SPOT_SEARCH) {
-            SpotSearchScreen(onBack = navController::popBackStack)
+            // 등록 화면과 동일 ViewModel 인스턴스를 공유(선택 주소 전달).
+            val regEntry = navController.getBackStackEntry(PickflowRoute.SPOT_REGISTRATION)
+            val regViewModel: SpotRegistrationViewModel = hiltViewModel(regEntry)
+            SpotSearchScreen(
+                onBack = navController::popBackStack,
+                onSelectResult = { suggestion ->
+                    regViewModel.setPendingAddress(suggestion)
+                    navController.navigate(PickflowRoute.SPOT_LOCATION_DETAIL)
+                },
+            )
+        }
+
+        composable(PickflowRoute.SPOT_LOCATION_DETAIL) {
+            val regEntry = navController.getBackStackEntry(PickflowRoute.SPOT_REGISTRATION)
+            val regViewModel: SpotRegistrationViewModel = hiltViewModel(regEntry)
+            val pending by regViewModel.pendingAddress.collectAsStateWithLifecycle()
+            pending?.let { candidate ->
+                SpotLocationDetailScreen(
+                    candidate = candidate,
+                    onBack = navController::popBackStack,
+                    onConfirm = { confirmed ->
+                        regViewModel.applyAddressSelection(confirmed)
+                        // 검색 → 등록까지 한 번에 복귀.
+                        navController.popBackStack(PickflowRoute.SPOT_REGISTRATION, inclusive = false)
+                    },
+                )
+            }
         }
 
         composable(PickflowRoute.SPOT_REGISTRATION) {
             SpotRegistrationScreen(
                 onBack = navController::popBackStack,
+                onOpenSearch = { navController.navigate(PickflowRoute.SPOT_SEARCH) },
                 onRegistered = { navController.popBackStack() },
             )
         }

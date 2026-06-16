@@ -6,8 +6,10 @@ object PickflowRoute {
     const val LOGIN = "login"
     const val HOME = "home"
     const val SPOT_SEARCH = "spot_search"
+    const val SPOT_LOCATION_DETAIL = "spot_location_detail"
     const val SPOT_REGISTRATION = "spot_registration"
     const val ACCOUNT_MANAGEMENT = "account_management"
+    const val TERMS_AND_POLICY = "terms_and_policy"
     const val WITHDRAWAL = "withdrawal"
     const val DEBUG = "debug"
 
