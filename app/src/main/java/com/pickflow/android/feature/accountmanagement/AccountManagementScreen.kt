@@ -23,6 +23,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -36,6 +37,9 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.core.services.protocols.ImagePayload
+import com.pickflow.android.feature.accountmanagement.components.LogoutConfirmDialogOverlay
 import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,6 +69,10 @@ fun AccountManagementScreen(
     val isSaveEnabled by viewModel.isSaveEnabled.collectAsStateWithLifecycle()
     val profileImageUrl by viewModel.profileImageUrl.collectAsStateWithLifecycle()
     val draftPreviewUri by viewModel.draftImagePreviewUri.collectAsStateWithLifecycle()
+    val nicknameError by viewModel.nicknameError.collectAsStateWithLifecycle()
+    val provider by viewModel.provider.collectAsStateWithLifecycle()
+
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(signedOut) {
         if (signedOut) onSignedOut()
@@ -85,6 +94,37 @@ fun AccountManagementScreen(
         )
     }
 
+    // 카메라 촬영 — FileProvider 임시 파일에 저장 후 bytes 추출.
+    var cameraUri by remember { mutableStateOf<Uri?>(null) }
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture(),
+    ) { success ->
+        val uri = cameraUri
+        if (!success || uri == null) return@rememberLauncherForActivityResult
+        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: return@rememberLauncherForActivityResult
+        viewModel.setDraftImage(
+            payload = ImagePayload(bytes = bytes, mimeType = "image/jpeg", filename = "profile.jpg"),
+            previewUri = uri.toString(),
+        )
+    }
+    val launchCamera = launchCamera@{
+        val dir = java.io.File(context.cacheDir, "images").apply { mkdirs() }
+        val file = java.io.File(dir, "camera_${System.currentTimeMillis()}.jpg")
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context, "${context.packageName}.fileprovider", file,
+        )
+        cameraUri = uri
+        cameraLauncher.launch(uri)
+    }
+    val launchAlbum = {
+        photoLauncher.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+        )
+    }
+    var showPhotoSheet by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         containerColor = PickflowColors.gray95,
         topBar = {
@@ -137,11 +177,7 @@ fun AccountManagementScreen(
                 Box(
                     modifier = Modifier
                         .size(96.dp)
-                        .clickable {
-                            photoLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                            )
-                        }
+                        .clickable { showPhotoSheet = true }
                         .testTag("account-profile-image"),
                 ) {
                     val preview = draftPreviewUri
@@ -218,6 +254,15 @@ fun AccountManagementScreen(
                     unfocusedTextColor = PickflowColors.gray0,
                 ),
             )
+            nicknameError?.let { error ->
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = error,
+                    style = PickflowTypography.labelMedium,
+                    color = PickflowColors.sunsetOrange,
+                    modifier = Modifier.testTag("account-nickname-error"),
+                )
+            }
 
             Spacer(Modifier.height(24.dp))
 
@@ -234,7 +279,7 @@ fun AccountManagementScreen(
                     .padding(horizontal = 16.dp, vertical = 14.dp),
             ) {
                 Text(
-                    text = "카카오로 로그인됨",
+                    text = "${provider?.displayName ?: "소셜"} 계정으로 로그인됨",
                     style = PickflowTypography.bodyMedium,
                     color = PickflowColors.gray40,
                 )
@@ -252,7 +297,7 @@ fun AccountManagementScreen(
                     style = PickflowTypography.bodyMedium,
                     color = PickflowColors.gray0,
                     modifier = Modifier
-                        .clickable(onClick = viewModel::logout)
+                        .clickable { showLogoutDialog = true }
                         .testTag("account-logout"),
                 )
                 Spacer(Modifier.height(24.dp))
@@ -269,4 +314,45 @@ fun AccountManagementScreen(
             Spacer(Modifier.height(32.dp))
         }
     }
+
+        if (showLogoutDialog) {
+            LogoutConfirmDialogOverlay(
+                onCancel = { showLogoutDialog = false },
+                onConfirm = {
+                    showLogoutDialog = false
+                    viewModel.logout()
+                },
+            )
+        }
+    }
+
+    if (showPhotoSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showPhotoSheet = false },
+            containerColor = PickflowColors.gray90,
+        ) {
+            PhotoSourceRow("카메라 촬영") {
+                showPhotoSheet = false
+                launchCamera()
+            }
+            PhotoSourceRow("앨범에서 선택") {
+                showPhotoSheet = false
+                launchAlbum()
+            }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun PhotoSourceRow(label: String, onClick: () -> Unit) {
+    Text(
+        text = label,
+        style = PickflowTypography.bodyLarge,
+        color = PickflowColors.gray0,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 24.dp, vertical = 18.dp),
+    )
 }
