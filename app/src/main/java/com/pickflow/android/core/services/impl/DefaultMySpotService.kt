@@ -26,8 +26,9 @@ class DefaultMySpotService @Inject constructor(
     override suspend fun list(page: Int, coordinates: Coordinates?): MySpotPage =
         mySpotApi.getMySpots(
             page = page,
-            latitude = coordinates?.latitude,
-            longitude = coordinates?.longitude,
+            // 서버 검증: 위/경도 소수점 6자리까지 → truncate (7자리 GPS 시 400 방지).
+            latitude = coordinates?.latitude?.toSixDecimal(),
+            longitude = coordinates?.longitude?.toSixDecimal(),
         ).unwrap().toMySpotPage()
 
     override suspend fun create(draft: SpotDraft, image: ImagePayload): CreateMySpotResult {

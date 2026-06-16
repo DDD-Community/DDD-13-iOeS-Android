@@ -52,8 +52,9 @@ class DefaultBookmarkService @Inject constructor(
     override suspend fun savedSpots(page: Int, coordinates: Coordinates?): SavedSpotPage =
         bookmarkApi.getSavedSpots(
             page = page,
-            latitude = coordinates?.latitude,
-            longitude = coordinates?.longitude,
+            // 서버 검증: 위/경도 소수점 6자리까지 → truncate (7자리 GPS 시 400 방지).
+            latitude = coordinates?.latitude?.toSixDecimal(),
+            longitude = coordinates?.longitude?.toSixDecimal(),
         ).unwrap().toSavedSpotPage()
 
     private fun String.toLongIdOrThrow(): Long = toLongOrNull()

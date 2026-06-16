@@ -301,16 +301,12 @@ private fun updateCurationClusterer(
                 marker.height = Marker.SIZE_AUTO
                 marker.anchor = PointF(0.5f, 0.5f)
                 marker.zIndex = 300
-                val pos = info.position
-                val ids = (info.tag as? List<*>)?.mapNotNull { it as? Long }?.map(Long::toString).orEmpty()
-                val cluster = Cluster(
-                    latitude = pos.latitude,
-                    longitude = pos.longitude,
-                    count = info.size,
-                    spotIds = ids,
-                )
+                // 클러스터 탭 → 바텀시트가 아니라 해당 위치로 확대(클러스터가 하위 단위로 펼쳐짐).
                 marker.onClickListener = Overlay.OnClickListener {
-                    onClusterTap(cluster)
+                    map.moveCamera(
+                        CameraUpdate.scrollAndZoomTo(info.position, map.cameraPosition.zoom + 2.0)
+                            .animate(CameraAnimation.Easing),
+                    )
                     true
                 }
             }
