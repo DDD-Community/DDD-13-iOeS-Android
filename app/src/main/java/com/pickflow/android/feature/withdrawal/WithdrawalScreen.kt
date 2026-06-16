@@ -11,8 +11,8 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +23,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
+import com.pickflow.android.feature.withdrawal.components.WithdrawalCompletedContent
 import com.pickflow.android.feature.withdrawal.components.WithdrawalContent
 
 /**
@@ -41,8 +42,9 @@ fun WithdrawalScreen(
     val otherFeedback by viewModel.otherFeedback.collectAsStateWithLifecycle()
     val didAgree by viewModel.didAgree.collectAsStateWithLifecycle()
 
-    LaunchedEffect(step) {
-        if (step is WithdrawalViewModel.Step.Done) onWithdrawn()
+    // 완료 상태에서는 back 도 로그인 화면으로 이동.
+    if (step is WithdrawalViewModel.Step.Done) {
+        BackHandler { onWithdrawn() }
     }
 
     Box(
@@ -68,7 +70,7 @@ fun WithdrawalScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) { CircularProgressIndicator(color = PickflowColors.gray0) }
-            WithdrawalViewModel.Step.Done -> Unit
+            WithdrawalViewModel.Step.Done -> WithdrawalCompletedContent(onGoToLogin = onWithdrawn)
             is WithdrawalViewModel.Step.Failed -> Column(
                 modifier = Modifier
                     .fillMaxSize()

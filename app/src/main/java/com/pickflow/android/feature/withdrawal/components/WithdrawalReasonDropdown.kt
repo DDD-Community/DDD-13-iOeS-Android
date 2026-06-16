@@ -1,6 +1,7 @@
 package com.pickflow.android.feature.withdrawal.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,8 +45,9 @@ fun WithdrawalReasonDropdown(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(PickflowColors.gray90),
+            .clip(RoundedCornerShape(8.dp))
+            .background(PickflowColors.gray95)
+            .border(1.dp, PickflowColors.gray50, RoundedCornerShape(8.dp)),
     ) {
         // header
         Row(
@@ -59,13 +61,13 @@ fun WithdrawalReasonDropdown(
             Text(
                 text = selectedReason?.displayText ?: "탈퇴 사유를 선택해주세요",
                 style = PickflowTypography.bodyMedium,
-                color = if (selectedReason != null) PickflowColors.gray0 else PickflowColors.gray50,
+                color = if (selectedReason != null) PickflowColors.gray0 else PickflowColors.gray20,
             )
             Spacer(Modifier.weight(1f))
             Icon(
                 imageVector = if (isOpen) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                 contentDescription = null,
-                tint = PickflowColors.gray40,
+                tint = PickflowColors.gray20,
                 modifier = Modifier.size(18.dp),
             )
         }
