@@ -29,7 +29,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.pickflow.android.BuildConfig
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.core.services.protocols.TermsPolicy
@@ -107,27 +106,6 @@ fun TermsAndPolicyListScreen(
                         modifier = Modifier.size(20.dp),
                     )
                 }
-            }
-
-            // 앱 버전 row (마이페이지에서 이전됨).
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .testTag("terms-policy-appversion"),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "앱 버전",
-                    style = PickflowTypography.bodyLarge,
-                    color = PickflowColors.gray0,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    text = "v${BuildConfig.VERSION_NAME}",
-                    style = PickflowTypography.bodyMedium,
-                    color = PickflowColors.gray40,
-                )
             }
         }
     }

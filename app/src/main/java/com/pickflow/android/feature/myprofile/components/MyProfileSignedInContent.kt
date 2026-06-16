@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.pickflow.android.BuildConfig
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.core.services.protocols.MyPageHome
@@ -159,7 +160,7 @@ fun MyProfileSignedInContent(
 
         Spacer(Modifier.height(24.dp))
 
-        // 4. 메뉴 리스트 — iOS 1:1: 공지사항 / (divider) / 약관 및 정책.
+        // 4. 메뉴 리스트 — 공지사항 / 약관 및 정책 / 앱 버전.
         MenuRow(
             icon = Icons.Outlined.Info,
             label = "공지사항",
@@ -167,20 +168,53 @@ fun MyProfileSignedInContent(
             tag = "myprofile-menu-notice",
         )
 
-        // 5. divider
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .height(1.dp)
-                .background(PickflowColors.gray80),
-        )
+        MenuDivider()
 
         MenuRow(
             icon = null,
             label = "약관 및 정책",
             onClick = onOpenTermsAndPolicy,
             tag = "myprofile-menu-terms-policy",
+        )
+
+        MenuDivider()
+
+        // 앱 버전 — 약관 화면 내부에서 마이 탭 최상위로 이동. 클릭 불가, 버전 후행 표시.
+        AppVersionRow()
+    }
+}
+
+@Composable
+private fun MenuDivider() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .height(1.dp)
+            .background(PickflowColors.gray80),
+    )
+}
+
+@Composable
+private fun AppVersionRow() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .padding(horizontal = 20.dp)
+            .testTag("myprofile-menu-appversion"),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "앱 버전",
+            style = PickflowTypography.bodyLarge,
+            color = PickflowColors.gray0,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = "v${BuildConfig.VERSION_NAME}",
+            style = PickflowTypography.bodyMedium,
+            color = PickflowColors.gray40,
         )
     }
 }
