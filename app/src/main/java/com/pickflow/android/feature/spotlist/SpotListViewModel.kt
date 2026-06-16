@@ -32,7 +32,8 @@ class SpotListViewModel @Inject constructor(
     private val _theme = MutableStateFlow<SpotTheme?>(null)
     val theme: StateFlow<SpotTheme?> = _theme.asStateFlow()
 
-    private val _sort = MutableStateFlow(SpotSort.DISTANCE)
+    // 기본 정렬은 북마크 순(RECOMMENDED). 가까운 순(DISTANCE)은 위치 권한이 있을 때만 선택 가능.
+    private val _sort = MutableStateFlow(SpotSort.RECOMMENDED)
     val sort: StateFlow<SpotSort> = _sort.asStateFlow()
 
     private val _bookmarkedIds = MutableStateFlow<Set<String>>(emptySet())
@@ -40,6 +41,12 @@ class SpotListViewModel @Inject constructor(
 
     private val _showLoginPrompt = MutableStateFlow(false)
     val showLoginPrompt: StateFlow<Boolean> = _showLoginPrompt.asStateFlow()
+
+    /** iOS `toast: String?` 1:1 — 다음 페이지 실패 등 단발성 안내. */
+    private val _toast = MutableStateFlow<String?>(null)
+    val toast: StateFlow<String?> = _toast.asStateFlow()
+
+    fun consumeToast() { _toast.value = null }
 
     // page 기반 페이지네이션 (0-base). nextPage = 다음에 요청할 페이지 번호.
     private var nextPage: Int = 0
@@ -75,8 +82,24 @@ class SpotListViewModel @Inject constructor(
                 _showLoginPrompt.value = true
                 return@launch
             }
-            bookmarkService.toggle(spotId)
-            _bookmarkedIds.value = bookmarkService.bookmarkedIds()
+            // iOS `SpotListViewModel.bookmarkTapped` 1:1 — 낙관적 토글 + 실패 시 롤백.
+            val wasBookmarked = spotId in _bookmarkedIds.value
+            _bookmarkedIds.value = if (wasBookmarked) {
+                _bookmarkedIds.value - spotId
+            } else {
+                _bookmarkedIds.value + spotId
+            }
+            runCatching {
+                if (wasBookmarked) bookmarkService.remove(spotId)
+                else bookmarkService.add(spotId)
+            }.onFailure {
+                _bookmarkedIds.value = if (wasBookmarked) {
+                    _bookmarkedIds.value + spotId
+                } else {
+                    _bookmarkedIds.value - spotId
+                }
+                _toast.value = "북마크 변경에 실패했어요."
+            }
         }
     }
 
@@ -85,8 +108,9 @@ class SpotListViewModel @Inject constructor(
     }
 
     private fun loadPage() {
+        val isFirstPage = accumulated.isEmpty()
         viewModelScope.launch {
-            if (accumulated.isEmpty()) _spots.value = LoadState.Loading
+            if (isFirstPage) _spots.value = LoadState.Loading
             // iOS와 동일하게 매 호출마다 최신 위치 시도. 권한 없으면 null.
             if (currentCoordinates == null) {
                 currentCoordinates = runCatching { locationService.currentLocation() }.getOrNull()
@@ -104,7 +128,12 @@ class SpotListViewModel @Inject constructor(
                 nextPage = page.page + 1
                 emitState()
             }.onFailure {
-                _spots.value = LoadState.Failed(it)
+                if (isFirstPage) {
+                    _spots.value = LoadState.Failed(it)
+                } else {
+                    // iOS `loadNextPageIfNeeded` 1:1 — 누적 리스트 유지 + 토스트.
+                    _toast.value = "다음 페이지를 불러오지 못했어요."
+                }
             }
         }
     }

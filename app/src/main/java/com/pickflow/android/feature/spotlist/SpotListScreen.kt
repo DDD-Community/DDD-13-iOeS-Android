@@ -72,19 +72,29 @@ fun SpotListScreen(
     val sort by viewModel.sort.collectAsStateWithLifecycle()
     val bookmarkedIds by viewModel.bookmarkedIds.collectAsStateWithLifecycle()
     val showLoginPrompt by viewModel.showLoginPrompt.collectAsStateWithLifecycle()
+    val toast by viewModel.toast.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
-    if (showLoginPrompt) {
-        LoginPromptDialog(
-            onConfirm = {
-                viewModel.dismissLoginPrompt()
-                onRequireLogin()
-            },
-            onDismiss = viewModel::dismissLoginPrompt,
-        )
+    val toastContext = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(toast) {
+        toast?.let {
+            android.widget.Toast.makeText(toastContext, it, android.widget.Toast.LENGTH_SHORT).show()
+            viewModel.consumeToast()
+        }
     }
 
+    // 가까운 순(DISTANCE)은 위치 권한이 필요. 권한 없이 선택 시 설정 이동 팝업 표시.
+    var showLocationDeniedPopup by remember { mutableStateOf(false) }
+    val onSelectSort: (SpotSort) -> Unit = { option ->
+        if (option == SpotSort.DISTANCE && !toastContext.hasLocationPermission()) {
+            showLocationDeniedPopup = true
+        } else {
+            viewModel.selectSort(option)
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -93,7 +103,7 @@ fun SpotListScreen(
     ) {
         SpotListHeader(
             sort = sort,
-            onSelectSort = viewModel::selectSort,
+            onSelectSort = onSelectSort,
         )
         MoodFilterRow(
             selected = theme.toMood(),
@@ -117,7 +127,67 @@ fun SpotListScreen(
             )
         }
     }
+
+        if (showLoginPrompt) {
+            // iOS `SpotListView` overlay + `LoginPromptPopup` 1:1.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f))
+                    .clickable { viewModel.dismissLoginPrompt() }
+                    .testTag("spotlist-login-overlay"),
+            ) {
+                com.pickflow.android.feature.spotdetail.components.LoginPromptPopup(
+                    onCancel = viewModel::dismissLoginPrompt,
+                    onLogin = {
+                        viewModel.dismissLoginPrompt()
+                        onRequireLogin()
+                    },
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 32.dp)
+                        .clickable(enabled = false) {},
+                )
+            }
+        }
+
+        if (showLocationDeniedPopup) {
+            // iOS `LocationPermissionDeniedPopup` 1:1 — 가까운 순 선택 시 권한 없으면 설정 이동 유도.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f))
+                    .clickable { showLocationDeniedPopup = false }
+                    .testTag("spotlist-location-denied-overlay"),
+            ) {
+                com.pickflow.android.feature.map.components.LocationPermissionDeniedPopup(
+                    onCancel = { showLocationDeniedPopup = false },
+                    onOpenSettings = {
+                        showLocationDeniedPopup = false
+                        val intent = android.content.Intent(
+                            android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            android.net.Uri.fromParts("package", toastContext.packageName, null),
+                        ).apply { addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK) }
+                        toastContext.startActivity(intent)
+                    },
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 32.dp)
+                        .clickable(enabled = false) {},
+                )
+            }
+        }
+    }
 }
+
+/** 위치 권한(정밀/대략 중 하나라도) 보유 여부. */
+private fun android.content.Context.hasLocationPermission(): Boolean =
+    androidx.core.content.ContextCompat.checkSelfPermission(
+        this, android.Manifest.permission.ACCESS_FINE_LOCATION,
+    ) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
+        androidx.core.content.ContextCompat.checkSelfPermission(
+            this, android.Manifest.permission.ACCESS_COARSE_LOCATION,
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
 /** iOS `HomeMapView.headerBar` + `SpotListSortDropdownHeader` 1:1 — 로고 + 정렬 드롭다운. */
 @Composable
@@ -449,22 +519,6 @@ private fun MetaRow(
             )
         }
     }
-}
-
-@Composable
-private fun LoginPromptDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("로그인이 필요해요") },
-        text = { Text("스팟을 저장하려면 로그인이 필요해요.") },
-        confirmButton = {
-            TextButton(onClick = onConfirm, modifier = Modifier.testTag("spotlist-login-confirm")) {
-                Text("로그인", color = PickflowColors.sunsetOrange)
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
-        containerColor = PickflowColors.gray90,
-    )
 }
 
 private fun SpotTheme.iconRes(): Int = when (this) {
