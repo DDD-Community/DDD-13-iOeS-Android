@@ -265,6 +265,7 @@ fun HomeMapScreen(
                     viewModel.dismissSheetLoginPrompt()
                     onRequireLogin()
                 },
+                isClosable = true,
                 modifier = Modifier
                     .align(Alignment.Center)
                     .padding(horizontal = 32.dp)

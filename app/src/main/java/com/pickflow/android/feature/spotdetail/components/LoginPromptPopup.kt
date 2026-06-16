@@ -9,7 +9,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,6 +34,7 @@ fun LoginPromptPopup(
     onCancel: () -> Unit,
     onLogin: () -> Unit,
     modifier: Modifier = Modifier,
+    isClosable: Boolean = false,
 ) {
     Column(
         modifier = modifier
@@ -41,6 +46,21 @@ fun LoginPromptPopup(
         verticalArrangement = Arrangement.spacedBy(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        if (isClosable) {
+            // 우측 상단 닫기(X).
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = "닫기",
+                    tint = PickflowColors.gray40,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(24.dp)
+                        .clickable(onClick = onCancel)
+                        .testTag("login-prompt-close"),
+                )
+            }
+        }
         Text(
             text = "잠깐,\n로그인이 필요한 기능이에요",
             style = PickflowTypography.headingSmall,

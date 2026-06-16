@@ -143,6 +143,7 @@ fun SpotListScreen(
                         viewModel.dismissLoginPrompt()
                         onRequireLogin()
                     },
+                    isClosable = true,
                     modifier = Modifier
                         .align(Alignment.Center)
                         .padding(horizontal = 32.dp)

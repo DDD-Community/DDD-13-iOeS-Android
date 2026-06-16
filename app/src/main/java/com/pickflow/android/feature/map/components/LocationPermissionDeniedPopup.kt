@@ -1,5 +1,6 @@
 package com.pickflow.android.feature.map.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,9 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -44,10 +42,9 @@ fun LocationPermissionDeniedPopup(
             .testTag("location-permission-denied-popup"),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Icon(
-            imageVector = Icons.Filled.Info,
+        Image(
+            painter = androidx.compose.ui.res.painterResource(com.pickflow.android.R.drawable.ic_check_circle),
             contentDescription = null,
-            tint = PickflowColors.sunsetOrange,
             modifier = Modifier
                 .padding(top = 8.dp)
                 .size(48.dp),
