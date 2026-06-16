@@ -49,6 +49,8 @@ import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.SpotDetail
 import com.pickflow.android.feature.spotdetail.components.FullscreenImageViewer
+import com.pickflow.android.feature.spotdetail.components.LoginPromptPopup
+import com.pickflow.android.feature.spotdetail.components.MySpotComingSoonSheet
 import com.pickflow.android.feature.spotdetail.components.ReportButton
 import com.pickflow.android.feature.spotdetail.components.SpotActionButtons
 import com.pickflow.android.feature.spotdetail.components.SpotDetailNavBar
@@ -75,28 +77,33 @@ import kotlinx.coroutines.launch
 fun SpotDetailScreen(
     spotId: String,
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    onRequireLogin: () -> Unit = {},
     viewModel: SpotDetailViewModel = hiltViewModel(),
     actionsViewModel: SpotDetailActionsViewModel = hiltViewModel(),
 ) {
     val spotState by viewModel.spot.collectAsStateWithLifecycle()
     val bookmarked by viewModel.bookmarked.collectAsStateWithLifecycle()
-    val reportSubmitted by viewModel.reportSubmitted.collectAsStateWithLifecycle()
+    val toastMessage by viewModel.toast.collectAsStateWithLifecycle()
+    val isLoginRequired by viewModel.isLoginRequired.collectAsStateWithLifecycle()
 
     var isReportSheetOpen by remember { mutableStateOf(false) }
+    var isComingSoonSheetOpen by remember { mutableStateOf(false) }
     var toastVisible by remember { mutableStateOf(false) }
     var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(spotId) { viewModel.load(spotId) }
-    LaunchedEffect(reportSubmitted) {
-        if (reportSubmitted) {
+    LaunchedEffect(toastMessage) {
+        if (toastMessage != null) {
             toastVisible = true
             delay(2000)
             toastVisible = false
+            viewModel.consumeToast()
         }
     }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(PickflowColors.gray95)
             .testTag("spotdetail-screen"),
@@ -121,7 +128,7 @@ fun SpotDetailScreen(
                     isBookmarked = bookmarked,
                     onRoute = { actionsViewModel.openInMap(state.value) },
                     onBookmark = viewModel::toggleBookmark,
-                    onOpenSpot = { /* TODO(KAN-future): 내 스팟 오픈 분기 연결. */ },
+                    onOpenSpot = { isComingSoonSheetOpen = true },
                     onReport = { isReportSheetOpen = true },
                     onImageClick = { fullscreenImageUrl = state.value.imageUrl },
                 )
@@ -129,7 +136,33 @@ fun SpotDetailScreen(
         }
 
         if (toastVisible) {
-            ReportSubmittedToast(modifier = Modifier.align(Alignment.Center))
+            ReportSubmittedToast(
+                message = toastMessage ?: "제보가 접수되었습니다.",
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
+
+        if (isLoginRequired) {
+            // iOS `isLoginRequired` overlay 1:1 — 검은 50% 딤 + 탭하면 닫힘 + LoginPromptPopup.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable { viewModel.dismissLoginRequired() }
+                    .testTag("spotdetail-login-overlay"),
+            ) {
+                LoginPromptPopup(
+                    onCancel = viewModel::dismissLoginRequired,
+                    onLogin = {
+                        viewModel.dismissLoginRequired()
+                        onRequireLogin()
+                    },
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 32.dp)
+                        .clickable(enabled = false) {},
+                )
+            }
         }
     }
 
@@ -139,6 +172,31 @@ fun SpotDetailScreen(
             contentDescription = null,
             onDismiss = { fullscreenImageUrl = null },
         )
+    }
+
+    if (isComingSoonSheetOpen) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val scope = rememberCoroutineScope()
+        ModalBottomSheet(
+            onDismissRequest = { isComingSoonSheetOpen = false },
+            sheetState = sheetState,
+            containerColor = PickflowColors.gray95,
+            contentColor = PickflowColors.gray0,
+        ) {
+            MySpotComingSoonSheet(
+                onCancel = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        isComingSoonSheetOpen = false
+                    }
+                },
+                onNotify = {
+                    viewModel.notifyUpdateRequested()
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        isComingSoonSheetOpen = false
+                    }
+                },
+            )
+        }
     }
 
     if (isReportSheetOpen) {
@@ -156,8 +214,8 @@ fun SpotDetailScreen(
                         isReportSheetOpen = false
                     }
                 },
-                onSubmit = {
-                    viewModel.reportInvalidInfo()
+                onSubmit = { text ->
+                    viewModel.reportInvalidInfo(text)
                     scope.launch { sheetState.hide() }.invokeOnCompletion {
                         isReportSheetOpen = false
                     }
@@ -240,7 +298,10 @@ private fun LoadedBody(
 
 /** iOS `viewModel.toast`(체크 아이콘 + 텍스트, gray0 배경) 1:1. */
 @Composable
-private fun ReportSubmittedToast(modifier: Modifier = Modifier) {
+private fun ReportSubmittedToast(
+    message: String,
+    modifier: Modifier = Modifier,
+) {
     Row(
         modifier = modifier
             .shadow(elevation = 12.dp, shape = RoundedCornerShape(8.dp))
@@ -258,7 +319,7 @@ private fun ReportSubmittedToast(modifier: Modifier = Modifier) {
             modifier = Modifier.size(20.dp),
         )
         Text(
-            text = "신고가 접수되었어요",
+            text = message,
             style = PickflowTypography.bodyMediumBold,
             color = PickflowColors.gray95,
         )

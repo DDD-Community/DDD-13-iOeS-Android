@@ -26,6 +26,10 @@ data class SpotDetailData(
     val isMine: Boolean = false,
     val isBookmarked: Boolean = false,
     val address: String = "서울 동작구",
+    /** 펼침 시 표시할 도로명 주소(없으면 null). */
+    val addressRoad: String? = null,
+    /** 펼침 시 표시할 지번 주소(없으면 null). */
+    val addressJibun: String? = null,
     /** iOS `SpotDetail.distance`(km). */
     val distanceKm: Double? = 2.5,
     val hasImage: Boolean = true,

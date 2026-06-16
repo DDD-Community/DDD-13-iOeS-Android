@@ -26,10 +26,11 @@ class DefaultSpotService @Inject constructor(
     override suspend fun preview(id: String, coordinates: Coordinates?): SpotPreview {
         val longId = id.toLongOrNull()
             ?: throw IllegalArgumentException("spotId는 정수여야 합니다: $id")
+        // 서버는 위/경도 소수점 6자리까지만 허용 → GPS 7자리 좌표를 6자리로 반올림.
         return spotApi.getSpotPreview(
             spotId = longId,
-            latitude = coordinates?.latitude,
-            longitude = coordinates?.longitude,
+            latitude = coordinates?.latitude?.round6(),
+            longitude = coordinates?.longitude?.round6(),
         ).unwrap().toSpotPreview()
     }
 
@@ -49,3 +50,6 @@ class DefaultSpotService @Inject constructor(
 }
 
 private fun SpotTheme.takeOrSunset(): SpotTheme = this
+
+/** 위/경도를 소수점 6자리로 반올림(서버 검증 제약). */
+private fun Double.round6(): Double = Math.round(this * 1_000_000.0) / 1_000_000.0
