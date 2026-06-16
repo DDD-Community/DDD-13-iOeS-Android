@@ -21,19 +21,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.core.services.protocols.MyPageHome
+
+/** "● {소셜} 계정 연결됨" 점 색상 (#FFA100). */
+private val ConnectedDotColor = Color(0xFFFFA100)
 
 /**
  * iOS `MyProfileSignedInContent` 대응 — 로그인 상태 마이페이지.
@@ -46,8 +49,9 @@ fun MyProfileSignedInContent(
     home: MyPageHome,
     onOpenAccount: () -> Unit = {},
     onOpenNotice: () -> Unit = {},
-    onOpenTerms: () -> Unit = {},
-    onOpenPrivacy: () -> Unit = {},
+    onOpenTermsAndPolicy: () -> Unit = {},
+    onOpenSavedSpots: () -> Unit = {},
+    onOpenMySpots: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -78,7 +82,9 @@ fun MyProfileSignedInContent(
                 modifier = Modifier
                     .size(72.dp)
                     .clip(CircleShape)
-                    .background(PickflowColors.gray80),
+                    .background(PickflowColors.gray80)
+                    .clickable(onClick = onOpenAccount)
+                    .testTag("myprofile-avatar"),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -96,19 +102,21 @@ fun MyProfileSignedInContent(
                     color = PickflowColors.gray0,
                 )
                 Spacer(Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(PickflowColors.sunsetOrange),
-                    )
-                    Spacer(Modifier.size(6.dp))
-                    Text(
-                        text = "카카오 계정 연결됨",
-                        style = PickflowTypography.bodySmall,
-                        color = PickflowColors.gray40,
-                    )
+                home.provider?.let { provider ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(ConnectedDotColor),
+                        )
+                        Spacer(Modifier.size(6.dp))
+                        Text(
+                            text = "${provider.displayName} 계정 연결됨",
+                            style = PickflowTypography.bodySmall,
+                            color = PickflowColors.gray40,
+                        )
+                    }
                 }
             }
             Box(
@@ -138,20 +146,20 @@ fun MyProfileSignedInContent(
             StatCard(
                 label = "저장한 스팟",
                 value = home.savedSpotCount,
+                onClick = onOpenSavedSpots,
                 modifier = Modifier.weight(1f),
             )
             StatCard(
                 label = "기록한 스팟",
                 value = home.recordedSpotCount,
+                onClick = onOpenMySpots,
                 modifier = Modifier.weight(1f),
             )
         }
 
         Spacer(Modifier.height(24.dp))
 
-        // 4. 메뉴 리스트
-        MenuRow(icon = Icons.Outlined.Info, label = "고객센터 및 1:1 문의")
-        MenuRow(icon = Icons.Outlined.Notifications, label = "알림 설정")
+        // 4. 메뉴 리스트 — iOS 1:1: 공지사항 / (divider) / 약관 및 정책.
         MenuRow(
             icon = Icons.Outlined.Info,
             label = "공지사항",
@@ -168,20 +176,12 @@ fun MyProfileSignedInContent(
                 .background(PickflowColors.gray80),
         )
 
-        // 6. 추가 메뉴 — iOS 1:1 단일 "약관 및 정책" 을 Android 에서는 2개로 분리.
         MenuRow(
             icon = null,
-            label = "이용약관",
-            onClick = onOpenTerms,
-            tag = "myprofile-menu-terms",
+            label = "약관 및 정책",
+            onClick = onOpenTermsAndPolicy,
+            tag = "myprofile-menu-terms-policy",
         )
-        MenuRow(
-            icon = null,
-            label = "개인정보처리방침",
-            onClick = onOpenPrivacy,
-            tag = "myprofile-menu-privacy",
-        )
-        AppVersionRow(version = "v1.0.0")
     }
 }
 
@@ -189,13 +189,15 @@ fun MyProfileSignedInContent(
 private fun StatCard(
     label: String,
     value: Long,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
             .height(92.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(PickflowColors.gray90),
+            .background(PickflowColors.gray90)
+            .clickable(onClick = onClick),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -253,25 +255,3 @@ private fun MenuRow(
     }
 }
 
-@Composable
-private fun AppVersionRow(version: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .padding(horizontal = 20.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = "앱 버전",
-            style = PickflowTypography.bodyLarge,
-            color = PickflowColors.gray0,
-        )
-        Spacer(Modifier.weight(1f))
-        Text(
-            text = version,
-            style = PickflowTypography.bodyMedium,
-            color = PickflowColors.gray40,
-        )
-    }
-}

@@ -20,6 +20,9 @@ fun MyProfileScreen(
     onRequireLogin: () -> Unit,
     onOpenAccount: () -> Unit = {},
     onOpenNotice: () -> Unit = {},
+    onOpenTermsAndPolicy: () -> Unit = {},
+    onOpenSavedSpots: () -> Unit = {},
+    onOpenMySpots: () -> Unit = {},
     viewModel: MyProfileViewModel = hiltViewModel(),
 ) {
     val loggedIn by viewModel.loggedIn.collectAsStateWithLifecycle()
@@ -48,8 +51,9 @@ fun MyProfileScreen(
                     home = home,
                     onOpenAccount = onOpenAccount,
                     onOpenNotice = onOpenNotice,
-                    onOpenTerms = viewModel::openTerms,
-                    onOpenPrivacy = viewModel::openPrivacy,
+                    onOpenTermsAndPolicy = onOpenTermsAndPolicy,
+                    onOpenSavedSpots = onOpenSavedSpots,
+                    onOpenMySpots = onOpenMySpots,
                 )
             }
         }

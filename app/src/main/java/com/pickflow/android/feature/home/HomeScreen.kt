@@ -24,6 +24,7 @@ import com.pickflow.android.R
 import com.pickflow.android.app.navigation.HomeTab
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.feature.archive.ArchiveScreen
+import com.pickflow.android.feature.archive.ArchiveTab
 import com.pickflow.android.feature.map.HomeMapScreen
 import com.pickflow.android.feature.myprofile.MyProfileScreen
 
@@ -35,8 +36,11 @@ fun HomeScreen(
     onOpenDebug: () -> Unit,
     onOpenAccount: () -> Unit,
     onOpenNotice: () -> Unit = {},
+    onOpenTermsAndPolicy: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableStateOf(HomeTab.EXPLORE) }
+    // 마이페이지 카드 → 보관 탭의 특정 내부 탭으로 진입 요청.
+    var pendingArchiveTab by remember { mutableStateOf<ArchiveTab?>(null) }
 
     Scaffold(
         containerColor = PickflowColors.gray95,
@@ -85,11 +89,22 @@ fun HomeScreen(
                     onRequireLogin = onRequireLogin,
                     onExploreClick = { selectedTab = HomeTab.EXPLORE },
                     onOpenRegistration = onOpenRegistration,
+                    initialTab = pendingArchiveTab,
+                    onInitialTabConsumed = { pendingArchiveTab = null },
                 )
                 HomeTab.MY -> MyProfileScreen(
                     onRequireLogin = onRequireLogin,
                     onOpenAccount = onOpenAccount,
                     onOpenNotice = onOpenNotice,
+                    onOpenTermsAndPolicy = onOpenTermsAndPolicy,
+                    onOpenSavedSpots = {
+                        pendingArchiveTab = ArchiveTab.SavedSpots
+                        selectedTab = HomeTab.SAVED
+                    },
+                    onOpenMySpots = {
+                        pendingArchiveTab = ArchiveTab.MySpots
+                        selectedTab = HomeTab.SAVED
+                    },
                 )
             }
         }
