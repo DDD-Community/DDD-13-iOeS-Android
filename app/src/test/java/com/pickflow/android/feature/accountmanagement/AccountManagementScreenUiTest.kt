@@ -6,6 +6,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.core.services.protocols.AuthService
+import com.pickflow.android.core.services.protocols.MyPageHome
+import com.pickflow.android.core.services.protocols.UserService
+import io.mockk.coEvery
 import io.mockk.mockk
 import org.junit.Rule
 import org.junit.Test
@@ -22,7 +25,17 @@ class AccountManagementScreenUiTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private fun viewModel() = AccountManagementViewModel(mockk<AuthService>(relaxed = true))
+    private fun viewModel(): AccountManagementViewModel {
+        val authService = mockk<AuthService>(relaxed = true)
+        val userService = mockk<UserService>()
+        coEvery { userService.fetchMyPage() } returns MyPageHome(
+            nickname = "테스트유저#1234",
+            profileImageUrl = null,
+            savedSpotCount = 0,
+            recordedSpotCount = 0,
+        )
+        return AccountManagementViewModel(authService, userService)
+    }
 
     @Test
     fun renders_account_rows() {

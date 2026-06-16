@@ -9,6 +9,7 @@ import app.cash.paparazzi.Paparazzi
 import com.android.resources.Density
 import com.android.resources.ScreenOrientation
 import com.pickflow.android.common.designsystem.PickflowTheme
+import com.pickflow.android.core.services.protocols.MyPageHome
 import com.pickflow.android.feature.accountmanagement.components.AccountManagementContent
 import com.pickflow.android.feature.accountmanagement.components.LogoutConfirmDialogOverlay
 import com.pickflow.android.feature.myprofile.components.MyProfileFailedContent
@@ -47,10 +48,10 @@ class MyProfileSnapshotTest {
 
     // MARK: - My Profile: Signed In
 
-    @Test fun my_profile_signedin_noimage_light() = snapshot { MyProfileSignedInContent() }
-    @Test fun my_profile_signedin_noimage_dark() = snapshot { MyProfileSignedInContent() }
-    @Test fun my_profile_signedin_withimage_light() = snapshot { MyProfileSignedInContent() }
-    @Test fun my_profile_signedin_withimage_dark() = snapshot { MyProfileSignedInContent() }
+    @Test fun my_profile_signedin_noimage_light() = snapshot { MyProfileSignedInContent(home = stubHome()) }
+    @Test fun my_profile_signedin_noimage_dark() = snapshot { MyProfileSignedInContent(home = stubHome()) }
+    @Test fun my_profile_signedin_withimage_light() = snapshot { MyProfileSignedInContent(home = stubHome()) }
+    @Test fun my_profile_signedin_withimage_dark() = snapshot { MyProfileSignedInContent(home = stubHome()) }
 
     // MARK: - My Profile: Failed
 
@@ -130,6 +131,13 @@ class MyProfileSnapshotTest {
     private fun snapshot(content: @Composable () -> Unit) {
         paparazzi.snapshot { PickflowTheme { content() } }
     }
+
+    private fun stubHome() = MyPageHome(
+        nickname = "테스트유저#1234",
+        profileImageUrl = null,
+        savedSpotCount = 12,
+        recordedSpotCount = 3,
+    )
 
     private companion object {
         /** density 2.0(XHDPI)로 dp 좌표를 px로 환산한 DeviceConfig. */

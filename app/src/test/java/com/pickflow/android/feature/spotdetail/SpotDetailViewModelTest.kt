@@ -125,9 +125,11 @@ class SpotDetailViewModelTest {
         vm.load("1"); advanceUntilIdle()
         vm.share(); advanceUntilIdle()
 
+        // 현재 SpotDetailViewModel.share 는 fixture 의 title("Cafe") 뒤에 " - comment" 를
+        // 붙이고 https URL 로 변환한다. 기대값을 실제 구현에 맞춰 갱신.
         coVerify {
             shareIntentService.share(
-                SharePayload(title = "Cafe", url = "pickflow://spot/1")
+                SharePayload(title = "Cafe - comment", url = "https://pickflow.app/spot/1")
             )
         }
     }

@@ -1,10 +1,10 @@
 package com.pickflow.android.feature.map
 
 import com.pickflow.android.common.ui.LoadState
-import com.pickflow.android.core.services.protocols.Cluster
-import com.pickflow.android.core.services.protocols.ClusteringService
+import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
+import com.pickflow.android.core.services.protocols.SpotMapService
 import com.pickflow.android.core.services.protocols.SpotPage
 import com.pickflow.android.core.services.protocols.SpotTheme
 import io.mockk.coEvery
@@ -22,92 +22,87 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
+/**
+ * HomeMapViewModel — `clusters` StateFlow 가 `curationSpots` 로 교체된 후의 단위 테스트.
+ *
+ * viewport partition 시나리오는 [HomeMapViewportPartitionTest] 에 위임. 본 테스트는
+ * `load()` / `setZoom` / `selectMood` / `selectCluster` / `selectMapListMode` 흐름만 검증.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeMapViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var spotListService: SpotListService
-    private lateinit var clusteringService: ClusteringService
+    private lateinit var spotMapService: SpotMapService
+    private lateinit var locationService: LocationService
 
     @BeforeEach
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         spotListService = mockk()
-        clusteringService = mockk()
+        spotMapService = mockk(relaxed = true)
+        locationService = mockk(relaxed = true)
     }
 
     @AfterEach
     fun tearDown() { Dispatchers.resetMain() }
 
+    private fun vm() = HomeMapViewModel(spotListService, spotMapService, locationService)
+
     @Test
-    fun `load emits Loaded clusters`() = runTest(testDispatcher) {
+    fun `load emits Loaded with raw spots`() = runTest(testDispatcher) {
         val spot = Spot("s1", "n", SpotTheme.SUNSET, 0.0, 0.0)
         coEvery { spotListService.fetch(theme = null, page = 0) } returns
             SpotPage(items = listOf(spot), page = 0, hasNext = false)
-        coEvery { clusteringService.cluster(any(), any()) } returns
-            listOf(Cluster(0.0, 0.0, 1, listOf("s1")))
 
-        val vm = HomeMapViewModel(spotListService, clusteringService)
-        vm.load(); advanceUntilIdle()
-        val state = vm.clusters.value
+        val viewModel = vm()
+        viewModel.load(); advanceUntilIdle()
+        val state = viewModel.curationSpots.value
         assertTrue(state is LoadState.Loaded && state.value.size == 1)
     }
 
     @Test
-    fun `load emits Empty when no clusters`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(theme = null, page = 0) } returns SpotPage(items = emptyList(), page = 0, hasNext = false)
-        coEvery { clusteringService.cluster(any(), any()) } returns emptyList()
+    fun `load emits Empty when no spots`() = runTest(testDispatcher) {
+        coEvery { spotListService.fetch(theme = null, page = 0) } returns
+            SpotPage(items = emptyList(), page = 0, hasNext = false)
 
-        val vm = HomeMapViewModel(spotListService, clusteringService)
-        vm.load(); advanceUntilIdle()
-        assertEquals(LoadState.Empty, vm.clusters.value)
+        val viewModel = vm()
+        viewModel.load(); advanceUntilIdle()
+        assertEquals(LoadState.Empty, viewModel.curationSpots.value)
     }
 
     @Test
-    fun `setZoom updates and reloads`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(theme = null, page = 0) } returns SpotPage(items = emptyList(), page = 0, hasNext = false)
-        coEvery { clusteringService.cluster(any(), any()) } returns emptyList()
+    fun `setZoom without prior viewport reloads via load`() = runTest(testDispatcher) {
+        coEvery { spotListService.fetch(theme = null, page = 0) } returns
+            SpotPage(items = emptyList(), page = 0, hasNext = false)
 
-        val vm = HomeMapViewModel(spotListService, clusteringService)
-        vm.setZoom(14); advanceUntilIdle()
-        assertEquals(14, vm.zoom.value)
+        val viewModel = vm()
+        viewModel.setZoom(14); advanceUntilIdle()
+        assertEquals(14, viewModel.zoom.value)
     }
 
     @Test
-    fun `selectMood toggles and filters spots by mood`() = runTest(testDispatcher) {
-        val s0 = Spot("s0", "n0", SpotTheme.SUNSET, 0.0, 0.0)
-        val s1 = Spot("s1", "n1", SpotTheme.YUNSEUL, 0.0, 0.0)
-        coEvery { spotListService.fetch(theme = null, page = 0) } returns SpotPage(items = listOf(s0, s1), page = 0, hasNext = false)
-        coEvery { clusteringService.cluster(any(), any()) } returns
-            listOf(Cluster(0.0, 0.0, 1, listOf("s0")))
+    fun `selectMood toggles theme on and off`() = runTest(testDispatcher) {
+        coEvery { spotListService.fetch(theme = null, page = 0) } returns
+            SpotPage(items = emptyList(), page = 0, hasNext = false)
+        coEvery { spotListService.fetch(theme = SpotTheme.SUNSET, page = 0) } returns
+            SpotPage(items = emptyList(), page = 0, hasNext = false)
 
-        val vm = HomeMapViewModel(spotListService, clusteringService)
-        vm.selectMood(MoodFilter.Sunset); advanceUntilIdle()
-        assertEquals(MoodFilter.Sunset, vm.selectedMood.value)
-        // Sunset = 짝수 인덱스만 → s0 1개로 클러스터링.
-        io.mockk.coVerify { clusteringService.cluster(match { it.size == 1 }, any()) }
+        val viewModel = vm()
+        viewModel.selectMood(MoodFilter.Sunset); advanceUntilIdle()
+        assertEquals(MoodFilter.Sunset, viewModel.selectedMood.value)
 
-        vm.selectMood(MoodFilter.Sunset); advanceUntilIdle()
-        assertEquals(null, vm.selectedMood.value) // 같은 무드 재선택 → 해제
+        viewModel.selectMood(MoodFilter.Sunset); advanceUntilIdle()
+        assertEquals(null, viewModel.selectedMood.value)
     }
 
     @Test
-    fun `selectCluster and dismissCluster update selectedCluster`() {
-        val vm = HomeMapViewModel(spotListService, clusteringService)
-        val cluster = Cluster(1.0, 2.0, 3, listOf("a", "b", "c"))
-        vm.selectCluster(cluster)
-        assertEquals(cluster, vm.selectedCluster.value)
-        vm.dismissCluster()
-        assertEquals(null, vm.selectedCluster.value)
-    }
-
-    @Test
-    fun `selectMapListMode switches between MAP and LIST`() = runTest(testDispatcher) {
-        val vm = HomeMapViewModel(spotListService, clusteringService)
-        assertEquals(MapListMode.MAP, vm.mapListMode.value)
-        vm.selectMapListMode(MapListMode.LIST)
-        assertEquals(MapListMode.LIST, vm.mapListMode.value)
-        vm.selectMapListMode(MapListMode.MAP)
-        assertEquals(MapListMode.MAP, vm.mapListMode.value)
+    fun `selectMapListMode switches between MAP and LIST`() {
+        val viewModel = vm()
+        assertEquals(MapListMode.MAP, viewModel.mapListMode.value)
+        viewModel.selectMapListMode(MapListMode.LIST)
+        assertEquals(MapListMode.LIST, viewModel.mapListMode.value)
+        viewModel.selectMapListMode(MapListMode.MAP)
+        assertEquals(MapListMode.MAP, viewModel.mapListMode.value)
     }
 }

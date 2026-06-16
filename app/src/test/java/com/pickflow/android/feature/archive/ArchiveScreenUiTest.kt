@@ -5,6 +5,9 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import com.pickflow.android.common.designsystem.PickflowTheme
+import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.core.services.protocols.MySpot
+import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.SavedSpot
 import com.pickflow.android.core.services.protocols.SpotTheme
 import org.junit.Rule
@@ -15,7 +18,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [34], qualifiers = "w411dp-h950dp-xhdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ArchiveScreenUiTest {
 
@@ -32,6 +35,19 @@ class ArchiveScreenUiTest {
         distanceKm = null,
         savedAt = "2026-01-01T00:00:00Z",
         deleted = false,
+    )
+
+    private fun my(id: Long, status: MySpotStatus) = MySpot(
+        id = id,
+        name = "my$id",
+        theme = SpotTheme.SUNSET,
+        imageUrl = null,
+        latitude = 0.0,
+        longitude = 0.0,
+        distanceKm = null,
+        createdAt = "2026-01-01T00:00:00Z",
+        status = status,
+        bookmarkCount = 0,
     )
 
     @Test
@@ -81,17 +97,63 @@ class ArchiveScreenUiTest {
     }
 
     @Test
-    fun my_spots_tab_shows_placeholder() {
+    fun my_spots_tab_empty_shows_placeholder() {
         composeRule.setContent {
             PickflowTheme {
                 ArchiveScreenContent(
                     state = ArchiveLoadState.Empty,
                     selectedTab = ArchiveTab.MySpots,
                     archiveName = "나의 보관함",
+                    mySpotState = LoadState.Empty,
                 )
             }
         }
         composeRule.onNodeWithTag("archive-myspot-placeholder").assertIsDisplayed()
+    }
+
+    @Test
+    fun my_spots_tab_loaded_shows_grid_cells_and_status_badges() {
+        composeRule.setContent {
+            PickflowTheme {
+                ArchiveScreenContent(
+                    state = ArchiveLoadState.Empty,
+                    selectedTab = ArchiveTab.MySpots,
+                    archiveName = "나의 보관함",
+                    mySpotState = LoadState.Loaded(
+                        listOf(
+                            my(1L, MySpotStatus.PENDING),
+                            my(2L, MySpotStatus.REJECTED),
+                            my(3L, MySpotStatus.PUBLISHED),
+                        ),
+                    ),
+                )
+            }
+        }
+        // LazyVerticalStaggeredGrid 의 일부 셀이 viewport 밖일 수 있어 assertExists 로 검증.
+        // 배지는 merged semantics 트리에서 hidden 이라 unmerged tree 사용.
+        composeRule.onNodeWithTag("archive-my-cell-1").assertExists()
+        composeRule.onNodeWithTag("archive-my-cell-2").assertExists()
+        composeRule.onNodeWithTag("archive-my-cell-3").assertExists()
+        composeRule.onNodeWithTag("archive-my-badge-pending", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithTag("archive-my-badge-rejected", useUnmergedTree = true).assertExists()
+    }
+
+    @Test
+    fun my_spots_cell_click_invokes_onCellClick() {
+        var lastId: Long? = null
+        composeRule.setContent {
+            PickflowTheme {
+                ArchiveScreenContent(
+                    state = ArchiveLoadState.Empty,
+                    selectedTab = ArchiveTab.MySpots,
+                    archiveName = "나의 보관함",
+                    mySpotState = LoadState.Loaded(listOf(my(7L, MySpotStatus.PUBLISHED))),
+                    onCellClick = { lastId = it },
+                )
+            }
+        }
+        composeRule.onNodeWithTag("archive-my-cell-7").performClick()
+        assert(lastId == 7L)
     }
 
     @Test

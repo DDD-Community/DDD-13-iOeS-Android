@@ -6,6 +6,9 @@ import app.cash.paparazzi.Paparazzi
 import com.android.resources.Density
 import com.android.resources.ScreenOrientation
 import com.pickflow.android.common.designsystem.PickflowTheme
+import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.core.services.protocols.MySpot
+import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.SavedSpot
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.feature.archive.components.ArchiveEmptyContent
@@ -86,13 +89,43 @@ class ArchiveSnapshotTest {
         )
     }
 
-    @Test fun archive_myspots_tab_dark() = snapshot {
+    @Test fun archive_myspots_tab_empty_dark() = snapshot {
         ArchiveScreenContent(
             state = ArchiveLoadState.Empty,
             selectedTab = ArchiveTab.MySpots,
             archiveName = "내 보관함",
+            mySpotState = LoadState.Empty,
         )
     }
+
+    @Test fun archive_myspots_loaded_mixed_status_dark() = snapshot {
+        ArchiveScreenContent(
+            state = ArchiveLoadState.Empty,
+            selectedTab = ArchiveTab.MySpots,
+            archiveName = "내 보관함",
+            mySpotState = LoadState.Loaded(
+                listOf(
+                    myStub(1L, "응봉산 노을", MySpotStatus.PUBLISHED),
+                    myStub(2L, "검수 대기중 스팟", MySpotStatus.PENDING),
+                    myStub(3L, "반려된 스팟", MySpotStatus.REJECTED),
+                    myStub(4L, "공개된 스팟", MySpotStatus.PUBLISHED),
+                ),
+            ),
+        )
+    }
+
+    private fun myStub(id: Long, name: String, status: MySpotStatus) = MySpot(
+        id = id,
+        name = name,
+        theme = SpotTheme.SUNSET,
+        imageUrl = null,
+        latitude = 0.0,
+        longitude = 0.0,
+        distanceKm = 0.8,
+        createdAt = "2026-01-01T00:00:00Z",
+        status = status,
+        bookmarkCount = 0,
+    )
 
     @Test fun archive_toast_overlay_dark() = snapshot {
         ArchiveScreenContent(

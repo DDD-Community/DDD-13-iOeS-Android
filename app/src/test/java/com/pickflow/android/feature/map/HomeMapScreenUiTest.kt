@@ -5,10 +5,10 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import com.pickflow.android.common.designsystem.PickflowTheme
-import com.pickflow.android.core.services.protocols.Cluster
-import com.pickflow.android.core.services.protocols.ClusteringService
+import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
+import com.pickflow.android.core.services.protocols.SpotMapService
 import com.pickflow.android.core.services.protocols.SpotPage
 import com.pickflow.android.core.services.protocols.SpotTheme
 import io.mockk.coEvery
@@ -28,15 +28,12 @@ class HomeMapScreenUiTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private fun viewModel(
-        spots: List<Spot> = emptyList(),
-        clusters: List<Cluster> = emptyList(),
-    ): HomeMapViewModel {
+    private fun viewModel(spots: List<Spot> = emptyList()): HomeMapViewModel {
         val listService = mockk<SpotListService>()
-        val clusteringService = mockk<ClusteringService>()
-        coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(items = spots, page = 0, hasNext = false)
-        coEvery { clusteringService.cluster(any(), any()) } returns clusters
-        return HomeMapViewModel(listService, clusteringService)
+        val mapService = mockk<SpotMapService>(relaxed = true)
+        val locationService = mockk<LocationService>(relaxed = true)
+        coEvery { listService.fetch(any(), any()) } returns SpotPage(items = spots, page = 0, hasNext = false)
+        return HomeMapViewModel(listService, mapService, locationService)
     }
 
     @Test
@@ -72,9 +69,9 @@ class HomeMapScreenUiTest {
 
     @Test
     fun cluster_tap_shows_bottom_sheet() {
-        val spot = Spot("s1", "한강 노을 스팟", SpotTheme.SUNSET, 37.5, 127.0)
-        val cluster = Cluster(37.5, 127.0, 1, listOf("s1"))
-        val vm = viewModel(spots = listOf(spot), clusters = listOf(cluster))
+        val spot = Spot("1", "한강 노을 스팟", SpotTheme.SUNSET, 37.5, 127.0)
+        val vm = viewModel(spots = listOf(spot))
+        val cluster = Cluster(37.5, 127.0, 1, listOf("1"))
 
         composeRule.setContent {
             PickflowTheme {
@@ -85,7 +82,7 @@ class HomeMapScreenUiTest {
                 )
             }
         }
-        composeRule.waitForIdle() // load() 완료 — loadedSpots 채워짐
+        composeRule.waitForIdle()
         composeRule.runOnIdle { vm.selectCluster(cluster) }
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("spotdetail-bottomsheet").assertIsDisplayed()

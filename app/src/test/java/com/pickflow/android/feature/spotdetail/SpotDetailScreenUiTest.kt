@@ -21,7 +21,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [34], qualifiers = "w411dp-h950dp-xhdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class SpotDetailScreenUiTest {
 
@@ -96,6 +96,6 @@ class SpotDetailScreenUiTest {
                 )
             }
         }
-        composeRule.onNodeWithTag("state-failed").assertIsDisplayed()
+        composeRule.onNodeWithTag("spotdetail-error").assertIsDisplayed()
     }
 }

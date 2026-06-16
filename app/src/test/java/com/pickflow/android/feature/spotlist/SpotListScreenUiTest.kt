@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
+import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotPage
@@ -38,7 +39,7 @@ class SpotListScreenUiTest {
             page = 0,
             hasNext = false,
         )
-        val vm = SpotListViewModel(listService, bookmarkService, authService())
+        val vm = SpotListViewModel(listService, bookmarkService, authService(), mockk(relaxed = true))
 
         composeRule.setContent {
             PickflowTheme {
@@ -54,7 +55,7 @@ class SpotListScreenUiTest {
         val listService = mockk<SpotListService>()
         val bookmarkService = mockk<BookmarkService>(relaxed = true)
         coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(items = emptyList(), page = 0, hasNext = false)
-        val vm = SpotListViewModel(listService, bookmarkService, authService())
+        val vm = SpotListViewModel(listService, bookmarkService, authService(), mockk(relaxed = true))
 
         composeRule.setContent {
             PickflowTheme {
