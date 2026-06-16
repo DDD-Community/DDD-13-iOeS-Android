@@ -102,6 +102,11 @@ object NetworkModule {
     @Singleton
     fun provideMySpotAlarmApi(retrofit: Retrofit): MySpotAlarmApi = retrofit.create(MySpotAlarmApi::class.java)
 
+    @Provides
+    @Singleton
+    fun provideAppVersionApi(retrofit: Retrofit): com.pickflow.android.core.network.api.AppVersionApi =
+        retrofit.create(com.pickflow.android.core.network.api.AppVersionApi::class.java)
+
     // --- Refresh 전용 (AuthInterceptor / Authenticator 미부착 OkHttpClient) ---
 
     @Provides
@@ -127,4 +132,30 @@ object NetworkModule {
     @Singleton
     fun provideRefreshApi(@Named("refresh") retrofit: Retrofit): RefreshApi =
         retrofit.create(RefreshApi::class.java)
+
+    // --- Kakao Local API 전용 (별도 base URL, AuthInterceptor 미부착) ---
+    // iOS `AddressService` 가 직접 호출하는 https://dapi.kakao.com/ 정합.
+
+    @Provides
+    @Singleton
+    @Named("kakaoLocal")
+    fun provideKakaoLocalRetrofit(
+        @Named("refresh") client: OkHttpClient,
+        json: Json,
+    ): Retrofit = Retrofit.Builder()
+        .baseUrl("https://dapi.kakao.com/")
+        .client(client)
+        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .build()
+
+    @Provides
+    @Singleton
+    fun provideKakaoLocalApi(
+        @Named("kakaoLocal") retrofit: Retrofit,
+    ): com.pickflow.android.core.network.api.KakaoLocalApi =
+        retrofit.create(com.pickflow.android.core.network.api.KakaoLocalApi::class.java)
+
+    @Provides
+    @Named("kakaoRestApiKey")
+    fun provideKakaoRestApiKey(): String = BuildConfig.KAKAO_REST_API_KEY
 }

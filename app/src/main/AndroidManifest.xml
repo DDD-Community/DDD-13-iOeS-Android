@@ -47,6 +47,31 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- iOS Universal Link (`pickflow-api.us/{SpotIDCoder-encoded}`) 1:1 — share URL 진입.
+                 autoVerify 는 BE 가 .well-known/assetlinks.json 을 호스팅해야 활성화된다. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="pickflow-api.us" />
+            </intent-filter>
+        </activity>
+
+        <!-- Apple Sign In OAuth redirect 수신. Service ID / redirect URI 는
+             secrets.properties (APPLE_SERVICE_ID / APPLE_REDIRECT_URI) 에 등록 후 동작. -->
+        <activity
+            android:name=".app.AppleCallbackActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                      android:host="pickflow-api.us"
+                      android:pathPrefix="/auth/apple" />
+            </intent-filter>
         </activity>
 
         <!-- Kakao 로그인 리다이렉트 (스킴: kakao + Native App Key) -->

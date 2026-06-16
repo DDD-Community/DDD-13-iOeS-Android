@@ -9,16 +9,15 @@ import com.pickflow.android.core.services.impl.DefaultMySpotService
 import com.pickflow.android.core.services.impl.DefaultSpotReportService
 import com.pickflow.android.core.services.impl.DefaultSocialLoginService
 import com.pickflow.android.core.services.impl.DefaultUserService
-import com.pickflow.android.core.services.impl.GridClusteringService
 import com.pickflow.android.core.services.impl.DataStoreOnboardingCompletionStore
-import com.pickflow.android.core.services.impl.InMemoryTokenStore
+import com.pickflow.android.core.services.impl.EncryptedTokenStore
 import com.pickflow.android.core.services.impl.DefaultSpotListService
 import com.pickflow.android.core.services.impl.NoopAnalyticsLogger
 import com.pickflow.android.core.services.impl.AndroidExternalAppLauncher
 import com.pickflow.android.core.services.impl.AndroidShareIntentService
 import com.pickflow.android.core.services.impl.RealKakaoAuthProvider
-import com.pickflow.android.core.services.impl.StubAddressService
-import com.pickflow.android.core.services.impl.StubAppleAuthProvider
+import com.pickflow.android.core.services.impl.DefaultAddressService
+import com.pickflow.android.core.services.impl.RealAppleAuthProvider
 import com.pickflow.android.core.services.impl.DefaultSpotMapService
 import com.pickflow.android.core.services.impl.DefaultLocationService
 import com.pickflow.android.core.services.impl.DefaultSpotService
@@ -28,7 +27,6 @@ import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.AddressService
 import com.pickflow.android.core.services.protocols.AnalyticsLogger
 import com.pickflow.android.core.services.protocols.BookmarkService
-import com.pickflow.android.core.services.protocols.ClusteringService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.KakaoAuthProvider
 import com.pickflow.android.core.services.protocols.BoardService
@@ -57,13 +55,13 @@ abstract class ServiceModule {
     abstract fun bindUserService(impl: DefaultUserService): UserService
 
     @Binds
-    abstract fun bindTokenStore(impl: InMemoryTokenStore): TokenStore
+    abstract fun bindTokenStore(impl: EncryptedTokenStore): TokenStore
 
     @Binds
     abstract fun bindKakaoAuthProvider(impl: RealKakaoAuthProvider): KakaoAuthProvider
 
     @Binds
-    abstract fun bindAppleAuthProvider(impl: StubAppleAuthProvider): AppleAuthProvider
+    abstract fun bindAppleAuthProvider(impl: RealAppleAuthProvider): AppleAuthProvider
 
     @Binds
     abstract fun bindSocialLoginService(impl: DefaultSocialLoginService): SocialLoginService
@@ -107,7 +105,7 @@ abstract class ServiceModule {
     abstract fun bindSpotMapService(impl: DefaultSpotMapService): SpotMapService
 
     @Binds
-    abstract fun bindAddressService(impl: StubAddressService): AddressService
+    abstract fun bindAddressService(impl: DefaultAddressService): AddressService
 
     @Binds
     abstract fun bindShareIntentService(impl: AndroidShareIntentService): ShareIntentService
@@ -116,8 +114,10 @@ abstract class ServiceModule {
     abstract fun bindExternalAppLauncher(impl: AndroidExternalAppLauncher): ExternalAppLauncher
 
     @Binds
-    abstract fun bindClusteringService(impl: GridClusteringService): ClusteringService
+    abstract fun bindAnalyticsLogger(impl: NoopAnalyticsLogger): AnalyticsLogger
 
     @Binds
-    abstract fun bindAnalyticsLogger(impl: NoopAnalyticsLogger): AnalyticsLogger
+    abstract fun bindAppVersionService(
+        impl: com.pickflow.android.core.services.impl.DefaultAppVersionService,
+    ): com.pickflow.android.core.services.protocols.AppVersionService
 }

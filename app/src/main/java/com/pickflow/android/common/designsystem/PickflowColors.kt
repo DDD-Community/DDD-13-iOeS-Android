@@ -33,6 +33,18 @@ object PickflowColors {
     val spotOrange = Color(0xFFFA6432)
     val spotDisabled = Color(0xFF5A5A5A)
 
+    // iOS `SpotRegistrationModels.swift extension Color { ... }` 1:1.
+    // RGB 0.0~1.0 → 0~255 변환.
+    val spotCardBackground = Color(0xFF1C1C1E)
+    val spotPhotoCardBackground = Color(0xFF33363D)
+    val spotInputBackground = Color(0xFF1E2124)
+    val spotSecondaryText = Color(0xFF8A8A8E)
+    val spotTertiaryText = Color(0xFFB1B8BE)
+    val spotPlaceholderText = Color(0xFF6D7882)
+    val spotChipBorder = Color(0xFF444448)
+    val spotDivider = Color(0x14FFFFFF)
+    val spotPillBackground = Color(0xFF1E2124)
+
     /** Figma 1067:5060 `#FEE404` — 카카오 로그인 버튼. */
     val kakaoYellow = Color(0xFFFEE404)
 }

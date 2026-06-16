@@ -19,6 +19,8 @@ datastore = "1.1.1"
 naverMap = "3.21.0"
 kakaoSdk = "2.20.6"
 playServicesLocation = "21.3.0"
+androidxBrowser = "1.8.0"
+androidxSecurityCrypto = "1.1.0-alpha06"
 
 # Test
 junitJupiter = "5.11.3"
@@ -45,6 +47,8 @@ compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+compose-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts" }
 
 # Navigation
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
@@ -74,6 +78,12 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 naver-map = { group = "com.naver.maps", name = "map-sdk", version.ref = "naverMap" }
 kakao-user = { group = "com.kakao.sdk", name = "v2-user", version.ref = "kakaoSdk" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+
+# Browser / Custom Tabs
+androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "androidxBrowser" }
+
+# Security (EncryptedSharedPreferences for TokenStore)
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "androidxSecurityCrypto" }
 
 # Test
 junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitJupiter" }

@@ -1,0 +1,87 @@
+name: CD (Firebase App Distribution)
+
+# 수동 배포: GitHub Actions 화면에서 "Run workflow" → 배포할 브랜치를 직접 선택해 실행한다.
+# 선택한 브랜치로 서명된 release APK를 빌드해 Firebase App Distribution 으로 배포한다.
+on:
+  workflow_dispatch:
+    inputs:
+      tester_groups:
+        description: "배포할 Firebase 테스터 그룹(쉼표 구분)"
+        required: true
+        default: "testers"
+      release_notes:
+        description: "릴리스 노트"
+        required: false
+        default: "workflow_dispatch 수동 배포"
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  distribute:
+    name: Build · Sign · Distribute
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout (선택한 브랜치)
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      # 비공개 키를 secrets.properties 로 주입(release 빌드에 실제 키 반영).
+      - name: Write secrets.properties
+        run: |
+          cat > secrets.properties <<'EOF'
+          NAVER_MAP_CLIENT_ID=${{ secrets.NAVER_MAP_CLIENT_ID }}
+          KAKAO_NATIVE_APP_KEY=${{ secrets.KAKAO_NATIVE_APP_KEY }}
+          PICKFLOW_API_BASE_URL=${{ secrets.PICKFLOW_API_BASE_URL }}
+          TERMS_URL=${{ secrets.TERMS_URL }}
+          PRIVACY_URL=${{ secrets.PRIVACY_URL }}
+          NOTICE_BOARD_MASTER_ID=${{ secrets.NOTICE_BOARD_MASTER_ID }}
+          KAKAO_REST_API_KEY=${{ secrets.KAKAO_REST_API_KEY }}
+          APPLE_SERVICE_ID=${{ secrets.APPLE_SERVICE_ID }}
+          APPLE_REDIRECT_URI=${{ secrets.APPLE_REDIRECT_URI }}
+          EOF
+
+      # base64 로 보관한 keystore 를 복원.
+      - name: Decode release keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+
+      - name: Assemble signed release APK
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew --no-daemon assembleRelease
+
+      - name: Distribute to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: ${{ inputs.tester_groups }}
+          releaseNotes: ${{ inputs.release_notes }}
+          file: app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pickflow-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
+          retention-days: 14
