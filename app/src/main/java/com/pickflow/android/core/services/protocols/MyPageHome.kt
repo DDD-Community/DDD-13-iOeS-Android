@@ -10,6 +10,8 @@ data class MyPageHome(
     val profileImageUrl: String?,
     val savedSpotCount: Long,
     val recordedSpotCount: Long,
+    /** 연결된 소셜. 서버 미제공 시 null. */
+    val provider: SocialProvider? = null,
 )
 
 /**

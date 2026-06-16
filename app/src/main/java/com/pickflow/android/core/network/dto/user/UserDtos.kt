@@ -8,6 +8,8 @@ data class MypageHomeResponseDto(
     val nickname: String = "",
     val savedSpotCount: Long = 0L,
     val recordedSpotCount: Long = 0L,
+    /** 연결된 소셜 ("KAKAO" / "APPLE"). 서버 미제공 시 null. */
+    val provider: String? = null,
 )
 
 @Serializable

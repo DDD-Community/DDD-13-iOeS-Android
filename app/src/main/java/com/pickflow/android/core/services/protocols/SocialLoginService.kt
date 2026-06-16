@@ -1,6 +1,23 @@
 package com.pickflow.android.core.services.protocols
 
-enum class SocialProvider { KAKAO, APPLE }
+enum class SocialProvider {
+    KAKAO, APPLE;
+
+    /** 연결된 소셜 표기용 한글 이름. iOS `SocialProvider.displayName` 1:1. */
+    val displayName: String
+        get() = when (this) {
+            KAKAO -> "카카오"
+            APPLE -> "애플"
+        }
+
+    companion object {
+        fun fromRaw(raw: String?): SocialProvider? = when (raw?.uppercase()) {
+            "KAKAO" -> KAKAO
+            "APPLE" -> APPLE
+            else -> null
+        }
+    }
+}
 
 // AppleAuthUser는 AppleAuthProvider.kt에서 선언됨
 

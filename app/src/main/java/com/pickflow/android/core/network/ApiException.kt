@@ -5,7 +5,13 @@ import retrofit2.HttpException
 class ApiException(
     val code: String,
     message: String,
+    /** 탈퇴 이력 계정 재가입(U007) 시 BE 가 내려주는 복구 토큰. 없으면 null. */
+    val restoreToken: String? = null,
 ) : RuntimeException(message)
+
+/** 탈퇴 이력 계정 재가입 필요(U007) 여부. */
+fun Throwable.isWithdrawalRestoreRequired(): Boolean =
+    this is ApiException && code.equals("U007", ignoreCase = true)
 
 /**
  * 인증 실패(401) 여부.
