@@ -2,6 +2,8 @@ package com.pickflow.android.feature.map
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.PointF
 import android.util.Log
 import androidx.compose.foundation.background
@@ -22,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.viewinterop.AndroidView
@@ -44,6 +47,7 @@ import com.naver.maps.map.clustering.DefaultLeafMarkerUpdater
 import com.naver.maps.map.clustering.LeafMarkerInfo
 import com.naver.maps.map.overlay.Marker
 import com.naver.maps.map.overlay.Overlay
+import com.naver.maps.map.overlay.OverlayImage
 import kotlinx.coroutines.launch
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
@@ -163,11 +167,22 @@ fun NaverMapView(
 
     LaunchedEffect(cameraTarget) {
         val target = cameraTarget ?: return@LaunchedEffect
-        naverMap?.moveCamera(
+        val map = naverMap ?: return@LaunchedEffect
+        map.moveCamera(
             CameraUpdate.toCameraPosition(
                 CameraPosition(LatLng(target.latitude, target.longitude), 15.0),
             ).animate(CameraAnimation.Easing),
         )
+        // 내 위치 핀(locationOverlay) 표시 — iOS `updateUserLocation` 1:1.
+        val dotPx = (18 * context.resources.displayMetrics.density).toInt()
+        map.locationOverlay.apply {
+            position = LatLng(target.latitude, target.longitude)
+            icon = userLocationDotImage
+            iconWidth = dotPx
+            iconHeight = dotPx
+            circleColor = PickflowColors.sunsetOrange.copy(alpha = 0.25f).toArgb()
+            isVisible = true
+        }
         onCameraTargetConsumed()
     }
 
@@ -192,6 +207,24 @@ fun NaverMapView(
         }
         onFocusConsumed()
     }
+}
+
+/**
+ * 내 위치 핀 아이콘 — iOS `userLocationDotImage` 1:1.
+ * 18pt 기준: 흰 원 + 안쪽 disc(테두리 ~2.5pt) sunsetOrange. 3x 해상도로 렌더.
+ */
+private val userLocationDotImage: OverlayImage by lazy {
+    val size = 54 // 18 * 3x
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    val radius = size / 2f
+    paint.color = android.graphics.Color.WHITE
+    canvas.drawCircle(radius, radius, radius, paint)
+    paint.color = PickflowColors.sunsetOrange.toArgb()
+    val inset = size * (2.5f / 18f)
+    canvas.drawCircle(radius, radius, radius - inset, paint)
+    OverlayImage.fromBitmap(bitmap)
 }
 
 private fun configureMap(naverMap: NaverMap) {
