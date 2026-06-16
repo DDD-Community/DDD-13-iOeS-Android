@@ -63,20 +63,32 @@ fun LoginScreen(
     onLoggedIn: () -> Unit,
 ) {
     val session by viewModel.session.collectAsStateWithLifecycle()
+    val restorePrompt by viewModel.restorePrompt.collectAsStateWithLifecycle()
 
     LaunchedEffect(session) {
         if (session is LoadState.Loaded<*>) onLoggedIn()
     }
 
-    LoginScreenContent(
-        kakaoLoading = session is LoadState.Loading,
-        appleLoading = false,
-        isClosable = false,
-        onKakaoClick = viewModel::loginWithKakao,
-        onAppleClick = viewModel::loginWithKakao,
-        onGuestClick = onLoggedIn,
-        onCloseClick = {},
-    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        LoginScreenContent(
+            kakaoLoading = session is LoadState.Loading,
+            appleLoading = false,
+            isClosable = false,
+            onKakaoClick = viewModel::loginWithKakao,
+            onAppleClick = viewModel::loginWithKakao,
+            onGuestClick = onLoggedIn,
+            onCloseClick = {},
+        )
+
+        // 탈퇴 이력 계정 재가입 안내 팝업(U007).
+        restorePrompt?.let { prompt ->
+            com.pickflow.android.feature.login.components.RestoreAccountDialog(
+                message = prompt.message,
+                onCancel = viewModel::dismissRestorePrompt,
+                onConfirm = viewModel::confirmRestore,
+            )
+        }
+    }
 }
 
 /**
