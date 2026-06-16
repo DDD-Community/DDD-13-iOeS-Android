@@ -3,6 +3,7 @@ package com.pickflow.android.core.services.impl
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.URLEncoder
@@ -57,6 +58,15 @@ class AndroidExternalAppLauncher @Inject constructor(
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             },
         )
+    }
+
+    override suspend fun openCustomTab(url: String) {
+        if (url.isBlank()) return
+        val intent = CustomTabsIntent.Builder()
+            .setShowTitle(true)
+            .build()
+        intent.intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        intent.launchUrl(context, Uri.parse(url))
     }
 
     override suspend fun dial(phoneNumber: String) {

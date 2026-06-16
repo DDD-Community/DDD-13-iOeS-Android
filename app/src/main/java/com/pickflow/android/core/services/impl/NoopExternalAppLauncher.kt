@@ -6,5 +6,6 @@ import javax.inject.Inject
 class NoopExternalAppLauncher @Inject constructor() : ExternalAppLauncher {
     override suspend fun openMap(latitude: Double, longitude: Double, label: String) = Unit
     override suspend fun openUrl(url: String) = Unit
+    override suspend fun openCustomTab(url: String) = Unit
     override suspend fun dial(phoneNumber: String) = Unit
 }
