@@ -1,7 +1,10 @@
 package com.pickflow.android.feature.map
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Spring
@@ -34,7 +37,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +54,6 @@ import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.common.ui.LoadState
-import com.pickflow.android.core.services.protocols.Cluster
 
 @Composable
 fun HomeMapScreen(
@@ -58,34 +62,62 @@ fun HomeMapScreen(
     onRequireLogin: () -> Unit = {},
     viewModel: HomeMapViewModel = hiltViewModel(),
 ) {
-    val clusters by viewModel.clusters.collectAsStateWithLifecycle()
+    val curationSpots by viewModel.curationSpots.collectAsStateWithLifecycle()
+    val mySpots by viewModel.mySpots.collectAsStateWithLifecycle()
+    val selectedSpotId by viewModel.selectedSpotId.collectAsStateWithLifecycle()
     val selectedMood by viewModel.selectedMood.collectAsStateWithLifecycle()
     val mapListMode by viewModel.mapListMode.collectAsStateWithLifecycle()
     val selectedCluster by viewModel.selectedCluster.collectAsStateWithLifecycle()
     val cameraTarget by viewModel.cameraTarget.collectAsStateWithLifecycle()
+    val focusTarget by viewModel.focusTarget.collectAsStateWithLifecycle()
+    val selectedPreview by viewModel.selectedPreview.collectAsStateWithLifecycle()
+    val selectedBookmarked by viewModel.selectedBookmarked.collectAsStateWithLifecycle()
+    val sheetLoginPrompt by viewModel.sheetLoginPrompt.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.load() }
 
     val context = LocalContext.current
+    // iOS `showLocationPermissionPopup` 1:1 — 사용자가 권한 거부 후 현재위치 버튼 재탭 시 표시.
+    var showLocationDeniedPopup by remember { mutableStateOf(false) }
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { grants ->
         if (grants.values.any { it }) viewModel.moveToCurrentLocation()
+        else showLocationDeniedPopup = true
     }
+    fun hasLocationPermission(): Boolean = ContextCompat.checkSelfPermission(
+        context, Manifest.permission.ACCESS_FINE_LOCATION,
+    ) == PackageManager.PERMISSION_GRANTED ||
+        ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_COARSE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+
     val onMyLocationClick = {
-        val granted = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_FINE_LOCATION,
-        ) == PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(
-                context, Manifest.permission.ACCESS_COARSE_LOCATION,
-            ) == PackageManager.PERMISSION_GRANTED
-        if (granted) viewModel.moveToCurrentLocation()
+        if (hasLocationPermission()) viewModel.moveToCurrentLocation()
         else locationPermissionLauncher.launch(
             arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION,
             ),
         )
+    }
+
+    // 지도 화면 최초 진입 시 위치 권한 확인 → 미보유면 시스템 권한 요청을 띄운다.
+    // (거부 시 설정 이동 팝업은 "현재 위치" 버튼 재탭 흐름에서 처리.)
+    val initialPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { grants ->
+        if (grants.values.any { it }) viewModel.moveToCurrentLocation()
+    }
+    LaunchedEffect(Unit) {
+        if (!hasLocationPermission()) {
+            initialPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                ),
+            )
+        }
     }
 
     Box(
@@ -96,14 +128,20 @@ fun HomeMapScreen(
     ) {
         when (mapListMode) {
             MapListMode.MAP -> {
-                val items = (clusters as? LoadState.Loaded)?.value.orEmpty()
+                val items = (curationSpots as? LoadState.Loaded)?.value.orEmpty()
                 NaverMapView(
-                    clusters = items,
+                    curationSpots = items,
+                    onSpotTap = viewModel::selectSpot,
                     onClusterTap = viewModel::selectCluster,
                     modifier = Modifier.fillMaxSize(),
                     onViewportChanged = viewModel::onViewportChanged,
                     cameraTarget = cameraTarget,
                     onCameraTargetConsumed = viewModel::consumeCameraTarget,
+                    mySpots = mySpots,
+                    selectedSpotId = selectedSpotId,
+                    focusTarget = focusTarget,
+                    onFocusConsumed = viewModel::consumeFocusTarget,
+                    bottomInsetFraction = if (selectedCluster != null) 0.45f else 0f,
                 )
             }
             MapListMode.LIST -> com.pickflow.android.feature.spotlist.SpotListScreen(
@@ -164,20 +202,73 @@ fun HomeMapScreen(
                 )
             }
         }
+
+        if (showLocationDeniedPopup) {
+            // iOS `LocationPermissionDeniedPopup` overlay 1:1.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f))
+                    .clickable { showLocationDeniedPopup = false }
+                    .testTag("homemap-location-denied-overlay"),
+            ) {
+                com.pickflow.android.feature.map.components.LocationPermissionDeniedPopup(
+                    onCancel = { showLocationDeniedPopup = false },
+                    onOpenSettings = {
+                        showLocationDeniedPopup = false
+                        val intent = Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", context.packageName, null),
+                        ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 32.dp)
+                        .clickable(enabled = false) {},
+                )
+            }
+        }
     }
 
-    // 핀 탭 → 바텀시트.
+    // 핀 탭 → 바텀시트(preview 데이터).
     selectedCluster?.let { cluster ->
-        val spot = cluster.spotIds.firstOrNull()?.let(viewModel::spotById)
-        if (spot != null) {
+        val spotId = cluster.spotIds.firstOrNull()
+        if (spotId != null) {
             SpotDetailBottomSheet(
-                spot = spot.toSpotDetailData(),
-                spotId = spot.id,
+                spotId = spotId,
+                preview = selectedPreview,
+                isBookmarked = selectedBookmarked,
                 onDismiss = viewModel::dismissCluster,
                 onOpenFullDetail = { id ->
                     viewModel.dismissCluster()
                     onOpenSpotDetail(id)
                 },
+                onRoute = viewModel::routeToSelected,
+                onSave = viewModel::bookmarkSelected,
+            )
+        }
+    }
+
+    // 비로그인 상태에서 "저장하기" 시도 시 로그인 유도 팝업.
+    if (sheetLoginPrompt) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f))
+                .clickable { viewModel.dismissSheetLoginPrompt() }
+                .testTag("homemap-login-overlay"),
+        ) {
+            com.pickflow.android.feature.spotdetail.components.LoginPromptPopup(
+                onCancel = viewModel::dismissSheetLoginPrompt,
+                onLogin = {
+                    viewModel.dismissSheetLoginPrompt()
+                    onRequireLogin()
+                },
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(horizontal = 32.dp)
+                    .clickable(enabled = false) {},
             )
         }
     }
@@ -324,36 +415,3 @@ private fun MapCircleButton(
     }
 }
 
-@Composable
-private fun ClusterList(
-    clusters: LoadState<List<Cluster>>,
-    onOpenSpotDetail: (String) -> Unit,
-) {
-    val items = (clusters as? LoadState.Loaded)?.value.orEmpty()
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 96.dp, bottom = 80.dp)
-            .testTag("homemap-list"),
-    ) {
-        items(items) { cluster ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(PickflowColors.gray90)
-                    .clickable {
-                        cluster.spotIds.firstOrNull()?.let(onOpenSpotDetail)
-                    }
-                    .padding(16.dp),
-            ) {
-                Text(
-                    text = "스팟 ${cluster.count}곳 · ${"%.4f".format(cluster.latitude)}",
-                    style = PickflowTypography.bodyMedium,
-                    color = PickflowColors.gray10,
-                )
-            }
-        }
-    }
-}

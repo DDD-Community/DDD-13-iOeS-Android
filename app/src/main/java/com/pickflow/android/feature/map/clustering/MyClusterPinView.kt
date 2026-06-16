@@ -1,5 +1,6 @@
 package com.pickflow.android.feature.map.clustering
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -19,19 +20,20 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 
 /**
  * iOS `MyClusterPinView` 1:1 이식 — MY 스팟 단일 마커(지름 56).
  *
- * 흰 원 + 검정 0.2 오버레이 + drop shadow / 검정 그라데이션 / 사진 아이콘 + "MY".
- * iOS `icPhoto` 커스텀 에셋은 이모지(🖼️)로 치환. 선택 시 sunsetOrange 4dp 테두리.
+ * 흰 원 + 검정 0.2 오버레이 + drop shadow / 검정 그라데이션 / 사진 아이콘(`ic_photo` 18dp,
+ * opacity 0.5) + "MY". 선택 시 sunsetOrange 4dp 테두리.
  */
 @Composable
 fun MyClusterPinView(
@@ -68,18 +70,14 @@ fun MyClusterPinView(
         // content — 사진 아이콘 + "MY"
         Box(contentAlignment = Alignment.BottomCenter) {
             // 아이콘은 iOS `Image`(고정 프레임)처럼 Dynamic Type 비반응.
-            val density = LocalDensity.current
-            CompositionLocalProvider(
-                LocalDensity provides Density(density.density, fontScale = 1f),
-            ) {
-                Text(
-                    text = "🖼️",
-                    fontSize = 16.sp,
-                    modifier = Modifier
-                        .alpha(0.5f)
-                        .padding(10.dp),
-                )
-            }
+            Image(
+                painter = painterResource(R.drawable.ic_photo),
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(10.dp)
+                    .size(18.dp)
+                    .alpha(0.5f),
+            )
             // iOS는 a11y에서 "MY"가 프레임을 넘쳐 truncation(…)으로 렌더된다.
             // 폭을 아이콘 박스에 맞춰(26dp) 동일하게 a11y 시 ellipsis 처리.
             Text(
