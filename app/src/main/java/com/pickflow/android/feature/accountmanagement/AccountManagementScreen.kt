@@ -1,5 +1,10 @@
 package com.pickflow.android.feature.accountmanagement
 
+import android.net.Uri
+import android.webkit.MimeTypeMap
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,45 +38,50 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
+import com.pickflow.android.core.services.protocols.ImagePayload
+import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountManagementScreen(
     onBack: () -> Unit,
     onSignedOut: () -> Unit,
+    onOpenWithdrawal: () -> Unit = {},
     viewModel: AccountManagementViewModel = hiltViewModel(),
 ) {
     val signedOut by viewModel.signedOut.collectAsStateWithLifecycle()
-    val withdrawDialogVisible by viewModel.withdrawDialogVisible.collectAsStateWithLifecycle()
     val nicknameDraft by viewModel.nicknameDraft.collectAsStateWithLifecycle()
     val isSaveEnabled by viewModel.isSaveEnabled.collectAsStateWithLifecycle()
+    val profileImageUrl by viewModel.profileImageUrl.collectAsStateWithLifecycle()
+    val draftPreviewUri by viewModel.draftImagePreviewUri.collectAsStateWithLifecycle()
 
     LaunchedEffect(signedOut) {
         if (signedOut) onSignedOut()
     }
 
-    if (withdrawDialogVisible) {
-        AlertDialog(
-            onDismissRequest = viewModel::dismissWithdraw,
-            title = { Text("회원 탈퇴") },
-            text = { Text("탈퇴하면 저장한 스팟과 계정 정보가 모두 삭제돼요. 계속할까요?") },
-            confirmButton = {
-                TextButton(
-                    onClick = viewModel::confirmWithdraw,
-                    modifier = Modifier.testTag("account-withdraw-confirm"),
-                ) { Text("탈퇴하기", color = PickflowColors.sunsetOrange) }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::dismissWithdraw) { Text("취소") }
-            },
-            containerColor = PickflowColors.gray90,
+    val context = LocalContext.current
+    val photoLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val resolver = context.contentResolver
+        val bytes = resolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: return@rememberLauncherForActivityResult
+        val mimeType = resolver.getType(uri) ?: "image/jpeg"
+        val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "jpg"
+        viewModel.setDraftImage(
+            payload = ImagePayload(bytes = bytes, mimeType = mimeType, filename = "profile.$ext"),
+            previewUri = uri.toString(),
         )
     }
 
@@ -119,23 +129,55 @@ fun AccountManagementScreen(
         ) {
             Spacer(Modifier.height(24.dp))
 
+            // iOS `AccountManagementView.profileImageSection` 1:1 — PhotosPicker 트리거.
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center,
             ) {
-                Box(modifier = Modifier.size(96.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .size(96.dp)
-                            .background(PickflowColors.gray80, CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Person,
-                            contentDescription = null,
-                            tint = PickflowColors.gray40,
-                            modifier = Modifier.size(48.dp),
+                Box(
+                    modifier = Modifier
+                        .size(96.dp)
+                        .clickable {
+                            photoLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                            )
+                        }
+                        .testTag("account-profile-image"),
+                ) {
+                    val preview = draftPreviewUri
+                    val remoteUrl = profileImageUrl
+                    when {
+                        preview != null -> AsyncImage(
+                            model = preview,
+                            contentDescription = "선택한 프로필 사진",
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(CircleShape)
+                                .background(PickflowColors.gray80, CircleShape),
+                            contentScale = ContentScale.Crop,
                         )
+                        !remoteUrl.isNullOrBlank() -> AsyncImage(
+                            model = remoteUrl,
+                            contentDescription = "프로필 사진",
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(CircleShape)
+                                .background(PickflowColors.gray80, CircleShape),
+                            contentScale = ContentScale.Crop,
+                        )
+                        else -> Box(
+                            modifier = Modifier
+                                .size(96.dp)
+                                .background(PickflowColors.gray80, CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Person,
+                                contentDescription = null,
+                                tint = PickflowColors.gray40,
+                                modifier = Modifier.size(48.dp),
+                            )
+                        }
                     }
                     Box(
                         modifier = Modifier
@@ -219,7 +261,7 @@ fun AccountManagementScreen(
                     style = PickflowTypography.bodyMedium,
                     color = Color(0xFFFF453A),
                     modifier = Modifier
-                        .clickable(onClick = viewModel::requestWithdraw)
+                        .clickable(onClick = onOpenWithdrawal)
                         .testTag("account-withdraw"),
                 )
             }

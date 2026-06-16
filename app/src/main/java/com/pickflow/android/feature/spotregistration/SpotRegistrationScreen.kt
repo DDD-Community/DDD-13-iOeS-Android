@@ -1,5 +1,11 @@
 package com.pickflow.android.feature.spotregistration
 
+import android.net.Uri
+import android.webkit.MimeTypeMap
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -46,6 +52,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -54,8 +62,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.core.services.protocols.ImagePayload
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.feature.spotlist.label
+import coil.compose.AsyncImage
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -73,13 +83,30 @@ fun SpotRegistrationScreen(
     val capturedDate by viewModel.capturedDate.collectAsStateWithLifecycle()
     val capturedTime by viewModel.capturedTime.collectAsStateWithLifecycle()
     val comment by viewModel.comment.collectAsStateWithLifecycle()
+    val imagePayload by viewModel.imagePayload.collectAsStateWithLifecycle()
     val submission by viewModel.submission.collectAsStateWithLifecycle()
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
     LaunchedEffect(submission) {
-        (submission as? LoadState.Loaded)?.let { onRegistered(it.value.id) }
+        (submission as? LoadState.Loaded)?.let { onRegistered(it.value.spotId.toString()) }
+    }
+
+    val context = LocalContext.current
+    val photoLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        selectedImageUri = uri
+        val resolver = context.contentResolver
+        val bytes = resolver.openInputStream(uri)?.use { it.readBytes() } ?: return@rememberLauncherForActivityResult
+        val mimeType = resolver.getType(uri) ?: "image/jpeg"
+        val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "jpg"
+        viewModel.setImagePayload(
+            ImagePayload(bytes = bytes, mimeType = mimeType, filename = "spot.$ext"),
+        )
     }
 
     if (showDatePicker) {
@@ -152,19 +179,42 @@ fun SpotRegistrationScreen(
                 .padding(20.dp)
                 .testTag("spotregistration-screen"),
         ) {
+            // iOS `SpotPhotoPickerCard` 1:1 — PhotosPicker(matching: .images).
+            // 배경은 iOS `Color.spotPhotoCardBackground` (#33363D) 정합.
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(PickflowColors.gray90),
+                    .background(PickflowColors.spotPhotoCardBackground)
+                    .clickable {
+                        photoLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                        )
+                    }
+                    .testTag("registration-photo-card"),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = "사진 추가",
-                    style = PickflowTypography.bodyMedium,
-                    color = PickflowColors.gray40,
-                )
+                val previewUri = selectedImageUri
+                if (previewUri != null && imagePayload != null) {
+                    AsyncImage(
+                        model = previewUri,
+                        contentDescription = "선택한 스팟 사진",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "스팟의 분위기가\n잘 담긴 사진을 올려주세요.",
+                            style = PickflowTypography.bodyMediumBold,
+                            color = PickflowColors.spotPlaceholderText,
+                        )
+                    }
+                }
             }
             Spacer(Modifier.height(20.dp))
 

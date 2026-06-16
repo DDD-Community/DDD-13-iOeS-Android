@@ -47,6 +47,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
+import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.core.services.protocols.MySpot
+import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.SavedSpot
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.feature.archive.components.ArchiveEmptyContent
@@ -77,6 +80,7 @@ fun ArchiveScreen(
     val archiveImageUrl by viewModel.archiveImageUrl.collectAsStateWithLifecycle()
     val coverImageBytes by viewModel.coverImageBytes.collectAsStateWithLifecycle()
     val toast by viewModel.toast.collectAsStateWithLifecycle()
+    val mySpotState by viewModel.mySpots.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.onAppear() }
 
@@ -90,6 +94,7 @@ fun ArchiveScreen(
         archiveImageUrl = archiveImageUrl,
         coverImageBytes = coverImageBytes,
         toast = toast,
+        mySpotState = mySpotState,
         onTabChange = viewModel::tabChanged,
         onKakaoLogin = onRequireLogin,
         onAppleLogin = onRequireLogin,
@@ -98,6 +103,7 @@ fun ArchiveScreen(
         onCellClick = { id -> onOpenSpotDetail(id.toString()) },
         onBookmarkTap = viewModel::bookmarkTapped,
         onCellAppear = viewModel::loadNextPageIfNeeded,
+        onMyCellAppear = viewModel::loadNextMySpotPageIfNeeded,
         onRenameClick = { showRenameDialog = true },
         onCoverImageClick = pickCover,
     )
@@ -126,6 +132,7 @@ fun ArchiveScreenContent(
     archiveImageUrl: String? = null,
     coverImageBytes: ByteArray? = null,
     toast: String? = null,
+    mySpotState: LoadState<List<MySpot>> = LoadState.Idle,
     onTabChange: (ArchiveTab) -> Unit = {},
     onKakaoLogin: () -> Unit = {},
     onAppleLogin: () -> Unit = {},
@@ -134,6 +141,7 @@ fun ArchiveScreenContent(
     onCellClick: (Long) -> Unit = {},
     onBookmarkTap: (Long) -> Unit = {},
     onCellAppear: (SavedSpot) -> Unit = {},
+    onMyCellAppear: (MySpot) -> Unit = {},
     onRenameClick: () -> Unit = {},
     onCoverImageClick: () -> Unit = {},
 ) {
@@ -154,12 +162,14 @@ fun ArchiveScreenContent(
                 archiveName = archiveName,
                 archiveImageUrl = archiveImageUrl,
                 coverImageBytes = coverImageBytes,
+                mySpotState = mySpotState,
                 onTabChange = onTabChange,
                 onExploreClick = onExploreClick,
                 onRegisterClick = onRegisterClick,
                 onCellClick = onCellClick,
                 onBookmarkTap = onBookmarkTap,
                 onCellAppear = onCellAppear,
+                onMyCellAppear = onMyCellAppear,
                 onRenameClick = onRenameClick,
                 onCoverImageClick = onCoverImageClick,
             )
@@ -176,12 +186,14 @@ private fun ArchiveScrollableContent(
     archiveName: String,
     archiveImageUrl: String?,
     coverImageBytes: ByteArray?,
+    mySpotState: LoadState<List<MySpot>>,
     onTabChange: (ArchiveTab) -> Unit,
     onExploreClick: () -> Unit,
     onRegisterClick: () -> Unit,
     onCellClick: (Long) -> Unit,
     onBookmarkTap: (Long) -> Unit,
     onCellAppear: (SavedSpot) -> Unit,
+    onMyCellAppear: (MySpot) -> Unit,
     onRenameClick: () -> Unit,
     onCoverImageClick: () -> Unit,
 ) {
@@ -229,19 +241,116 @@ private fun ArchiveScrollableContent(
                     onCellAppear = onCellAppear,
                     onExploreClick = onExploreClick,
                 )
-                ArchiveTab.MySpots -> {
-                    item(key = "myspot-placeholder", span = StaggeredGridItemSpan.FullLine) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(360.dp),
-                        ) {
-                            ArchiveMySpotPlaceholderContent(onRegisterClick = onRegisterClick)
-                        }
-                    }
+                ArchiveTab.MySpots -> mySpotsItems(
+                    state = mySpotState,
+                    onCellClick = onCellClick,
+                    onCellAppear = onMyCellAppear,
+                    onRegisterClick = onRegisterClick,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * "나만의 스팟" 탭의 그리드 아이템들. 빈 상태(Empty)에서만 등록 CTA placeholder 표시.
+ * 셀에는 상태 배지(PENDING/REJECTED) overlay. PUBLISHED 는 배지 없음. 셀 탭 → 기존 SpotDetail.
+ */
+private fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope.mySpotsItems(
+    state: LoadState<List<MySpot>>,
+    onCellClick: (Long) -> Unit,
+    onCellAppear: (MySpot) -> Unit,
+    onRegisterClick: () -> Unit,
+) {
+    when (state) {
+        is LoadState.Idle,
+        is LoadState.Loading -> item(key = "my-loading", span = StaggeredGridItemSpan.FullLine) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .testTag("archive-my-loading"),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(color = PickflowColors.sunsetOrange)
+            }
+        }
+        is LoadState.Empty -> item(key = "my-empty", span = StaggeredGridItemSpan.FullLine) {
+            Box(modifier = Modifier.fillMaxWidth().height(360.dp)) {
+                ArchiveMySpotPlaceholderContent(onRegisterClick = onRegisterClick)
+            }
+        }
+        is LoadState.Failed -> item(key = "my-failed", span = StaggeredGridItemSpan.FullLine) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(240.dp)
+                    .padding(24.dp)
+                    .testTag("archive-my-failed"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "문제가 발생했어요.\n${state.error.message ?: ""}",
+                    style = PickflowTypography.bodyMedium,
+                    color = PickflowColors.gray40,
+                )
+            }
+        }
+        is LoadState.Loaded -> {
+            item(key = "my-grid-padding-top", span = StaggeredGridItemSpan.FullLine) {
+                Spacer(Modifier.height(16.dp))
+            }
+            items(state.value, key = { it.id }) { my ->
+                LaunchedEffect(my.id) { onCellAppear(my) }
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onCellClick(my.id) }
+                        .testTag("archive-my-cell-${my.id}"),
+                ) {
+                    SpotListCell(
+                        item = SpotListGridItem(
+                            spotId = my.id,
+                            name = my.name,
+                            mood = my.theme.toMood(),
+                            hasThumbnail = !my.imageUrl.isNullOrBlank(),
+                            distanceKm = my.distanceKm,
+                        ),
+                        isBookmarked = false,
+                        bookmarkCount = null,
+                    )
+                    MySpotStatusBadge(
+                        status = my.status,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(8.dp),
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MySpotStatusBadge(status: MySpotStatus, modifier: Modifier = Modifier) {
+    val (label, bg) = when (status) {
+        MySpotStatus.PENDING -> "검토중" to PickflowColors.gray80
+        MySpotStatus.REJECTED -> "반려됨" to PickflowColors.sunsetOrange
+        MySpotStatus.PUBLISHED -> return // 배지 없음
+    }
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(bg)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .testTag("archive-my-badge-${status.name.lowercase()}"),
+    ) {
+        Text(
+            text = label,
+            style = PickflowTypography.labelSmall,
+            color = PickflowColors.gray0,
+        )
     }
 }
 

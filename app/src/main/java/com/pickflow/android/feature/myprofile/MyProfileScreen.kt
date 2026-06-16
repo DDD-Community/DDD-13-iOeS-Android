@@ -19,6 +19,7 @@ import com.pickflow.android.feature.myprofile.components.MyProfileSignedOutConte
 fun MyProfileScreen(
     onRequireLogin: () -> Unit,
     onOpenAccount: () -> Unit = {},
+    onOpenNotice: () -> Unit = {},
     viewModel: MyProfileViewModel = hiltViewModel(),
 ) {
     val loggedIn by viewModel.loggedIn.collectAsStateWithLifecycle()
@@ -46,6 +47,9 @@ fun MyProfileScreen(
                 MyProfileSignedInContent(
                     home = home,
                     onOpenAccount = onOpenAccount,
+                    onOpenNotice = onOpenNotice,
+                    onOpenTerms = viewModel::openTerms,
+                    onOpenPrivacy = viewModel::openPrivacy,
                 )
             }
         }

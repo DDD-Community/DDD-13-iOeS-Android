@@ -3,9 +3,10 @@ package com.pickflow.android.feature.spotregistration
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pickflow.android.common.ui.LoadState
-import com.pickflow.android.core.services.protocols.Spot
+import com.pickflow.android.core.services.protocols.CreateMySpotResult
+import com.pickflow.android.core.services.protocols.ImagePayload
+import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.SpotDraft
-import com.pickflow.android.core.services.protocols.SpotService
 import com.pickflow.android.core.services.protocols.SpotTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -14,9 +15,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+/**
+ * iOS `SpotRegistrationViewModel` 1:1 — 입력 + multipart 사진 업로드.
+ * Submit 은 `MySpotService.create(draft, ImagePayload)` 호출 (iOS `spotService.registerSpot(draft)` 와 동일 흐름).
+ */
 @HiltViewModel
 class SpotRegistrationViewModel @Inject constructor(
-    private val spotService: SpotService,
+    private val mySpotService: MySpotService,
 ) : ViewModel() {
 
     private val _name = MutableStateFlow("")
@@ -39,10 +44,11 @@ class SpotRegistrationViewModel @Inject constructor(
 
     private val _coordinates = MutableStateFlow<Pair<Double, Double>?>(null)
 
-    private val _imageUrl = MutableStateFlow<String?>(null)
+    private val _imagePayload = MutableStateFlow<ImagePayload?>(null)
+    val imagePayload: StateFlow<ImagePayload?> = _imagePayload.asStateFlow()
 
-    private val _submission = MutableStateFlow<LoadState<Spot>>(LoadState.Idle)
-    val submission: StateFlow<LoadState<Spot>> = _submission.asStateFlow()
+    private val _submission = MutableStateFlow<LoadState<CreateMySpotResult>>(LoadState.Idle)
+    val submission: StateFlow<LoadState<CreateMySpotResult>> = _submission.asStateFlow()
 
     fun setName(value: String) { _name.value = value.take(MAX_NAME_LENGTH) }
     fun setTheme(value: SpotTheme) { _theme.value = value }
@@ -53,14 +59,17 @@ class SpotRegistrationViewModel @Inject constructor(
     fun setCoordinates(latitude: Double, longitude: Double) {
         _coordinates.value = latitude to longitude
     }
-    fun setImageUrl(url: String?) { _imageUrl.value = url }
+
+    /** 사용자가 PhotoPicker 로 선택한 사진을 ImagePayload 로 보관. null = 선택 해제. */
+    fun setImagePayload(payload: ImagePayload?) { _imagePayload.value = payload }
 
     fun isValid(): Boolean =
         _name.value.isNotBlank() &&
             _address.value.isNotBlank() &&
             _coordinates.value != null &&
             _capturedDate.value.isNotBlank() &&
-            _capturedTime.value.isNotBlank()
+            _capturedTime.value.isNotBlank() &&
+            _imagePayload.value != null
 
     fun submit() {
         if (!isValid()) {
@@ -68,6 +77,7 @@ class SpotRegistrationViewModel @Inject constructor(
             return
         }
         val (lat, lng) = _coordinates.value!!
+        val image = _imagePayload.value!!
         val draft = SpotDraft(
             name = _name.value,
             theme = _theme.value,
@@ -77,11 +87,11 @@ class SpotRegistrationViewModel @Inject constructor(
             capturedDate = _capturedDate.value,
             capturedTime = _capturedTime.value,
             comment = _comment.value,
-            imageUrl = _imageUrl.value,
+            imageUrl = null,
         )
         viewModelScope.launch {
             _submission.value = LoadState.Loading
-            _submission.value = runCatching { spotService.register(draft) }
+            _submission.value = runCatching { mySpotService.create(draft, image) }
                 .fold(
                     onSuccess = { LoadState.Loaded(it) },
                     onFailure = { LoadState.Failed(it) },

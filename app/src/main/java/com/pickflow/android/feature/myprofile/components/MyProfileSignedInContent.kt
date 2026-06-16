@@ -45,6 +45,9 @@ import com.pickflow.android.core.services.protocols.MyPageHome
 fun MyProfileSignedInContent(
     home: MyPageHome,
     onOpenAccount: () -> Unit = {},
+    onOpenNotice: () -> Unit = {},
+    onOpenTerms: () -> Unit = {},
+    onOpenPrivacy: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -149,7 +152,12 @@ fun MyProfileSignedInContent(
         // 4. 메뉴 리스트
         MenuRow(icon = Icons.Outlined.Info, label = "고객센터 및 1:1 문의")
         MenuRow(icon = Icons.Outlined.Notifications, label = "알림 설정")
-        MenuRow(icon = Icons.Outlined.Info, label = "공지사항")
+        MenuRow(
+            icon = Icons.Outlined.Info,
+            label = "공지사항",
+            onClick = onOpenNotice,
+            tag = "myprofile-menu-notice",
+        )
 
         // 5. divider
         Box(
@@ -160,8 +168,19 @@ fun MyProfileSignedInContent(
                 .background(PickflowColors.gray80),
         )
 
-        // 6. 추가 메뉴
-        MenuRow(icon = null, label = "약관 및 정책")
+        // 6. 추가 메뉴 — iOS 1:1 단일 "약관 및 정책" 을 Android 에서는 2개로 분리.
+        MenuRow(
+            icon = null,
+            label = "이용약관",
+            onClick = onOpenTerms,
+            tag = "myprofile-menu-terms",
+        )
+        MenuRow(
+            icon = null,
+            label = "개인정보처리방침",
+            onClick = onOpenPrivacy,
+            tag = "myprofile-menu-privacy",
+        )
         AppVersionRow(version = "v1.0.0")
     }
 }
@@ -198,12 +217,16 @@ private fun StatCard(
 private fun MenuRow(
     icon: ImageVector?,
     label: String,
+    onClick: () -> Unit = {},
+    tag: String? = null,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
-            .padding(horizontal = 20.dp),
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp)
+            .then(if (tag != null) Modifier.testTag(tag) else Modifier),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {

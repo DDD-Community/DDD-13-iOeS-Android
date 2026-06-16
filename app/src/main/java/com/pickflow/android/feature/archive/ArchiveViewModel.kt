@@ -2,11 +2,14 @@ package com.pickflow.android.feature.archive
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.ArchiveService
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ImagePayload
 import com.pickflow.android.core.services.protocols.LocationService
+import com.pickflow.android.core.services.protocols.MySpot
+import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.SavedSpot
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -47,6 +50,7 @@ class ArchiveViewModel @Inject constructor(
     private val bookmarkService: BookmarkService,
     private val authService: AuthService,
     private val locationService: LocationService,
+    private val mySpotService: MySpotService,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<ArchiveLoadState>(ArchiveLoadState.Loading)
@@ -70,8 +74,18 @@ class ArchiveViewModel @Inject constructor(
     private val _toast = MutableStateFlow<String?>(null)
     val toast: StateFlow<String?> = _toast.asStateFlow()
 
+    /**
+     * "나만의 스팟" 탭 — `MySpotService.list()` 결과. SignedOut 분기는 상위 [state] 가
+     * 처리하므로 표준 [LoadState] 사용. tabChanged(MySpots) 진입 시 lazy fetch.
+     */
+    private val _mySpots = MutableStateFlow<LoadState<List<MySpot>>>(LoadState.Idle)
+    val mySpots: StateFlow<LoadState<List<MySpot>>> = _mySpots.asStateFlow()
+
     private var currentPage: Int = 0
     private var hasNext: Boolean = false
+    private var myCurrentPage: Int = 0
+    private var myHasNext: Boolean = false
+    private val myAccumulated = mutableListOf<MySpot>()
     private var currentCoordinates: com.pickflow.android.core.services.protocols.Coordinates? = null
 
     fun onAppear() {
@@ -91,6 +105,56 @@ class ArchiveViewModel @Inject constructor(
 
     fun tabChanged(tab: ArchiveTab) {
         _selectedTab.value = tab
+        // MySpots 탭 진입 시 한 번만 lazy fetch — 이미 Loaded/Empty/Failed 면 재요청 X.
+        if (tab == ArchiveTab.MySpots && _mySpots.value is LoadState.Idle) {
+            fetchMySpots()
+        }
+    }
+
+    /** 나만의 스팟 페이지네이션 — 끝에서 3번째 아이템에 도달하면 다음 페이지 호출. */
+    fun loadNextMySpotPageIfNeeded(currentItem: MySpot) {
+        val loaded = _mySpots.value as? LoadState.Loaded ?: return
+        if (!myHasNext || _isLoadingNextPage.value) return
+
+        val items = loaded.value
+        val triggerIndex = (items.size - 3).coerceAtLeast(0)
+        val index = items.indexOfFirst { it.id == currentItem.id }
+        if (index < 0 || index < triggerIndex) return
+
+        _isLoadingNextPage.value = true
+        viewModelScope.launch {
+            runCatching {
+                mySpotService.list(page = myCurrentPage + 1, coordinates = currentCoordinates)
+            }.onSuccess { page ->
+                myCurrentPage = page.page
+                myHasNext = page.hasNext
+                myAccumulated.addAll(page.items)
+                _mySpots.value = LoadState.Loaded(myAccumulated.toList())
+            }.onFailure {
+                showToast("다음 페이지를 불러오지 못했어요.")
+            }
+            _isLoadingNextPage.value = false
+        }
+    }
+
+    private fun fetchMySpots() {
+        _mySpots.value = LoadState.Loading
+        myCurrentPage = 0
+        myHasNext = false
+        myAccumulated.clear()
+        viewModelScope.launch {
+            runCatching {
+                mySpotService.list(page = 0, coordinates = currentCoordinates)
+            }.onSuccess { page ->
+                myCurrentPage = page.page
+                myHasNext = page.hasNext
+                myAccumulated.addAll(page.items)
+                _mySpots.value = if (page.items.isEmpty()) LoadState.Empty
+                else LoadState.Loaded(myAccumulated.toList())
+            }.onFailure {
+                _mySpots.value = LoadState.Failed(it)
+            }
+        }
     }
 
     fun renameArchive(name: String) {
