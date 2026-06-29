@@ -43,12 +43,12 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.pickflow.android"
+        applicationId = "com.pickflow.app"
         minSdk = 26
         targetSdk = 35
         // CD(GitHub Actions)에서 VERSION_CODE(=github.run_number) 주입, 로컬은 1.
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         manifestPlaceholders["naverMapClientId"] = naverMapClientId

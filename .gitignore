@@ -12,5 +12,7 @@ captures/
 secrets.properties
 *.keystore
 !debug.keystore
+*.jks
+*.aab
 google-services.json
 
