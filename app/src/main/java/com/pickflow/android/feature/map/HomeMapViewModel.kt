@@ -235,6 +235,14 @@ class HomeMapViewModel @Inject constructor(
         _sheetLoginPrompt.value = false
     }
 
+    /** 스팟 등록 버튼 — 비로그인 시 로그인 유도 팝업, 로그인 시에만 등록 화면 이동. */
+    fun requestRegistration(onAllowed: () -> Unit) {
+        viewModelScope.launch {
+            if (authService.isLoggedIn()) onAllowed()
+            else _sheetLoginPrompt.value = true
+        }
+    }
+
     /** "현재 위치" 버튼 — LocationService에서 좌표를 받아 카메라를 옮긴다. */
     fun moveToCurrentLocation() {
         viewModelScope.launch {

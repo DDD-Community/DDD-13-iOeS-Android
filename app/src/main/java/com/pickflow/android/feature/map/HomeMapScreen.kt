@@ -190,7 +190,8 @@ fun HomeMapScreen(
             MapCircleButton(
                 iconRes = R.drawable.ic_add_location,
                 contentDescription = "스팟 등록",
-                onClick = onOpenRegistration,
+                // 비로그인 시 로그인 유도 팝업(sheetLoginPrompt)으로 가드.
+                onClick = { viewModel.requestRegistration(onOpenRegistration) },
                 modifier = Modifier.testTag("homemap-register"),
             )
             if (mapListMode == MapListMode.MAP) {
