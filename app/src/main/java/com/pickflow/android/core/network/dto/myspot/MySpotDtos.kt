@@ -31,11 +31,10 @@ data class CreateMySpotResponseDto(
 )
 
 /**
- * POST /v1/users/me/my-spots 의 `meta` part로 직렬화될 JSON 페이로드 (추정).
+ * POST /v1/users/me/my-spots 의 `request` part로 직렬화될 JSON 페이로드.
  *
- * TODO(BE confirm): OpenAPI 스펙상 multipart schema 가 깨져 있어 (integer로 표기) 정확한
- * 필드 이름/구조 미확정. 본 DTO는 description("이미지 + 메타데이터 JSON")과 SpotAdminCreateRequest.Item
- * 스키마를 참고한 추정. BE 컨트롤러 시그니처 확인 후 필드명/형태 조정 필요.
+ * iOS `SpotRegisterRequest` 1:1 — name/theme/latitude/longitude/comment/recordedDate/recordedTime.
+ * (address 는 서버 스펙에 없어 전송하지 않는다.)
  */
 @Serializable
 data class CreateMySpotMetaRequest(
@@ -43,7 +42,6 @@ data class CreateMySpotMetaRequest(
     val theme: String,
     val latitude: Double,
     val longitude: Double,
-    val address: String,
     val comment: String? = null,
     val recordedDate: String? = null,
     val recordedTime: String? = null,

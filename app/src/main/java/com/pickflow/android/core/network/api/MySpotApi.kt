@@ -19,8 +19,8 @@ interface MySpotApi {
     ): ApiResponse<MySpotListResponseDto>
 
     /**
-     * 나만의 스팟 등록. TODO(BE confirm): part 이름(`image`/`meta`)은 추정값.
-     * 실제 BE 컨트롤러 시그니처에 맞춰 조정 필요.
+     * 나만의 스팟 등록. part 이름은 `image` + `request`(JSON 메타) —
+     * iOS `SpotService.registerSpot` 과 동일(BE 검증 완료 형태).
      */
     @Multipart
     @POST("v1/users/me/my-spots")

@@ -56,6 +56,19 @@ class DefaultSpotReportServiceTest {
     }
 
     @Test
+    fun `report succeeds even when data is null (iOS EmptyResponse parity)`() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(201).setBody(
+                """{"success":true,"code":"OK","message":"","data":null}"""
+            )
+        )
+
+        val id = service.report(spotId = 42L, content = "실제 위치가 지도와 달라요")
+
+        assertEquals(0L, id)
+    }
+
+    @Test
     fun `report propagates ApiException on validation failure (too short)`() {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(

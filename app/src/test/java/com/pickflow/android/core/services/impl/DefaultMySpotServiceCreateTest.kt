@@ -82,14 +82,15 @@ class DefaultMySpotServiceCreateTest {
         assertTrue(body.contains("name=\"image\""))
         assertTrue(body.contains("filename=\"spot.png\""))
         assertTrue(body.contains("Content-Type: image/png"))
-        // meta part
-        assertTrue(body.contains("name=\"meta\""))
+        // 메타 part — iOS `SpotService.registerSpot` 1:1: part 이름 `request`, address 미전송
+        assertTrue(body.contains("name=\"request\""))
         assertTrue(body.contains("Content-Type: application/json"))
         assertTrue(body.contains("\"name\":\"한강 노을\""))
         assertTrue(body.contains("\"theme\":\"SUNSET\""))
         assertTrue(body.contains("\"latitude\":37.5"))
         assertTrue(body.contains("\"comment\":\"강 위로 번지는 노을이 좋아요\""))
         assertTrue(body.contains("\"recordedDate\":\"2026-05-25\""))
+        assertTrue(!body.contains("\"address\""))
     }
 
     @Test

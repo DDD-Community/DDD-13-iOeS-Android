@@ -34,13 +34,13 @@ class DefaultMySpotService @Inject constructor(
     override suspend fun create(draft: SpotDraft, image: ImagePayload): CreateMySpotResult {
         // 이미지 part (공통 변환기 사용)
         val imagePart = image.toMultipartPart(IMAGE_PART)
-        // 메타 part (JSON)
+        // 메타 part (JSON) — iOS `SpotService.registerSpot` 1:1: part 이름 `request`,
+        // address 미포함, 위/경도 소수점 6자리 반올림(서버 검증).
         val meta = CreateMySpotMetaRequest(
             name = draft.name,
             theme = draft.theme.name,
-            latitude = draft.latitude,
-            longitude = draft.longitude,
-            address = draft.address,
+            latitude = draft.latitude.toSixDecimal(),
+            longitude = draft.longitude.toSixDecimal(),
             comment = draft.comment.takeIf { it.isNotBlank() },
             recordedDate = draft.capturedDate.takeIf { it.isNotBlank() },
             recordedTime = draft.capturedTime.takeIf { it.isNotBlank() },
@@ -56,9 +56,9 @@ class DefaultMySpotService @Inject constructor(
     }
 
     private companion object {
-        // TODO(BE confirm): part 이름 검증 후 확정.
+        // iOS `SpotService.registerSpot` 과 동일한 part 이름 (BE 검증 완료 형태).
         const val IMAGE_PART = "image"
-        const val META_PART = "meta"
+        const val META_PART = "request"
         val JSON_MEDIA = "application/json".toMediaType()
     }
 }
