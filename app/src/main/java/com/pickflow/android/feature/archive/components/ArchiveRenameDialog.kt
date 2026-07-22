@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 
@@ -43,7 +44,14 @@ fun ArchiveRenameDialog(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
+    // 다이얼로그 기본 폭 제한을 풀어 딤 배경이 좌우/상하 풀스크린으로 깔리도록 한다.
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false,
+        ),
+    ) {
         ArchiveRenameDialogContent(
             initialName = initialName,
             onDismiss = onDismiss,
@@ -65,12 +73,16 @@ fun ArchiveRenameDialogContent(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.5f))
+            // 콘텐츠가 풀스크린을 덮으므로 딤 영역 탭으로도 닫히게 한다.
+            .clickable(onClick = onDismiss)
             .testTag("archive-rename-dialog"),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             modifier = Modifier
                 .padding(horizontal = 24.dp)
+                // 카드 내부 탭이 딤 dismiss로 전파되지 않도록 소비.
+                .clickable(enabled = false) {}
                 .clip(RoundedCornerShape(16.dp))
                 .background(PickflowColors.gray90)
                 .padding(20.dp),
