@@ -1,5 +1,6 @@
 package com.pickflow.android.feature.map
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,7 +15,12 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -29,6 +35,7 @@ import com.pickflow.android.feature.spotdetail.SpotDetailScreen
 import com.pickflow.android.feature.spotdetail.components.SpotDetailData
 import com.pickflow.android.feature.spotdetail.components.SpotDetailSheetContent
 import com.pickflow.android.feature.spotdetail.components.SpotDetailTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -53,6 +60,40 @@ fun SpotDetailBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val scope = rememberCoroutineScope()
 
+    // full 상세 표시 여부를 targetValue 에서 분리해 래치한다.
+    // targetValue 를 직접 조건으로 쓰면, 상세 안의 신고 시트에서 키보드가 열릴 때
+    // 윈도우 리사이즈 → 앵커 재계산으로 targetValue 가 PartiallyExpanded 로 튀어
+    // 상세 화면(및 신고 시트)이 프리뷰 카드로 되돌아가는 버그가 발생한다.
+    // 가드 신호는 IME 인셋(API 29 이하에서 부정확) 대신 상세 화면이 직접 알려주는
+    // "내부 모달 시트 열림 여부(childSheetOpen)"를 사용한다.
+    var isFullDetail by remember { mutableStateOf(false) }
+    var childSheetOpen by remember { mutableStateOf(false) }
+    // 내부 시트가 "열려 있는 동안 + 닫힌 직후 여파가 가라앉을 때까지" 앵커 추종을 멈추는 가드.
+    // (신고 시트가 닫힐 때 키보드도 함께 닫히며 앵커 재계산이 한 박자 늦게 도착한다.)
+    var anchorGuard by remember { mutableStateOf(false) }
+
+    LaunchedEffect(childSheetOpen) {
+        if (childSheetOpen) {
+            anchorGuard = true
+        } else if (anchorGuard) {
+            // 닫힘 직후 ~800ms 동안 키보드 리사이즈로 밀린 시트를 full 로 복원.
+            if (isFullDetail) {
+                repeat(8) {
+                    if (sheetState.targetValue != SheetValue.Expanded) {
+                        runCatching { sheetState.expand() }
+                    }
+                    delay(100)
+                }
+            }
+            anchorGuard = false
+        }
+    }
+    LaunchedEffect(sheetState.targetValue, anchorGuard) {
+        if (!anchorGuard) {
+            isFullDetail = sheetState.targetValue == SheetValue.Expanded
+        }
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -69,10 +110,14 @@ fun SpotDetailBottomSheet(
         // - 부분 확장(medium): preview 요약 카드(+길안내/저장 버튼).
         // - 전체 확장(full/fullcover): 시트 안에 전체 상세(SpotDetailScreen) 임베드.
         Box(modifier = Modifier.fillMaxHeight()) {
-            if (sheetState.targetValue == SheetValue.Expanded) {
+            if (isFullDetail) {
                 SpotDetailScreen(
                     spotId = spotId,
-                    onBack = { scope.launch { sheetState.partialExpand() } },
+                    onBack = {
+                        isFullDetail = false
+                        scope.launch { sheetState.partialExpand() }
+                    },
+                    onOverlaySheetVisible = { childSheetOpen = it },
                     modifier = Modifier
                         .fillMaxSize()
                         .testTag("spotdetail-bottomsheet-full"),
@@ -91,6 +136,8 @@ fun SpotDetailBottomSheet(
                         onSave = onSave,
                         modifier = Modifier
                             .fillMaxWidth()
+                            // 프리뷰 카드 탭 → full 확장(버튼 영역 제외). iOS medium→full 1:1.
+                            .clickable { scope.launch { sheetState.expand() } }
                             .testTag("spotdetail-bottomsheet"),
                     )
                 }

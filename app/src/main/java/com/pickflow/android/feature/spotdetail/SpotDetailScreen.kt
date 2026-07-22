@@ -79,6 +79,12 @@ fun SpotDetailScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onRequireLogin: () -> Unit = {},
+    showRegisteredToast: Boolean = false,
+    /**
+     * 신고/오픈알림 등 내부 모달 시트 열림 여부 통지 — 지도 바텀시트에 임베드될 때
+     * 키보드 리사이즈로 인한 외부 시트 앵커 변동을 무시하기 위한 신호.
+     */
+    onOverlaySheetVisible: (Boolean) -> Unit = {},
     viewModel: SpotDetailViewModel = hiltViewModel(),
     actionsViewModel: SpotDetailActionsViewModel = hiltViewModel(),
 ) {
@@ -86,6 +92,7 @@ fun SpotDetailScreen(
     val bookmarked by viewModel.bookmarked.collectAsStateWithLifecycle()
     val toastMessage by viewModel.toast.collectAsStateWithLifecycle()
     val isLoginRequired by viewModel.isLoginRequired.collectAsStateWithLifecycle()
+    val reportDraft by viewModel.reportDraft.collectAsStateWithLifecycle()
 
     var isReportSheetOpen by remember { mutableStateOf(false) }
     var isComingSoonSheetOpen by remember { mutableStateOf(false) }
@@ -93,10 +100,16 @@ fun SpotDetailScreen(
     var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(spotId) { viewModel.load(spotId) }
+    LaunchedEffect(Unit) {
+        if (showRegisteredToast) viewModel.showRegisteredToast()
+    }
+    LaunchedEffect(isReportSheetOpen, isComingSoonSheetOpen) {
+        onOverlaySheetVisible(isReportSheetOpen || isComingSoonSheetOpen)
+    }
     LaunchedEffect(toastMessage) {
         if (toastMessage != null) {
             toastVisible = true
-            delay(2000)
+            delay(3000)
             toastVisible = false
             viewModel.consumeToast()
         }
@@ -210,7 +223,10 @@ fun SpotDetailScreen(
             contentColor = PickflowColors.gray0,
         ) {
             ReportSheetBody(
+                text = reportDraft,
+                onTextChange = viewModel::setReportDraft,
                 onClose = {
+                    viewModel.clearReportDraft()
                     scope.launch { sheetState.hide() }.invokeOnCompletion {
                         isReportSheetOpen = false
                     }
@@ -327,15 +343,20 @@ private fun ReportSubmittedToast(
     }
 }
 
-/** iOS `ReportSheet.swift` 1:1 — 최소 5자, 최대 200자 신고 본문 입력. */
+/**
+ * iOS `ReportSheet.swift` 1:1 — 최소 5자, 최대 200자 신고 본문 입력.
+ * 입력 상태는 [SpotDetailViewModel.reportDraft] 로 호이스팅 — 키보드 리사이즈 등으로
+ * 시트가 recomposition 되어도 입력/등록 버튼 활성 상태가 유지된다.
+ */
 @Composable
 private fun ReportSheetBody(
+    text: String,
+    onTextChange: (String) -> Unit,
     onClose: () -> Unit,
     onSubmit: (String) -> Unit,
 ) {
-    var text by remember { mutableStateOf("") }
-    val minLength = 5
-    val maxLength = 200
+    val minLength = SpotDetailViewModel.REPORT_MIN_LENGTH
+    val maxLength = SpotDetailViewModel.REPORT_MAX_LENGTH
     val placeholder = "실제 위치가 지도와 달라요, 현재 공사 중이라 출입이 안 돼요 등 상세한 내용을 적어주세요 (최소 5자 이상)"
     val isSubmittable = text.trim().length >= minLength
 
@@ -387,9 +408,7 @@ private fun ReportSheetBody(
         ) {
             BasicTextField(
                 value = text,
-                onValueChange = { new ->
-                    text = if (new.length > maxLength) new.take(maxLength) else new
-                },
+                onValueChange = onTextChange,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 140.dp)

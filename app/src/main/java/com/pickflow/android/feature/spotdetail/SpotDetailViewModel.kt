@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.common.util.SpotIdCoder
+import com.pickflow.android.core.network.ApiException
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.SharePayload
@@ -46,6 +47,19 @@ class SpotDetailViewModel @Inject constructor(
     val toast: StateFlow<String?> = _toast.asStateFlow()
 
     fun consumeToast() { _toast.value = null }
+
+    /**
+     * 신고 시트 입력 초안. 시트 recomposition/재생성에도 유지되도록 ViewModel 에 보관.
+     * 5~200자(트림 기준 최소 5자)일 때만 등록 가능.
+     */
+    private val _reportDraft = MutableStateFlow("")
+    val reportDraft: StateFlow<String> = _reportDraft.asStateFlow()
+
+    fun setReportDraft(value: String) { _reportDraft.value = value.take(REPORT_MAX_LENGTH) }
+    fun clearReportDraft() { _reportDraft.value = "" }
+
+    /** 스팟 등록 완료 직후 상세 진입 시 노출할 토스트. */
+    fun showRegisteredToast() { _toast.value = "나만의 스팟이 등록되었어요!" }
 
     /**
      * iOS `SpotDetailViewModel.notifyUpdateRequested()` 1:1 fakedoor — "나만의 스팟 오픈" CTA 의
@@ -113,14 +127,23 @@ class SpotDetailViewModel @Inject constructor(
     fun reportInvalidInfo(content: String) {
         val current = (_spot.value as? LoadState.Loaded<SpotDetail>)?.value ?: return
         viewModelScope.launch {
-            runCatching { spotReportService.report(current.id, content) }
+            runCatching { spotReportService.report(current.id, content.trim()) }
                 .onSuccess {
                     _reportSubmitted.value = true
                     _toast.value = "제보가 접수되었습니다."
+                    clearReportDraft()
                 }
-                .onFailure {
-                    _toast.value = "제보 접수에 실패했어요."
+                .onFailure { error ->
+                    // 서버 정책 거부(예: SP002 미승인 스팟)는 사유를 그대로 노출.
+                    _toast.value = (error as? ApiException)?.message
+                        ?.takeIf { it.isNotBlank() }
+                        ?: "제보 접수에 실패했어요."
                 }
         }
+    }
+
+    companion object {
+        const val REPORT_MIN_LENGTH = 5
+        const val REPORT_MAX_LENGTH = 200
     }
 }
