@@ -21,7 +21,9 @@ val secrets = Properties().apply {
 }
 val naverMapClientId: String = secrets.getProperty("NAVER_MAP_CLIENT_ID", "")
 val kakaoNativeAppKey: String = secrets.getProperty("KAKAO_NATIVE_APP_KEY", "")
-val pickflowApiBaseUrl: String = secrets.getProperty("PICKFLOW_API_BASE_URL", "https://pickflow-api.us/api/")
+// CI 가 빈 값을 써 넣어도 기본 API 주소가 유지되도록 blank → 기본값 처리.
+val pickflowApiBaseUrl: String = secrets.getProperty("PICKFLOW_API_BASE_URL", "")
+    .ifBlank { "https://pickflow-api.us/api/" }
 val termsUrl: String = secrets.getProperty("TERMS_URL", "")
 val privacyUrl: String = secrets.getProperty("PRIVACY_URL", "")
 // CI 가 빈 값을 써 넣어도 long 리터럴이 깨지지 않도록 blank → 기본값 처리.

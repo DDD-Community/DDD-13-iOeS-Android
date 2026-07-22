@@ -38,7 +38,16 @@ BE 조치 사항:
 
 ## release 지문 추출 방법
 
-릴리스 keystore는 로컬에 없고 GitHub Secrets에만 base64로 보관되어 있다. 다음 중 하나로 추출한다.
+릴리스(업로드) keystore 는 로컬 `~/keystores/pickflow-release.keystore` 에 보관하며,
+GitHub Secrets(`KEYSTORE_BASE64` 등)에도 base64 로 등록되어 있다 (2026-07-23 등록).
+로컬 보관본이 있으면 아래로 바로 추출 가능:
+
+```sh
+keytool -list -v -keystore ~/keystores/pickflow-release.keystore -alias pickflow | grep SHA256
+```
+
+주의: 위 지문은 **업로드 키**다. assetlinks 에 넣는 release 지문은 Play App Signing 의
+**앱 서명 키**(Play Console > 앱 무결성) SHA-256 이어야 한다. 로컬 보관본이 없을 때의 대안:
 
 1. **CI에서 출력** — `cd.yml`의 keystore 복원 스텝 뒤에 임시로 추가 후 Actions 로그에서 확인:
    ```yaml
