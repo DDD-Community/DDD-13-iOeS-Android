@@ -285,7 +285,8 @@ fun AccountManagementScreen(
                 )
             }
 
-            Spacer(Modifier.weight(1f))
+            // 시안(iOS) 1:1 — 로그아웃/회원탈퇴는 하단 고정이 아니라 연결된 소셜 바로 아래 배치.
+            Spacer(Modifier.height(40.dp))
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
