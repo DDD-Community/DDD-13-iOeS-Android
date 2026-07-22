@@ -46,7 +46,7 @@ import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.common.ui.LoadState
-import com.pickflow.android.feature.login.components.AppleLoginButton
+// import com.pickflow.android.feature.login.components.AppleLoginButton // Apple 로그인 임시 비활성화.
 import com.pickflow.android.feature.login.components.KakaoLoginButton
 
 // iOS LoginView.backgroundGradient 4-stop LinearGradient 1:1 이식.
@@ -254,12 +254,13 @@ private fun LoginBottomCTA(
                 isLoading = kakaoLoading,
                 enabled = !isLoading,
             )
-            AppleLoginButton(
-                onClick = onAppleClick,
-                modifier = Modifier.testTag("login-apple"),
-                isLoading = appleLoading,
-                enabled = !isLoading,
-            )
+            // Apple 로그인 임시 비활성화.
+            // AppleLoginButton(
+            //     onClick = onAppleClick,
+            //     modifier = Modifier.testTag("login-apple"),
+            //     isLoading = appleLoading,
+            //     enabled = !isLoading,
+            // )
         }
 
         Box(

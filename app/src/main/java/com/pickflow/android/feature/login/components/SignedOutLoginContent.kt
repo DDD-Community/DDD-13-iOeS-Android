@@ -83,7 +83,8 @@ fun SignedOutLoginContent(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             KakaoLoginButton(onClick = onKakaoLogin)
-            AppleLoginButton(onClick = onAppleLogin)
+            // Apple 로그인 임시 비활성화.
+            // AppleLoginButton(onClick = onAppleLogin)
         }
 
         Spacer(Modifier.weight(1f))
