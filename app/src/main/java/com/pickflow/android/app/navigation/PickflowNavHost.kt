@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.pickflow.android.feature.accountmanagement.AccountManagementScreen
+import com.pickflow.android.feature.archive.ArchiveTab
 import com.pickflow.android.feature.debug.DebugScreen
 import com.pickflow.android.feature.home.HomeScreen
 import com.pickflow.android.feature.login.LoginScreen
@@ -141,15 +142,23 @@ fun PickflowNavHost(
 
         composable(
             route = PickflowRoute.SPOT_DETAIL,
-            arguments = listOf(navArgument(PickflowRoute.ARG_SPOT_ID) {
-                type = NavType.StringType
-            }),
+            arguments = listOf(
+                navArgument(PickflowRoute.ARG_SPOT_ID) {
+                    type = NavType.StringType
+                },
+                navArgument(PickflowRoute.ARG_REGISTERED) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+            ),
         ) { entry ->
             val spotId = entry.arguments?.getString(PickflowRoute.ARG_SPOT_ID).orEmpty()
+            val registered = entry.arguments?.getBoolean(PickflowRoute.ARG_REGISTERED) ?: false
             SpotDetailScreen(
                 spotId = spotId,
                 onBack = navController::popBackStack,
                 onRequireLogin = { navController.navigate(PickflowRoute.LOGIN) },
+                showRegisteredToast = registered,
             )
         }
 
@@ -187,7 +196,12 @@ fun PickflowNavHost(
             SpotRegistrationScreen(
                 onBack = navController::popBackStack,
                 onOpenSearch = { navController.navigate(PickflowRoute.SPOT_SEARCH) },
-                onRegistered = { navController.popBackStack() },
+                onRegistered = { spotId ->
+                    // 등록 완료 → 보관함(마이 스팟 탭) 위에 등록 스팟 상세 + 완료 토스트.
+                    HomeTabRequest.request(HomeTab.SAVED, ArchiveTab.MySpots)
+                    navController.popBackStack()
+                    navController.navigate(PickflowRoute.spotDetail(spotId, registered = true))
+                },
             )
         }
 

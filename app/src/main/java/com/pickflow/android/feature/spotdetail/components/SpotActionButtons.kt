@@ -48,12 +48,13 @@ fun SpotActionButtons(
         RouteButton(height = routeHeight, modifier = Modifier.weight(1f), onClick = onRoute)
 
         if (isMine) {
+            // iOS `SpotActionButtons` 1:1 — gray0 배경 + gray80 텍스트/보더.
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .height(52.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(PickflowColors.gray95)
+                    .background(PickflowColors.gray0)
                     .border(1.dp, PickflowColors.gray80, RoundedCornerShape(8.dp))
                     .clickable(onClick = onOpenSpot)
                     .testTag("detail-open-spot"),
@@ -62,7 +63,7 @@ fun SpotActionButtons(
                 Text(
                     text = "내 스팟 오픈하기",
                     style = PickflowTypography.bodyLargeBold,
-                    color = PickflowColors.gray0,
+                    color = PickflowColors.gray80,
                 )
             }
         } else {

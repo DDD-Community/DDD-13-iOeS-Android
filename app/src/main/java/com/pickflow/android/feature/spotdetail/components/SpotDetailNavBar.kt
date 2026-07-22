@@ -12,19 +12,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 
 /**
  * iOS `SpotDetailNavBar` 1:1 이식 — 우측 정렬 공유/닫기 버튼.
  *
- * iOS `icShare`/`icClose` 커스텀 에셋은 Material `Share`/`Close`로 치환.
+ * 공유는 시안 에셋 `ic_share`(figma), 닫기는 Material `Close`로 표시.
  */
 @Composable
 fun SpotDetailNavBar(
@@ -44,21 +47,31 @@ fun SpotDetailNavBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         NavBarIcon(
-            Icons.AutoMirrored.Filled.ArrowBack,
+            rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack),
             "뒤로",
             onClick = onBack,
             tag = "detail-back",
         )
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            NavBarIcon(Icons.Filled.Share, "공유", onClick = onShare, tag = "detail-share")
-            NavBarIcon(Icons.Filled.Close, "닫기", onClick = onClose, tag = "detail-close")
+            NavBarIcon(
+                painterResource(R.drawable.ic_share),
+                "공유",
+                onClick = onShare,
+                tag = "detail-share",
+            )
+            NavBarIcon(
+                rememberVectorPainter(Icons.Filled.Close),
+                "닫기",
+                onClick = onClose,
+                tag = "detail-close",
+            )
         }
     }
 }
 
 @Composable
 private fun NavBarIcon(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    painter: Painter,
     contentDescription: String,
     onClick: () -> Unit,
     tag: String,
@@ -71,7 +84,7 @@ private fun NavBarIcon(
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = icon,
+            painter = painter,
             contentDescription = contentDescription,
             tint = PickflowColors.gray0,
             modifier = Modifier.size(24.dp),

@@ -11,10 +11,12 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -22,6 +24,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.pickflow.android.R
 import com.pickflow.android.app.navigation.HomeTab
+import com.pickflow.android.app.navigation.HomeTabRequest
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.feature.archive.ArchiveScreen
 import com.pickflow.android.feature.archive.ArchiveTab
@@ -41,6 +44,16 @@ fun HomeScreen(
     var selectedTab by remember { mutableStateOf(HomeTab.EXPLORE) }
     // 마이페이지 카드 → 보관 탭의 특정 내부 탭으로 진입 요청.
     var pendingArchiveTab by remember { mutableStateOf<ArchiveTab?>(null) }
+
+    // HOME 바깥 라우트(스팟 등록 완료 등)에서 온 탭 전환 요청 소비.
+    val tabRequest by HomeTabRequest.pending.collectAsStateWithLifecycle()
+    LaunchedEffect(tabRequest) {
+        tabRequest?.let { request ->
+            selectedTab = request.tab
+            pendingArchiveTab = request.archiveTab
+            HomeTabRequest.clear()
+        }
+    }
 
     Scaffold(
         containerColor = PickflowColors.gray95,

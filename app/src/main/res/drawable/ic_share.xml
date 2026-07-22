@@ -1,0 +1,11 @@
+<!-- figma_assets/ic_share.svg 1:1 — 스팟 상세 공유 버튼 아이콘. tint 로 색 제어. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32"
+    android:tint="?attr/colorControlNormal">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M21.3335,6.6663L19.4402,8.5597L17.3202,6.4397V21.333H14.6802V6.4397L12.5602,8.5597L10.6668,6.6663L16.0002,1.333L21.3335,6.6663ZM26.6668,13.333V27.9997C26.6668,29.4663 25.4668,30.6663 24.0002,30.6663H8.0002C6.5202,30.6663 5.3335,29.4663 5.3335,27.9997V13.333C5.3335,11.853 6.5202,10.6663 8.0002,10.6663H12.0002V13.333H8.0002V27.9997H24.0002V13.333H20.0002V10.6663H24.0002C25.4668,10.6663 26.6668,11.853 26.6668,13.333Z" />
+</vector>

@@ -35,8 +35,8 @@ data class SpotDetailData(
     val hasImage: Boolean = true,
     /** 서버 `imageUrl` — 사진 박스에 표시할 원본 이미지 URL. */
     val imageUrl: String? = null,
-    /** iOS `pickflowDisplayTime("19:30")` 결과. */
-    val recordedTime: String = "PM 7:30",
+    /** 사진 좌상단 촬영 기록 배지 — "yy.MM.dd AM/PM h:mm". */
+    val recordedTime: String = "26.05.25 PM 7:30",
     val weatherCondition: String = "맑음",
     val precipitationProbability: Int = 15,
     /** iOS `pickflowDisplayTime("18:40")` 결과. */
@@ -63,7 +63,7 @@ fun SpotDetail.toDetailData(isBookmarked: Boolean): SpotDetailData =
         distanceKm = null,
         hasImage = imageUrl?.isNotBlank() == true,
         imageUrl = imageUrl,
-        recordedTime = recordedTime,
+        recordedTime = recordedBadgeText(recordedDate, recordedTime),
         weatherCondition = weather?.toDisplayName() ?: "-",
         precipitationProbability = weather?.precipitationProbability ?: 0,
         sunsetTime = sunsetTime ?: "-",
@@ -74,6 +74,28 @@ fun SpotDetail.toDetailData(isBookmarked: Boolean): SpotDetailData =
 private fun SpotTheme.toDetailTheme(): SpotDetailTheme = when (this) {
     SpotTheme.SUNSET -> SpotDetailTheme.Sunset
     SpotTheme.YUNSEUL -> SpotDetailTheme.Reflection
+}
+
+/**
+ * 서버 `recordedDate`("yyyy-MM-dd") + `recordedTime`("HH:mm") →
+ * "yy.MM.dd AM/PM h:mm" 배지 문자열. 시각은 iOS `pickflowDisplayTime` 1:1 변환.
+ * 파싱 불가 값은 원문을 그대로 이어 붙인다.
+ */
+internal fun recordedBadgeText(recordedDate: String, recordedTime: String): String {
+    val datePart = recordedDate.split("-")
+        .takeIf { it.size == 3 && it[0].length == 4 }
+        ?.let { (y, m, d) -> "${y.takeLast(2)}.$m.$d" }
+        ?: recordedDate
+    val timePart = recordedTime.split(":")
+        .mapNotNull { it.toIntOrNull() }
+        .takeIf { it.size == 2 }
+        ?.let { (hour, minute) ->
+            val period = if (hour < 12) "AM" else "PM"
+            val displayHour = if (hour % 12 == 0) 12 else hour % 12
+            "%s %d:%02d".format(period, displayHour, minute)
+        }
+        ?: recordedTime
+    return listOf(datePart, timePart).filter { it.isNotBlank() }.joinToString(" ")
 }
 
 private fun SpotWeather.toDisplayName(): String {

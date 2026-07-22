@@ -1,6 +1,7 @@
 package com.pickflow.android.feature.spotdetail.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,13 +37,14 @@ fun SpotHeaderSection(spot: SpotDetailData, modifier: Modifier = Modifier) {
                 color = PickflowColors.gray0,
             )
             if (spot.isMine) {
+                // iOS `SpotHeaderSection` MY 배지 1:1 — sunsetOrange 보더 + 텍스트, 배경 없음.
                 Text(
                     text = "MY 스팟",
                     style = PickflowTypography.labelMedium,
-                    color = PickflowColors.gray0,
+                    color = PickflowColors.sunsetOrange,
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
-                        .background(PickflowColors.sunsetOrange)
+                        .border(1.dp, PickflowColors.sunsetOrange, RoundedCornerShape(4.dp))
                         .padding(horizontal = 6.dp, vertical = 3.dp),
                 )
             }

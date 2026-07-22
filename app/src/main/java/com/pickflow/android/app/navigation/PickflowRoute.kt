@@ -13,9 +13,11 @@ object PickflowRoute {
     const val WITHDRAWAL = "withdrawal"
     const val DEBUG = "debug"
 
-    const val SPOT_DETAIL = "spot_detail/{spotId}"
-    fun spotDetail(spotId: String) = "spot_detail/$spotId"
+    const val SPOT_DETAIL = "spot_detail/{spotId}?registered={registered}"
+    fun spotDetail(spotId: String, registered: Boolean = false) =
+        "spot_detail/$spotId?registered=$registered"
     const val ARG_SPOT_ID = "spotId"
+    const val ARG_REGISTERED = "registered"
 
     /** 공지사항 게시판(BoardService.posts/detail) — masterId 는 BuildConfig 주입. */
     const val NOTICE_LIST = "notice_list"
