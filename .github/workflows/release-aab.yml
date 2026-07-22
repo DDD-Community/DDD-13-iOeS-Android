@@ -1,0 +1,85 @@
+name: Release AAB (Play 심사용)
+
+# vX.Y.Z 태그 푸시 시 서명된 release AAB 를 빌드해 GitHub Release 에 첨부한다.
+# (workflow_dispatch 는 워크플로가 기본 브랜치에 있어야 노출되므로 태그 트리거 사용.)
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    name: Build · Sign · Attach AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      # 비공개 키를 secrets.properties 로 주입(release 빌드에 실제 키 반영).
+      - name: Write secrets.properties
+        run: |
+          cat > secrets.properties <<'EOF'
+          NAVER_MAP_CLIENT_ID=${{ secrets.NAVER_MAP_CLIENT_ID }}
+          KAKAO_NATIVE_APP_KEY=${{ secrets.KAKAO_NATIVE_APP_KEY }}
+          PICKFLOW_API_BASE_URL=${{ secrets.PICKFLOW_API_BASE_URL }}
+          TERMS_URL=${{ secrets.TERMS_URL }}
+          PRIVACY_URL=${{ secrets.PRIVACY_URL }}
+          NOTICE_BOARD_MASTER_ID=${{ secrets.NOTICE_BOARD_MASTER_ID }}
+          KAKAO_REST_API_KEY=${{ secrets.KAKAO_REST_API_KEY }}
+          APPLE_SERVICE_ID=${{ secrets.APPLE_SERVICE_ID }}
+          APPLE_REDIRECT_URI=${{ secrets.APPLE_REDIRECT_URI }}
+          EOF
+
+      # base64 로 보관한 keystore 를 복원.
+      - name: Decode release keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+
+      # 태그 vX.Y.Z → versionCode = X*10000 + Y*100 + Z (semver 단조 증가 보장).
+      - name: Compute VERSION_CODE from tag
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$TAG"
+          VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "versionCode=$VERSION_CODE (tag $GITHUB_REF_NAME)"
+
+      - name: Build signed release AAB
+        env:
+          VERSION_CODE: ${{ env.VERSION_CODE }}
+          KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew --no-daemon bundleRelease
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pickflow-release-aab
+          path: app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+      - name: Attach AAB to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app/build/outputs/bundle/release/app-release.aab
+          generate_release_notes: true
