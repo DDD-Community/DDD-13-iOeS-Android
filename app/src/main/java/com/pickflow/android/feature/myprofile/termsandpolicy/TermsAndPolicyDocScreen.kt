@@ -1,6 +1,8 @@
 package com.pickflow.android.feature.myprofile.termsandpolicy
 
 import android.annotation.SuppressLint
+import android.view.ViewGroup
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
@@ -74,11 +76,34 @@ fun TermsAndPolicyDocScreen(
             AndroidView(
                 factory = { context ->
                     WebView(context).apply {
-                        settings.javaScriptEnabled = true
-                        settings.domStorageEnabled = true
-                        settings.userAgentString = DESKTOP_USER_AGENT
+                        // Compose AndroidView 안에서 WebView 가 0×0 으로 측정돼 빈 화면이
+                        // 보이는 사례가 있어 layoutParams 를 명시한다.
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                        )
+                        with(settings) {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            userAgentString = DESKTOP_USER_AGENT
+                            // 데스크탑 UA 로 받은 Notion 페이지를 데스크탑 레이아웃 그대로 렌더링.
+                            useWideViewPort = true
+                            loadWithOverviewMode = true
+                            // Notion 이 내부 리소스를 혼합 스킴으로 로드해도 차단하지 않게.
+                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                            // Notion 임베드 PDF 가 데스크탑 UA 에서 본문으로 렌더되도록 zoom 허용.
+                            builtInZoomControls = true
+                            displayZoomControls = false
+                        }
                         webViewClient = object : WebViewClient() {
                             override fun onPageFinished(view: WebView?, url: String?) {
+                                isLoading = false
+                            }
+                            override fun onReceivedError(
+                                view: WebView?,
+                                request: android.webkit.WebResourceRequest?,
+                                error: android.webkit.WebResourceError?,
+                            ) {
                                 isLoading = false
                             }
                         }
