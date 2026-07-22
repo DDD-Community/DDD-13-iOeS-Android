@@ -44,6 +44,7 @@
         <activity
             android:name=".app.MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:theme="@style/Theme.Pickflow">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -57,6 +58,15 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="pickflow-api.us" />
+            </intent-filter>
+
+            <!-- 커스텀 스킴 폴백 (`pickflow://spot/{token}`) — 공유 랜딩 페이지가
+                 App Links 미검증 환경에서 앱을 열 때 사용. iOS URL 스킴 1:1. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="pickflow" android:host="spot" />
             </intent-filter>
         </activity>
 

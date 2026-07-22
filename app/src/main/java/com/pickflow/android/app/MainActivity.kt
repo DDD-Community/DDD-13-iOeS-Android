@@ -38,13 +38,20 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * iOS `PickflowApp.handleUniversalLink` 1:1 — host=`pickflow-api.us`, path 첫 segment 를
-     * [SpotIdCoder.decodeSpot] 으로 복원해 [DeepLinkState] 에 적재.
+     * iOS `PickflowApp.handleUniversalLink` 1:1 + 커스텀 스킴 폴백.
+     *
+     * - `https://pickflow-api.us/{token}` — App Links(검증 완료 시) 직행 경로.
+     * - `pickflow://spot/{token}` — 공유 랜딩 페이지가 App Links 미검증 환경에서 여는 폴백.
+     *
+     * token 을 [SpotIdCoder.decodeSpot] 으로 복원해 [DeepLinkState] 에 적재.
      */
     private fun handleDeepLink(intent: Intent?) {
         val data: Uri = intent?.data ?: return
-        if (data.host != "pickflow-api.us") return
-        val token = data.pathSegments.firstOrNull() ?: return
+        val token = when {
+            data.scheme == "pickflow" && data.host == "spot" -> data.pathSegments.firstOrNull()
+            data.host == "pickflow-api.us" -> data.pathSegments.firstOrNull()
+            else -> null
+        } ?: return
         val spotId = SpotIdCoder.decodeSpot(token) ?: return
         DeepLinkState.setPendingSpotId(spotId)
     }
