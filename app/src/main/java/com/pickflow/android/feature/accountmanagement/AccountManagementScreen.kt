@@ -33,6 +33,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +56,7 @@ import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.core.services.protocols.ImagePayload
 import com.pickflow.android.feature.accountmanagement.components.LogoutConfirmDialogOverlay
 import coil.compose.AsyncImage
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,11 +73,21 @@ fun AccountManagementScreen(
     val draftPreviewUri by viewModel.draftImagePreviewUri.collectAsStateWithLifecycle()
     val nicknameError by viewModel.nicknameError.collectAsStateWithLifecycle()
     val provider by viewModel.provider.collectAsStateWithLifecycle()
+    val toastMessage by viewModel.toast.collectAsStateWithLifecycle()
 
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var toastVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(signedOut) {
         if (signedOut) onSignedOut()
+    }
+    LaunchedEffect(toastMessage) {
+        if (toastMessage != null) {
+            toastVisible = true
+            delay(3000)
+            toastVisible = false
+            viewModel.consumeToast()
+        }
     }
 
     val context = LocalContext.current
@@ -325,6 +337,14 @@ fun AccountManagementScreen(
                 },
             )
         }
+
+        // 저장 결과 토스트 — "저장되었습니다." (화면 중앙, 3초 후 자동 소멸).
+        if (toastVisible && toastMessage != null) {
+            SaveResultToast(
+                message = toastMessage ?: "",
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
     }
 
     if (showPhotoSheet) {
@@ -342,6 +362,35 @@ fun AccountManagementScreen(
             }
             Spacer(Modifier.height(24.dp))
         }
+    }
+}
+
+/** 시안 공통 토스트(체크 아이콘 + gray0 배경) — 스팟 상세 토스트와 동일 스타일. */
+@Composable
+private fun SaveResultToast(
+    message: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(PickflowColors.gray0)
+            .padding(horizontal = 20.dp, vertical = 14.dp)
+            .testTag("account-save-toast"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            imageVector = Icons.Filled.CheckCircle,
+            contentDescription = null,
+            tint = PickflowColors.gray95,
+            modifier = Modifier.size(20.dp),
+        )
+        Text(
+            text = message,
+            style = PickflowTypography.bodyMediumBold,
+            color = PickflowColors.gray95,
+        )
     }
 }
 

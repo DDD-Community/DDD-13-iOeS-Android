@@ -19,19 +19,14 @@ interface UserApi {
     suspend fun getMyPageHome(): ApiResponse<MypageHomeResponseDto>
 
     /**
-     * 이미지 없는 경우 — Retrofit @Multipart는 최소 1개 part를 요구하므로 image 변경 없이
-     * 닉네임만 바꿀 때는 multipart가 아닌 일반 PATCH로 분리.
+     * 프로필 부분 수정 — iOS `UserService.updateProfile` 1:1: multipart PATCH.
+     * `nickname`(텍스트 part) / `profileImage`(파일 part) 중 변경분만 담는다.
+     * (기존 쿼리 파라미터 방식은 서버가 인식하지 못해 닉네임 저장이 무시되던 원인.)
      */
-    @PATCH("v1/users/me")
-    suspend fun updateProfileNoImage(
-        @Query("nickname") nickname: String? = null,
-    ): ApiResponse<UpdateProfileResponseDto>
-
     @Multipart
     @PATCH("v1/users/me")
-    suspend fun updateProfileWithImage(
-        @Query("nickname") nickname: String? = null,
-        @Part profileImage: MultipartBody.Part,
+    suspend fun updateProfile(
+        @Part parts: List<MultipartBody.Part>,
     ): ApiResponse<UpdateProfileResponseDto>
 
     @DELETE("v1/users/me")

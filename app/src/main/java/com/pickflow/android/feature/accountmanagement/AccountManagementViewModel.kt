@@ -2,6 +2,7 @@ package com.pickflow.android.feature.accountmanagement
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pickflow.android.core.network.ApiException
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.ImagePayload
 import com.pickflow.android.core.services.protocols.SocialProvider
@@ -47,6 +48,12 @@ class AccountManagementViewModel @Inject constructor(
     private val _draftImagePreviewUri = MutableStateFlow<String?>(null)
     val draftImagePreviewUri: StateFlow<String?> = _draftImagePreviewUri.asStateFlow()
 
+    /** 저장 결과 토스트("저장되었습니다." 등). 1회 표시 후 [consumeToast] 로 비운다. */
+    private val _toast = MutableStateFlow<String?>(null)
+    val toast: StateFlow<String?> = _toast.asStateFlow()
+
+    fun consumeToast() { _toast.value = null }
+
     val isSaveEnabled: StateFlow<Boolean> =
         combine(_nicknameDraft, _originalNickname, _draftImagePayload) { draft, original, image ->
             val nicknameChanged = draft != original
@@ -71,12 +78,16 @@ class AccountManagementViewModel @Inject constructor(
         }
     }
 
-    /** 한글·영문·숫자 2~12자만 허용. 12자 초과 입력 차단, 특수문자·공백 시 에러. */
+    /**
+     * 닉네임 유효성 정책 — 한글·영문·숫자 2~12자, 특수문자/공백 불가.
+     * 12자 초과는 입력을 허용하되 인라인 에러를 노출하고 저장을 비활성화한다.
+     */
     fun updateNickname(new: String) {
-        val capped = new.take(MAX_NICKNAME)
+        val capped = new.take(MAX_NICKNAME_INPUT)
         _nicknameDraft.value = capped
         _nicknameError.value = when {
             capped == _originalNickname.value || capped.isEmpty() -> null
+            capped.length > MAX_NICKNAME -> "닉네임은 12자 이하로 입력해 주세요."
             !isNicknameValid(capped) -> "한글, 영문, 숫자 2~12자로 입력해주세요."
             else -> null
         }
@@ -87,7 +98,12 @@ class AccountManagementViewModel @Inject constructor(
         _draftImagePreviewUri.value = previewUri
     }
 
+    /**
+     * 변경분 저장. 성공 시 "저장되었습니다." 토스트, 닉네임 중복(서버 검증) 시
+     * 인라인 에러 "이미 사용 중인 닉네임이에요." 노출.
+     */
     fun save() {
+        if (!isSaveEnabled.value) return
         viewModelScope.launch {
             val nicknameChanged = _nicknameDraft.value != _originalNickname.value &&
                 isNicknameValid(_nicknameDraft.value)
@@ -102,6 +118,15 @@ class AccountManagementViewModel @Inject constructor(
                     _profileImageUrl.value = it.profileImageUrl ?: _profileImageUrl.value
                     _draftImagePayload.value = null
                     _draftImagePreviewUri.value = null
+                }
+                _nicknameError.value = null
+                _toast.value = "저장되었습니다."
+            }.onFailure { error ->
+                if (nicknameChanged && error is ApiException) {
+                    // 서버 측 닉네임 검증 실패 — 정책상 중복이 유일한 케이스.
+                    _nicknameError.value = "이미 사용 중인 닉네임이에요."
+                } else {
+                    _toast.value = "저장에 실패했어요."
                 }
             }
         }
@@ -118,6 +143,9 @@ class AccountManagementViewModel @Inject constructor(
 
     companion object {
         private const val MAX_NICKNAME = 12
+
+        /** 12자 초과 에러 문구를 보여주기 위한 입력 상한(하드 컷). */
+        private const val MAX_NICKNAME_INPUT = 20
         private val NICKNAME_REGEX = Regex("^[가-힣a-zA-Z0-9]{2,12}$")
     }
 }

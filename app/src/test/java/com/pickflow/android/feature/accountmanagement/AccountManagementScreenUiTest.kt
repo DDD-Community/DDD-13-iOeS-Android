@@ -18,7 +18,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [34], qualifiers = "w411dp-h950dp-xhdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class AccountManagementScreenUiTest {
 
@@ -45,18 +45,27 @@ class AccountManagementScreenUiTest {
             }
         }
         composeRule.onNodeWithTag("accountmanagement-screen").assertIsDisplayed()
-        composeRule.onNodeWithTag("account-logout").assertIsDisplayed()
-        composeRule.onNodeWithTag("account-withdraw").assertIsDisplayed()
+        // 로그아웃/회원탈퇴는 연결된 소셜 하단 배치 — 화면 하단이라 존재만 검증.
+        composeRule.onNodeWithTag("account-logout").assertExists()
+        composeRule.onNodeWithTag("account-withdraw").assertExists()
     }
 
     @Test
-    fun withdraw_tap_shows_confirm_dialog() {
+    fun withdraw_tap_invokes_onOpenWithdrawal() {
+        // 회원탈퇴는 확인 다이얼로그 대신 탈퇴 안내 화면(WITHDRAWAL 라우트)으로 이동한다.
+        var opened = false
         composeRule.setContent {
             PickflowTheme {
-                AccountManagementScreen(onBack = {}, onSignedOut = {}, viewModel = viewModel())
+                AccountManagementScreen(
+                    onBack = {},
+                    onSignedOut = {},
+                    onOpenWithdrawal = { opened = true },
+                    viewModel = viewModel(),
+                )
             }
         }
         composeRule.onNodeWithTag("account-withdraw").performClick()
-        composeRule.onNodeWithTag("account-withdraw-confirm").assertIsDisplayed()
+        composeRule.waitForIdle()
+        assert(opened) { "onOpenWithdrawal 이 호출되어야 한다" }
     }
 }

@@ -18,6 +18,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import retrofit2.Retrofit
 
+/**
+ * iOS `UserService.updateProfile` 1:1 — multipart PATCH 계약 검증.
+ * nickname 은 텍스트 part, profileImage 는 파일 part 로 전송된다.
+ */
 class DefaultUserServiceUpdateProfileTest {
 
     private lateinit var server: MockWebServer
@@ -38,7 +42,7 @@ class DefaultUserServiceUpdateProfileTest {
     fun tearDown() = server.shutdown()
 
     @Test
-    fun `updateProfile with nickname and image sends query and multipart part`() = runBlocking {
+    fun `updateProfile with nickname and image sends both multipart parts`() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(
                 """{"success":true,"code":"OK","message":"","data":{
@@ -59,19 +63,21 @@ class DefaultUserServiceUpdateProfileTest {
 
         val req = server.takeRequest()
         assertEquals("PATCH", req.method)
-        val url = req.requestUrl!!
-        assertEquals("/v1/users/me", url.encodedPath)
-        assertEquals("Alice", url.queryParameter("nickname"))
+        assertEquals("/v1/users/me", req.requestUrl!!.encodedPath)
         val contentType = req.getHeader("Content-Type") ?: ""
         assertTrue(contentType.startsWith("multipart/form-data"))
         val body = req.body.readUtf8()
+        // nickname 텍스트 part
+        assertTrue(body.contains("name=\"nickname\""))
+        assertTrue(body.contains("Alice"))
+        // profileImage 파일 part
         assertTrue(body.contains("name=\"profileImage\""))
         assertTrue(body.contains("filename=\"avatar.png\""))
         assertTrue(body.contains("Content-Type: image/png"))
     }
 
     @Test
-    fun `updateProfile with only nickname omits multipart part body`() = runBlocking {
+    fun `updateProfile with only nickname sends nickname part without image part`() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(
                 """{"success":true,"code":"OK","message":"","data":{
@@ -86,27 +92,35 @@ class DefaultUserServiceUpdateProfileTest {
         assertNull(result.profileImageUrl) // blank → null
 
         val req = server.takeRequest()
-        assertEquals("Bob", req.requestUrl!!.queryParameter("nickname"))
+        val contentType = req.getHeader("Content-Type") ?: ""
+        assertTrue(contentType.startsWith("multipart/form-data"))
         val body = req.body.readUtf8()
+        assertTrue(body.contains("name=\"nickname\""))
+        assertTrue(body.contains("Bob"))
         assertTrue(!body.contains("profileImage"))
     }
 
     @Test
-    fun `updateProfile with neither field still PATCHes and parses`() = runBlocking {
+    fun `updateProfile with neither field fails fast without network call`() {
+        val ex = assertThrows(IllegalArgumentException::class.java) {
+            runBlocking { service.updateProfile() }
+        }
+        assertEquals("변경된 항목이 없습니다.", ex.message)
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun `updateProfile succeeds even when data is null (iOS EmptyResponse parity)`() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(
-                """{"success":true,"code":"OK","message":"","data":{
-                  "displayName":"unchanged#0003","profileImageUrl":null
-                }}"""
+                """{"success":true,"code":"OK","message":"","data":null}"""
             )
         )
 
-        val result = service.updateProfile()
-        assertEquals("unchanged#0003", result.displayName)
-        assertNull(result.profileImageUrl)
+        val result = service.updateProfile(nickname = "Alice")
 
-        val url = server.takeRequest().requestUrl!!
-        assertNull(url.queryParameter("nickname"))
+        assertEquals("Alice", result.displayName)
+        assertNull(result.profileImageUrl)
     }
 
     @Test
