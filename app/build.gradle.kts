@@ -24,7 +24,9 @@ val kakaoNativeAppKey: String = secrets.getProperty("KAKAO_NATIVE_APP_KEY", "")
 val pickflowApiBaseUrl: String = secrets.getProperty("PICKFLOW_API_BASE_URL", "https://pickflow-api.us/api/")
 val termsUrl: String = secrets.getProperty("TERMS_URL", "")
 val privacyUrl: String = secrets.getProperty("PRIVACY_URL", "")
-val noticeBoardMasterId: String = secrets.getProperty("NOTICE_BOARD_MASTER_ID", "1")
+// CI 가 빈 값을 써 넣어도 long 리터럴이 깨지지 않도록 blank → 기본값 처리.
+val noticeBoardMasterId: String =
+    secrets.getProperty("NOTICE_BOARD_MASTER_ID", "1").ifBlank { "1" }
 val kakaoRestApiKey: String = secrets.getProperty("KAKAO_REST_API_KEY", "")
 val appleServiceId: String = secrets.getProperty("APPLE_SERVICE_ID", "")
 val appleRedirectUri: String = secrets.getProperty("APPLE_REDIRECT_URI", "")
