@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -75,6 +76,8 @@ fun ArchiveRenameDialogContent(
             .background(Color.Black.copy(alpha = 0.5f))
             // 콘텐츠가 풀스크린을 덮으므로 딤 영역 탭으로도 닫히게 한다.
             .clickable(onClick = onDismiss)
+            // 키보드가 올라오면 남은 영역 기준으로 카드를 중앙 정렬(딤은 풀스크린 유지).
+            .imePadding()
             .testTag("archive-rename-dialog"),
         contentAlignment = Alignment.Center,
     ) {
@@ -139,16 +142,17 @@ fun ArchiveRenameDialogContent(
                 DialogButton(
                     label = "취소",
                     background = PickflowColors.gray0,
-                    foreground = PickflowColors.gray10,
+                    foreground = PickflowColors.gray95,
                     enabled = true,
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f).testTag("archive-rename-cancel"),
                 )
-                val enabled = name.trim().isNotEmpty()
+                // 이름을 실제로 변경했을 때만 저장 활성화(sunsetOrange), 아니면 gray70 비활성.
+                val enabled = name.trim().isNotEmpty() && name != initialName
                 DialogButton(
                     label = "저장",
-                    background = PickflowColors.gray70,
-                    foreground = PickflowColors.gray10,
+                    background = if (enabled) PickflowColors.sunsetOrange else PickflowColors.gray70,
+                    foreground = if (enabled) PickflowColors.gray0 else PickflowColors.gray50,
                     enabled = enabled,
                     onClick = { onSave(name); onDismiss() },
                     modifier = Modifier.weight(1f).testTag("archive-rename-save"),
@@ -170,7 +174,8 @@ private fun DialogButton(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(if (enabled) background else background.copy(alpha = 0.5f))
+            // 비활성 색은 호출 측에서 명시적으로 전달한다(디자인 시안의 solid gray70).
+            .background(background)
             .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = 14.dp),
         contentAlignment = Alignment.Center,
