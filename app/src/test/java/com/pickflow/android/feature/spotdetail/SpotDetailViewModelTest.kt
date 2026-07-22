@@ -1,10 +1,13 @@
 package com.pickflow.android.feature.spotdetail
 
 import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.common.util.SpotIdCoder
+import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.SharePayload
 import com.pickflow.android.core.services.protocols.ShareIntentService
 import com.pickflow.android.core.services.protocols.SpotDetail
+import com.pickflow.android.core.services.protocols.SpotReportService
 import com.pickflow.android.core.services.protocols.SpotService
 import com.pickflow.android.core.services.protocols.SpotTheme
 import io.mockk.coEvery
@@ -31,6 +34,8 @@ class SpotDetailViewModelTest {
     private lateinit var spotService: SpotService
     private lateinit var bookmarkService: BookmarkService
     private lateinit var shareIntentService: ShareIntentService
+    private lateinit var spotReportService: SpotReportService
+    private lateinit var authService: AuthService
 
     private fun fixture(isBookmarked: Boolean = false, isMySpot: Boolean = false): SpotDetail =
         SpotDetail(
@@ -64,17 +69,23 @@ class SpotDetailViewModelTest {
         spotService = mockk()
         bookmarkService = mockk()
         shareIntentService = mockk(relaxed = true)
+        spotReportService = mockk(relaxed = true)
+        authService = mockk(relaxed = true)
     }
 
     @AfterEach
     fun tearDown() { Dispatchers.resetMain() }
+
+    private fun vm() = SpotDetailViewModel(
+        spotService, bookmarkService, shareIntentService, spotReportService, authService,
+    )
 
     @Test
     fun `load uses server isBookmarked as truth (logged in)`() = runTest(testDispatcher) {
         val spot = fixture(isBookmarked = true)
         coEvery { spotService.spot("1") } returns spot
 
-        val vm = SpotDetailViewModel(spotService, bookmarkService, shareIntentService)
+        val vm = vm()
         vm.load("1"); advanceUntilIdle()
 
         assertEquals(LoadState.Loaded(spot), vm.spot.value)
@@ -87,7 +98,7 @@ class SpotDetailViewModelTest {
         coEvery { spotService.spot("9") } throws boom
         coEvery { bookmarkService.isBookmarked("9") } returns true
 
-        val vm = SpotDetailViewModel(spotService, bookmarkService, shareIntentService)
+        val vm = vm()
         vm.load("9"); advanceUntilIdle()
 
         val state = vm.spot.value
@@ -96,40 +107,77 @@ class SpotDetailViewModelTest {
     }
 
     @Test
-    fun `toggleBookmark uses bookmarkService toggle with stringified id`() = runTest(testDispatcher) {
+    fun `toggleBookmark adds bookmark with stringified id when logged in`() = runTest(testDispatcher) {
         val spot = fixture(isBookmarked = false)
         coEvery { spotService.spot("1") } returns spot
-        coEvery { bookmarkService.toggle("1") } returns true
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { bookmarkService.add("1") } returns 1L
 
-        val vm = SpotDetailViewModel(spotService, bookmarkService, shareIntentService)
+        val vm = vm()
         vm.load("1"); advanceUntilIdle()
         vm.toggleBookmark(); advanceUntilIdle()
 
         assertTrue(vm.bookmarked.value)
-        coVerify(exactly = 1) { bookmarkService.toggle("1") }
+        coVerify(exactly = 1) { bookmarkService.add("1") }
     }
 
     @Test
-    fun `reportInvalidInfo sets reportSubmitted true`() {
-        val vm = SpotDetailViewModel(spotService, bookmarkService, shareIntentService)
+    fun `toggleBookmark when logged out shows login prompt without server call`() = runTest(testDispatcher) {
+        val spot = fixture(isBookmarked = false)
+        coEvery { spotService.spot("1") } returns spot
+        coEvery { authService.isLoggedIn() } returns false
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+        vm.toggleBookmark(); advanceUntilIdle()
+
+        assertTrue(vm.isLoginRequired.value)
+        assertFalse(vm.bookmarked.value)
+        coVerify(exactly = 0) { bookmarkService.add(any()) }
+    }
+
+    @Test
+    fun `reportInvalidInfo sets reportSubmitted true on success`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns fixture()
+        coEvery { spotReportService.report(1L, any()) } returns 10L
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
         assertFalse(vm.reportSubmitted.value)
-        vm.reportInvalidInfo()
+        vm.reportInvalidInfo("실제 위치가 지도와 달라요"); advanceUntilIdle()
+
         assertTrue(vm.reportSubmitted.value)
+        assertEquals("제보가 접수되었습니다.", vm.toast.value)
+    }
+
+    @Test
+    fun `reportInvalidInfo emits failure toast on error`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns fixture()
+        coEvery { spotReportService.report(1L, any()) } throws RuntimeException("boom")
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+        vm.reportInvalidInfo("실제 위치가 지도와 달라요"); advanceUntilIdle()
+
+        assertFalse(vm.reportSubmitted.value)
+        assertEquals("제보 접수에 실패했어요.", vm.toast.value)
     }
 
     @Test
     fun `share dispatches with spot payload`() = runTest(testDispatcher) {
         coEvery { spotService.spot("1") } returns fixture()
 
-        val vm = SpotDetailViewModel(spotService, bookmarkService, shareIntentService)
+        val vm = vm()
         vm.load("1"); advanceUntilIdle()
         vm.share(); advanceUntilIdle()
 
-        // 현재 SpotDetailViewModel.share 는 fixture 의 title("Cafe") 뒤에 " - comment" 를
-        // 붙이고 https URL 로 변환한다. 기대값을 실제 구현에 맞춰 갱신.
+        // share 는 "이름 - 코멘트" 제목 + SpotIdCoder 인코딩 URL 을 전달한다.
         coVerify {
             shareIntentService.share(
-                SharePayload(title = "Cafe - comment", url = "https://pickflow.app/spot/1")
+                SharePayload(
+                    title = "Cafe - comment",
+                    url = "https://pickflow-api.us/${SpotIdCoder.encodeSpot(1L)}",
+                )
             )
         }
     }

@@ -1,14 +1,11 @@
 package com.pickflow.android.feature.myprofile
 
 import app.cash.turbine.test
-import com.pickflow.android.BuildConfig
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.AuthService
-import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.MyPageHome
 import com.pickflow.android.core.services.protocols.UserService
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,14 +27,12 @@ class MyProfileViewModelTest {
 
     private lateinit var userService: UserService
     private lateinit var authService: AuthService
-    private lateinit var externalAppLauncher: ExternalAppLauncher
 
     @BeforeEach
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         userService = mockk()
         authService = mockk()
-        externalAppLauncher = mockk(relaxed = true)
     }
 
     @AfterEach
@@ -45,7 +40,7 @@ class MyProfileViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun vm() = MyProfileViewModel(userService, authService, externalAppLauncher)
+    private fun vm() = MyProfileViewModel(userService, authService)
 
     private fun home(nickname: String = "테스트유저#1234") = MyPageHome(
         nickname = nickname,
@@ -98,19 +93,4 @@ class MyProfileViewModelTest {
         }
     }
 
-    @Test
-    fun `openTerms launches Custom Tab with TERMS_URL`() = runTest(testDispatcher) {
-        val viewModel = vm()
-        viewModel.openTerms()
-        advanceUntilIdle()
-        coVerify(exactly = 1) { externalAppLauncher.openCustomTab(BuildConfig.TERMS_URL) }
-    }
-
-    @Test
-    fun `openPrivacy launches Custom Tab with PRIVACY_URL`() = runTest(testDispatcher) {
-        val viewModel = vm()
-        viewModel.openPrivacy()
-        advanceUntilIdle()
-        coVerify(exactly = 1) { externalAppLauncher.openCustomTab(BuildConfig.PRIVACY_URL) }
-    }
 }

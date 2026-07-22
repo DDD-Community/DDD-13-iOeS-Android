@@ -1,12 +1,16 @@
 package com.pickflow.android.feature.map
 
 import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.core.services.protocols.AuthService
+import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.Coordinates
+import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotMapMarker
 import com.pickflow.android.core.services.protocols.SpotMapService
+import com.pickflow.android.core.services.protocols.SpotService
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.core.services.protocols.ViewportBox
 import io.mockk.coEvery
@@ -46,7 +50,15 @@ class HomeMapViewportPartitionTest {
         Dispatchers.resetMain()
     }
 
-    private fun vm() = HomeMapViewModel(listService, mapService, locationService)
+    private fun vm() = HomeMapViewModel(
+        listService,
+        mapService,
+        locationService,
+        mockk<SpotService>(relaxed = true),
+        mockk<AuthService>(relaxed = true),
+        mockk<BookmarkService>(relaxed = true),
+        mockk<ExternalAppLauncher>(relaxed = true),
+    )
 
     private fun box() = ViewportBox(
         topLeft = Coordinates(37.6, 126.9),

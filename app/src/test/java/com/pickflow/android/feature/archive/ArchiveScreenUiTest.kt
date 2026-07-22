@@ -3,6 +3,7 @@ package com.pickflow.android.feature.archive
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.common.ui.LoadState
@@ -62,8 +63,9 @@ class ArchiveScreenUiTest {
             }
         }
         composeRule.onNodeWithTag("archive-signedout").assertIsDisplayed()
-        composeRule.onNodeWithTag("archive-kakao").assertIsDisplayed()
-        composeRule.onNodeWithTag("archive-apple").assertIsDisplayed()
+        // 공통 SignedOutLoginContent 로 대체됨 — 카카오 버튼은 텍스트로 검증.
+        // (Apple 로그인은 임시 비활성화 상태)
+        composeRule.onNodeWithText("카카오로 로그인").assertIsDisplayed()
     }
 
     @Test

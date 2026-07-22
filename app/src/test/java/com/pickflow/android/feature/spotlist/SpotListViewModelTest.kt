@@ -59,7 +59,7 @@ class SpotListViewModelTest {
     @Test
     fun `refresh loads page 0 and emits Loaded`() = runTest(testDispatcher) {
         coEvery {
-            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.DISTANCE)
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
         } returns SpotPage(items = listOf(spot("a"), spot("b")), page = 0, hasNext = true)
 
         val vm = viewModel()
@@ -72,10 +72,10 @@ class SpotListViewModelTest {
     @Test
     fun `loadNextPage appends and stops when hasNext is false`() = runTest(testDispatcher) {
         coEvery {
-            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.DISTANCE)
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
         } returns SpotPage(items = listOf(spot("a")), page = 0, hasNext = true)
         coEvery {
-            listService.fetch(theme = null, page = 1, coordinates = null, sort = SpotSort.DISTANCE)
+            listService.fetch(theme = null, page = 1, coordinates = null, sort = SpotSort.RECOMMENDED)
         } returns SpotPage(items = listOf(spot("b")), page = 1, hasNext = false)
 
         val vm = viewModel()
@@ -91,10 +91,10 @@ class SpotListViewModelTest {
     @Test
     fun `selectTheme resets page and refilters`() = runTest(testDispatcher) {
         coEvery {
-            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.DISTANCE)
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
         } returns SpotPage(items = listOf(spot("a", SpotTheme.SUNSET)), page = 0, hasNext = false)
         coEvery {
-            listService.fetch(theme = SpotTheme.YUNSEUL, page = 0, coordinates = null, sort = SpotSort.DISTANCE)
+            listService.fetch(theme = SpotTheme.YUNSEUL, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
         } returns SpotPage(items = listOf(spot("b", SpotTheme.YUNSEUL)), page = 0, hasNext = false)
 
         val vm = viewModel()
@@ -107,23 +107,23 @@ class SpotListViewModelTest {
     @Test
     fun `selectSort resets page and re-fetches with new sort`() = runTest(testDispatcher) {
         coEvery {
-            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.DISTANCE)
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
         } returns SpotPage(items = listOf(spot("d")), page = 0, hasNext = false)
         coEvery {
-            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.DISTANCE)
         } returns SpotPage(items = listOf(spot("b")), page = 0, hasNext = false)
 
         val vm = viewModel()
         vm.refresh(); advanceUntilIdle()
-        vm.selectSort(SpotSort.RECOMMENDED); advanceUntilIdle()
-        assertEquals(SpotSort.RECOMMENDED, vm.sort.value)
+        vm.selectSort(SpotSort.DISTANCE); advanceUntilIdle()
+        assertEquals(SpotSort.DISTANCE, vm.sort.value)
         assertEquals(listOf("b"), (vm.spots.value as LoadState.Loaded).value.map { it.id })
     }
 
     @Test
     fun `empty result emits Empty`() = runTest(testDispatcher) {
         coEvery {
-            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.DISTANCE)
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
         } returns SpotPage(items = emptyList(), page = 0, hasNext = false)
         val vm = viewModel()
         vm.refresh(); advanceUntilIdle()

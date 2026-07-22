@@ -5,11 +5,15 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import com.pickflow.android.common.designsystem.PickflowTheme
+import com.pickflow.android.core.services.protocols.AuthService
+import com.pickflow.android.core.services.protocols.BookmarkService
+import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotMapService
 import com.pickflow.android.core.services.protocols.SpotPage
+import com.pickflow.android.core.services.protocols.SpotService
 import com.pickflow.android.core.services.protocols.SpotTheme
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -33,7 +37,15 @@ class HomeMapScreenUiTest {
         val mapService = mockk<SpotMapService>(relaxed = true)
         val locationService = mockk<LocationService>(relaxed = true)
         coEvery { listService.fetch(any(), any()) } returns SpotPage(items = spots, page = 0, hasNext = false)
-        return HomeMapViewModel(listService, mapService, locationService)
+        return HomeMapViewModel(
+            listService,
+            mapService,
+            locationService,
+            mockk<SpotService>(relaxed = true),
+            mockk<AuthService>(relaxed = true),
+            mockk<BookmarkService>(relaxed = true),
+            mockk<ExternalAppLauncher>(relaxed = true),
+        )
     }
 
     @Test

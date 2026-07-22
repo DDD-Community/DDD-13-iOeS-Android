@@ -1,11 +1,15 @@
 package com.pickflow.android.feature.map
 
 import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.core.services.protocols.AuthService
+import com.pickflow.android.core.services.protocols.BookmarkService
+import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotMapService
 import com.pickflow.android.core.services.protocols.SpotPage
+import com.pickflow.android.core.services.protocols.SpotService
 import com.pickflow.android.core.services.protocols.SpotTheme
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -47,7 +51,15 @@ class HomeMapViewModelTest {
     @AfterEach
     fun tearDown() { Dispatchers.resetMain() }
 
-    private fun vm() = HomeMapViewModel(spotListService, spotMapService, locationService)
+    private fun vm() = HomeMapViewModel(
+        spotListService,
+        spotMapService,
+        locationService,
+        mockk<SpotService>(relaxed = true),
+        mockk<AuthService>(relaxed = true),
+        mockk<BookmarkService>(relaxed = true),
+        mockk<ExternalAppLauncher>(relaxed = true),
+    )
 
     @Test
     fun `load emits Loaded with raw spots`() = runTest(testDispatcher) {

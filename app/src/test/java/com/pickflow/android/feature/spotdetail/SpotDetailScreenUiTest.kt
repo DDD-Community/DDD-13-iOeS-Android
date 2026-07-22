@@ -5,10 +5,12 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import com.pickflow.android.common.designsystem.PickflowTheme
+import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.ShareIntentService
 import com.pickflow.android.core.services.protocols.SpotDetail
+import com.pickflow.android.core.services.protocols.SpotReportService
 import com.pickflow.android.core.services.protocols.SpotService
 import com.pickflow.android.core.services.protocols.SpotTheme
 import io.mockk.coEvery
@@ -61,7 +63,13 @@ class SpotDetailScreenUiTest {
             isMySpot = false,
         )
         coEvery { bookmarkService.isBookmarked("s1") } returns false
-        val vm = SpotDetailViewModel(spotService, bookmarkService, shareIntentService)
+        val vm = SpotDetailViewModel(
+            spotService,
+            bookmarkService,
+            shareIntentService,
+            mockk<SpotReportService>(relaxed = true),
+            mockk<AuthService>(relaxed = true),
+        )
 
         composeRule.setContent {
             PickflowTheme {
@@ -84,7 +92,13 @@ class SpotDetailScreenUiTest {
         val bookmarkService = mockk<BookmarkService>(relaxed = true)
         val shareIntentService = mockk<ShareIntentService>(relaxed = true)
         coEvery { spotService.spot(any()) } throws RuntimeException("not found")
-        val vm = SpotDetailViewModel(spotService, bookmarkService, shareIntentService)
+        val vm = SpotDetailViewModel(
+            spotService,
+            bookmarkService,
+            shareIntentService,
+            mockk<SpotReportService>(relaxed = true),
+            mockk<AuthService>(relaxed = true),
+        )
 
         composeRule.setContent {
             PickflowTheme {

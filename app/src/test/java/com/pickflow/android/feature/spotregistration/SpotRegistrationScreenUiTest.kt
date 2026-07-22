@@ -5,7 +5,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import com.pickflow.android.common.designsystem.PickflowTheme
-import com.pickflow.android.core.services.protocols.SpotService
+import com.pickflow.android.core.services.protocols.LocationService
+import com.pickflow.android.core.services.protocols.MySpotService
 import io.mockk.mockk
 import org.junit.Rule
 import org.junit.Test
@@ -24,14 +25,22 @@ class SpotRegistrationScreenUiTest {
 
     @Test
     fun renders_registration_form() {
-        val vm = SpotRegistrationViewModel(mockk<SpotService>(relaxed = true))
+        val vm = SpotRegistrationViewModel(
+            mockk<MySpotService>(relaxed = true),
+            mockk<LocationService>(relaxed = true),
+        )
         composeRule.setContent {
             PickflowTheme {
-                SpotRegistrationScreen(onBack = {}, onRegistered = {}, viewModel = vm)
+                SpotRegistrationScreen(
+                    onBack = {},
+                    onOpenSearch = {},
+                    onRegistered = {},
+                    viewModel = vm,
+                )
             }
         }
         composeRule.onNodeWithTag("spotregistration-screen").assertIsDisplayed()
         composeRule.onNodeWithTag("registration-submit").assertExists()
-        composeRule.onNodeWithText("등록하기").assertExists()
+        composeRule.onNodeWithText("스팟 등록").assertExists()
     }
 }

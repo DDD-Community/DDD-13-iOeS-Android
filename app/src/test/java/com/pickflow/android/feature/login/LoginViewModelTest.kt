@@ -2,6 +2,7 @@ package com.pickflow.android.feature.login
 
 import app.cash.turbine.test
 import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.KakaoAuthProvider
 import com.pickflow.android.core.services.protocols.KakaoAuthResult
 import com.pickflow.android.core.services.protocols.AuthenticatedSession
@@ -32,12 +33,14 @@ class LoginViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var kakao: KakaoAuthProvider
     private lateinit var social: SocialLoginService
+    private lateinit var auth: AuthService
 
     @BeforeEach
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         kakao = mockk()
         social = mockk()
+        auth = mockk(relaxed = true)
     }
 
     @AfterEach
@@ -61,7 +64,7 @@ class LoginViewModelTest {
         )
         coEvery { social.loginWith(capture(captured)) } returns session
 
-        val vm = LoginViewModel(kakao, social)
+        val vm = LoginViewModel(kakao, social, auth)
 
         vm.session.test {
             assertEquals(LoadState.Idle, awaitItem())
@@ -83,7 +86,7 @@ class LoginViewModelTest {
         val boom = IllegalStateException("kakao down")
         coEvery { kakao.login() } throws boom
 
-        val vm = LoginViewModel(kakao, social)
+        val vm = LoginViewModel(kakao, social, auth)
 
         vm.session.test {
             assertEquals(LoadState.Idle, awaitItem())

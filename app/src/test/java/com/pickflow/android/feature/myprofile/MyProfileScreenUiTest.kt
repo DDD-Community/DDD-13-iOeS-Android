@@ -6,7 +6,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.core.services.protocols.AuthService
-import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.MyPageHome
 import com.pickflow.android.core.services.protocols.UserService
 import io.mockk.coEvery
@@ -38,14 +37,13 @@ class MyProfileScreenUiTest {
     ): MyProfileViewModel {
         val userService = mockk<UserService>()
         val authService = mockk<AuthService>()
-        val launcher = mockk<ExternalAppLauncher>(relaxed = true)
         coEvery { authService.isLoggedIn() } returns loggedIn
         if (throwOnFetch) {
             coEvery { userService.fetchMyPage() } throws RuntimeException("network")
         } else {
             coEvery { userService.fetchMyPage() } returns home
         }
-        return MyProfileViewModel(userService, authService, launcher)
+        return MyProfileViewModel(userService, authService)
     }
 
     @Test
@@ -57,8 +55,7 @@ class MyProfileScreenUiTest {
         composeRule.onNodeWithText("테스트유저#1234").assertIsDisplayed()
         // 메뉴는 verticalScroll 끝 쪽이라 기기에서 안 보일 수 있어 assertExists 로 검증.
         composeRule.onNodeWithTag("myprofile-menu-notice").assertExists()
-        composeRule.onNodeWithTag("myprofile-menu-terms").assertExists()
-        composeRule.onNodeWithTag("myprofile-menu-privacy").assertExists()
+        composeRule.onNodeWithTag("myprofile-menu-terms-policy").assertExists()
     }
 
     @Test

@@ -39,6 +39,13 @@ class SpotSearchViewModelTest {
     @AfterEach
     fun tearDown() { Dispatchers.resetMain() }
 
+    private fun suggestion() = AddressSuggestion(
+        name = "Seoul",
+        fullAddress = "서울특별시 중구",
+        latitude = 37.5,
+        longitude = 127.0,
+    )
+
     @Test
     fun `blank query resets to Idle`() = runTest(testDispatcher) {
         val vm = SpotSearchViewModel(addressService, locationService)
@@ -48,9 +55,8 @@ class SpotSearchViewModelTest {
 
     @Test
     fun `query with results emits Loaded`() = runTest(testDispatcher) {
-        coEvery { addressService.search("seoul") } returns listOf(
-            AddressSuggestion("Seoul", 37.0, 127.0)
-        )
+        coEvery { locationService.currentLocation() } returns null
+        coEvery { addressService.search("seoul") } returns listOf(suggestion())
         val vm = SpotSearchViewModel(addressService, locationService)
         vm.onQueryChanged("seoul"); advanceUntilIdle()
         assertTrue(vm.suggestions.value is LoadState.Loaded)
@@ -58,6 +64,7 @@ class SpotSearchViewModelTest {
 
     @Test
     fun `query with empty result emits Empty`() = runTest(testDispatcher) {
+        coEvery { locationService.currentLocation() } returns null
         coEvery { addressService.search(any()) } returns emptyList()
         val vm = SpotSearchViewModel(addressService, locationService)
         vm.onQueryChanged("???"); advanceUntilIdle()
@@ -65,23 +72,22 @@ class SpotSearchViewModelTest {
     }
 
     @Test
-    fun `useCurrentLocation resolves to suggestion`() = runTest(testDispatcher) {
+    fun `distanceText returns formatted distance when location available`() = runTest(testDispatcher) {
         coEvery { locationService.currentLocation() } returns Coordinates(37.5, 127.0)
+        coEvery { addressService.search(any()) } returns listOf(suggestion())
         val vm = SpotSearchViewModel(addressService, locationService)
-        var captured: AddressSuggestion? = null
-        vm.useCurrentLocation { captured = it }
-        advanceUntilIdle()
-        assertNotNull(captured)
-        assertEquals(37.5, captured!!.latitude)
+        vm.onQueryChanged("seoul"); advanceUntilIdle()
+        val text = vm.distanceText(suggestion())
+        assertNotNull(text)
+        assertEquals("0.0km", text)
     }
 
     @Test
-    fun `useCurrentLocation null when service returns null`() = runTest(testDispatcher) {
+    fun `distanceText null when location unavailable`() = runTest(testDispatcher) {
         coEvery { locationService.currentLocation() } returns null
+        coEvery { addressService.search(any()) } returns listOf(suggestion())
         val vm = SpotSearchViewModel(addressService, locationService)
-        var resolved: AddressSuggestion? = AddressSuggestion("", 0.0, 0.0)
-        vm.useCurrentLocation { resolved = it }
-        advanceUntilIdle()
-        assertNull(resolved)
+        vm.onQueryChanged("seoul"); advanceUntilIdle()
+        assertNull(vm.distanceText(suggestion()))
     }
 }
