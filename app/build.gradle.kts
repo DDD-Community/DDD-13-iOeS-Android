@@ -50,10 +50,11 @@ android {
         applicationId = "com.pickflow.app"
         minSdk = 26
         targetSdk = 35
-        // CD(GitHub Actions)에서 VERSION_CODE 주입, 로컬은 1.
-        // release-aab 워크플로는 태그(vX.Y.Z)에서 X*10000+Y*100+Z 로 계산해 주입한다.
-        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
-        versionName = "1.0.1"
+        // 버전 규칙(docs/ci-cd.md §버전 규칙): release-aab 워크플로가 태그 vX.Y.Z 에서
+        // versionName=X.Y.Z, versionCode=X*10000+Y*100+Z 를 계산해 주입한다.
+        // 로컬 기본값은 최신 릴리스와 동일하게 유지한다.
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 10002
+        versionName = System.getenv("VERSION_NAME") ?: "1.0.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         manifestPlaceholders["naverMapClientId"] = naverMapClientId

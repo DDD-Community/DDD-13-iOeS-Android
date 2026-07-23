@@ -53,17 +53,20 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/release.keystore"
           echo "KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
 
-      # 태그 vX.Y.Z → versionCode = X*10000 + Y*100 + Z (semver 단조 증가 보장).
-      - name: Compute VERSION_CODE from tag
+      # 태그 vX.Y.Z → versionName = X.Y.Z, versionCode = X*10000 + Y*100 + Z.
+      # (버전 규칙 상세: docs/ci-cd.md §버전 규칙)
+      - name: Compute VERSION_NAME / VERSION_CODE from tag
         run: |
           TAG="${GITHUB_REF_NAME#v}"
           IFS='.' read -r MAJOR MINOR PATCH <<< "$TAG"
           VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+          echo "VERSION_NAME=$TAG" >> "$GITHUB_ENV"
           echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
-          echo "versionCode=$VERSION_CODE (tag $GITHUB_REF_NAME)"
+          echo "versionName=$TAG versionCode=$VERSION_CODE (tag $GITHUB_REF_NAME)"
 
       - name: Build signed release AAB
         env:
+          VERSION_NAME: ${{ env.VERSION_NAME }}
           VERSION_CODE: ${{ env.VERSION_CODE }}
           KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
