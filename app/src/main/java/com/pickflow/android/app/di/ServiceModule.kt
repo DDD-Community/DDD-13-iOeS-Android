@@ -12,7 +12,7 @@ import com.pickflow.android.core.services.impl.DefaultUserService
 import com.pickflow.android.core.services.impl.DataStoreOnboardingCompletionStore
 import com.pickflow.android.core.services.impl.EncryptedTokenStore
 import com.pickflow.android.core.services.impl.DefaultSpotListService
-import com.pickflow.android.core.services.impl.NoopAnalyticsLogger
+import com.pickflow.android.core.services.impl.FirebaseAnalyticsLogger
 import com.pickflow.android.core.services.impl.AndroidExternalAppLauncher
 import com.pickflow.android.core.services.impl.AndroidShareIntentService
 import com.pickflow.android.core.services.impl.RealKakaoAuthProvider
@@ -114,7 +114,7 @@ abstract class ServiceModule {
     abstract fun bindExternalAppLauncher(impl: AndroidExternalAppLauncher): ExternalAppLauncher
 
     @Binds
-    abstract fun bindAnalyticsLogger(impl: NoopAnalyticsLogger): AnalyticsLogger
+    abstract fun bindAnalyticsLogger(impl: FirebaseAnalyticsLogger): AnalyticsLogger
 
     @Binds
     abstract fun bindAppVersionService(

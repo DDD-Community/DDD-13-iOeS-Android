@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import com.pickflow.android.common.designsystem.PickflowTheme
+import com.pickflow.android.core.services.protocols.AnalyticsLogger
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
@@ -69,6 +70,7 @@ class SpotDetailScreenUiTest {
             shareIntentService,
             mockk<SpotReportService>(relaxed = true),
             mockk<AuthService>(relaxed = true),
+            mockk<AnalyticsLogger>(relaxed = true),
         )
 
         composeRule.setContent {
@@ -98,6 +100,7 @@ class SpotDetailScreenUiTest {
             shareIntentService,
             mockk<SpotReportService>(relaxed = true),
             mockk<AuthService>(relaxed = true),
+            mockk<AnalyticsLogger>(relaxed = true),
         )
 
         composeRule.setContent {

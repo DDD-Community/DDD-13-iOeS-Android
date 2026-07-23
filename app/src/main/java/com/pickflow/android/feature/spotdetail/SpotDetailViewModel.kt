@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.common.util.SpotIdCoder
+import com.pickflow.android.core.analytics.events.ShareFakedoorAnalyticsEvent
+import com.pickflow.android.core.analytics.events.SpotDetailAnalyticsEvent
 import com.pickflow.android.core.network.ApiException
+import com.pickflow.android.core.services.protocols.AnalyticsLogger
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.SharePayload
@@ -26,6 +29,7 @@ class SpotDetailViewModel @Inject constructor(
     private val shareIntentService: ShareIntentService,
     private val spotReportService: SpotReportService,
     private val authService: AuthService,
+    private val analyticsLogger: AnalyticsLogger,
 ) : ViewModel() {
 
     private val _isLoginRequired = MutableStateFlow(false)
@@ -66,6 +70,7 @@ class SpotDetailViewModel @Inject constructor(
      * 업데이트 알림 신청. 현재 BE 연동 없이 토스트만 띄움 (양 플랫폼 동일).
      */
     fun notifyUpdateRequested() {
+        analyticsLogger.log(ShareFakedoorAnalyticsEvent.NOTIFY_BUTTON_TAP)
         _toast.value = "추후 업데이트 시, 가장 먼저 알림 보내드릴게요!"
     }
 
@@ -109,6 +114,7 @@ class SpotDetailViewModel @Inject constructor(
 
     fun share() {
         val current = (_spot.value as? LoadState.Loaded<SpotDetail>)?.value ?: return
+        analyticsLogger.log(SpotDetailAnalyticsEvent.SHARE_BUTTON_TAP)
         viewModelScope.launch {
             // iOS `share()` 1:1 — "이름 - 코멘트\nhttps://pickflow-api.us/{SpotIdCoder.encodeSpot(id)}"
             shareIntentService.share(

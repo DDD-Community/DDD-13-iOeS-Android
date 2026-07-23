@@ -10,6 +10,15 @@ plugins {
     alias(libs.plugins.paparazzi)
 }
 
+// GA(Firebase Analytics) 설정 — google-services.json 은 미추적 시크릿(.gitignore).
+// 파일이 있을 때만 플러그인을 적용해 CI(시크릿 없는 lint/test/assembleDebug)가 깨지지 않게 한다.
+// 파일이 없으면 Firebase 는 "Missing google_app_id" 경고와 함께 수집만 비활성화된다(크래시 없음).
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+} else {
+    logger.warn("google-services.json 이 없어 google-services 플러그인을 건너뜁니다. GA 수집이 비활성화됩니다.")
+}
+
 // 비공개 키 로드: secrets.properties(미추적) 우선, 없으면 secrets.defaults.properties.
 val secrets = Properties().apply {
     val real = rootProject.file("secrets.properties")
@@ -165,6 +174,10 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.androidx.browser)
     implementation(libs.androidx.security.crypto)
+
+    // Firebase (GA)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
 
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly(libs.junit.jupiter.engine)

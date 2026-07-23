@@ -21,6 +21,9 @@ kakaoSdk = "2.20.6"
 playServicesLocation = "21.3.0"
 androidxBrowser = "1.8.0"
 androidxSecurityCrypto = "1.1.0-alpha06"
+googleServices = "4.4.4"
+# 34.x 는 Kotlin 2.2 메타데이터라 프로젝트 Kotlin 2.0.21 과 비호환 — 33.x 유지.
+firebaseBom = "33.16.0"
 
 # Test
 junitJupiter = "5.11.3"
@@ -85,6 +88,10 @@ androidx-browser = { group = "androidx.browser", name = "browser", version.ref =
 # Security (EncryptedSharedPreferences for TokenStore)
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "androidxSecurityCrypto" }
 
+# Firebase (GA — Analytics)
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+
 # Test
 junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitJupiter" }
 junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junitJupiter" }
@@ -107,3 +114,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 paparazzi = { id = "app.cash.paparazzi", version.ref = "paparazzi" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
