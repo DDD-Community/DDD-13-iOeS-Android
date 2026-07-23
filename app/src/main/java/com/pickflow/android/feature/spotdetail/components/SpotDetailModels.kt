@@ -66,7 +66,7 @@ fun SpotDetail.toDetailData(isBookmarked: Boolean): SpotDetailData =
         recordedTime = recordedBadgeText(recordedDate, recordedTime),
         weatherCondition = weather?.toDisplayName() ?: "-",
         precipitationProbability = weather?.precipitationProbability ?: 0,
-        sunsetTime = sunsetTime ?: "-",
+        sunsetTime = sunsetTime?.let(::pickflowDisplayTime) ?: "-",
         parking = parkingInfo,
         congestion = congestion?.level?.toDisplayName() ?: "-",
     )
@@ -78,7 +78,7 @@ private fun SpotTheme.toDetailTheme(): SpotDetailTheme = when (this) {
 
 /**
  * 서버 `recordedDate`("yyyy-MM-dd") + `recordedTime`("HH:mm") →
- * "yy.MM.dd AM/PM h:mm" 배지 문자열. 시각은 iOS `pickflowDisplayTime` 1:1 변환.
+ * "yy.MM.dd AM/PM h:mm" 배지 문자열. 시각은 [pickflowDisplayTime] 변환.
  * 파싱 불가 값은 원문을 그대로 이어 붙인다.
  */
 internal fun recordedBadgeText(recordedDate: String, recordedTime: String): String {
@@ -86,7 +86,14 @@ internal fun recordedBadgeText(recordedDate: String, recordedTime: String): Stri
         .takeIf { it.size == 3 && it[0].length == 4 }
         ?.let { (y, m, d) -> "${y.takeLast(2)}.$m.$d" }
         ?: recordedDate
-    val timePart = recordedTime.split(":")
+    return listOf(datePart, pickflowDisplayTime(recordedTime))
+        .filter { it.isNotBlank() }
+        .joinToString(" ")
+}
+
+/** iOS `DateFormatter.pickflowDisplayTime` 1:1 — "HH:mm" → "AM/PM h:mm". 파싱 불가 시 원문. */
+internal fun pickflowDisplayTime(time: String): String =
+    time.split(":")
         .mapNotNull { it.toIntOrNull() }
         .takeIf { it.size == 2 }
         ?.let { (hour, minute) ->
@@ -94,9 +101,7 @@ internal fun recordedBadgeText(recordedDate: String, recordedTime: String): Stri
             val displayHour = if (hour % 12 == 0) 12 else hour % 12
             "%s %d:%02d".format(period, displayHour, minute)
         }
-        ?: recordedTime
-    return listOf(datePart, timePart).filter { it.isNotBlank() }.joinToString(" ")
-}
+        ?: time
 
 private fun SpotWeather.toDisplayName(): String {
     return when (precipitation) {

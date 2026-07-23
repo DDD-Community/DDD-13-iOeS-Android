@@ -1,6 +1,7 @@
 package com.pickflow.android.feature.spotdetail.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalParking
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.WbSunny
@@ -21,15 +21,22 @@ import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 
@@ -44,10 +51,12 @@ private val InfoRowHeight = 54.dp
  *  - `icTwilight` → `Icons.Filled.WbTwilight`
  *  - `icLocalParking` → `Icons.Filled.LocalParking`
  *  - `icPeople` → `Icons.Filled.People`
- *  - `icHelpOutline` → `Icons.Filled.Info`
+ *  - `icHelpOutline` → `R.drawable.ic_help_outline` (figma 1:1, 탭 시 혼잡도 기준 팝업)
  */
 @Composable
 fun SpotRealTimeInfoSection(spot: SpotDetailData, modifier: Modifier = Modifier) {
+    var showCongestionInfo by remember { mutableStateOf(false) }
+
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -105,14 +114,21 @@ fun SpotRealTimeInfoSection(spot: SpotDetailData, modifier: Modifier = Modifier)
                 sub = null,
                 trailing = {
                     Icon(
-                        imageVector = Icons.Filled.Info,
-                        contentDescription = null,
+                        painter = painterResource(R.drawable.ic_help_outline),
+                        contentDescription = "혼잡도 표시 기준",
                         tint = PickflowColors.gray50,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable { showCongestionInfo = true }
+                            .testTag("congestion-info-button"),
                     )
                 },
             )
         }
+    }
+
+    if (showCongestionInfo) {
+        CongestionInfoPopup(onDismiss = { showCongestionInfo = false })
     }
 }
 
