@@ -53,41 +53,45 @@ Settings → Secrets and variables → Actions 에 등록한다.
 
 ## Play 심사용 AAB 릴리스
 
-`vX.Y.Z` 태그를 푸시하면 `.github/workflows/release-aab.yml` 이 서명된 AAB 를 빌드해
+`vX.Y.Z[-N]` 태그를 푸시하면 `.github/workflows/release-aab.yml` 이 서명된 AAB 를 빌드해
 GitHub Release 에 첨부한다 (Actions 아티팩트로도 30일 보관).
 
 ```sh
-git tag v1.0.1 && git push origin v1.0.1
+git tag v1.0.1-2 && git push origin v1.0.1-2
 ```
 
-- `versionCode` 는 태그에서 `X*10000 + Y*100 + Z` 로 계산 (v1.0.1 → 10001) — semver 증가 = versionCode 단조 증가.
+- versionName/versionCode 는 태그에서 파생 — 아래 "버전 규칙" 참고.
 - 서명/비공개 키 Secrets 는 CD 워크플로와 동일한 항목을 사용한다.
 - 워크플로가 기본 브랜치에 없어도 태그 푸시 트리거는 태그 시점의 워크플로 파일로 실행된다.
 
 ## 버전 규칙
 
+**versionName(마케팅 버전)과 versionCode(빌드 넘버)는 분리한다.**
+배포가 나가기 전까지는 같은 versionName 으로 빌드 차수만 올려 재빌드한다.
+
 | 항목 | 규칙 |
 |---|---|
-| 태그 | `vX.Y.Z` (semver). 태그가 곧 릴리스 버전의 단일 소스. |
-| versionName | 태그에서 파생 — `X.Y.Z` |
-| versionCode | 태그에서 파생 — `X*10000 + Y*100 + Z` (예: v1.0.2 → 10002) |
-| 로컬 기본값 | `app/build.gradle.kts` 의 fallback 을 **최신 릴리스와 동일하게** 유지 |
+| 태그 | `vX.Y.Z[-N]` — N 은 같은 versionName 의 빌드 차수(생략 시 1) |
+| versionName | 태그에서 파생 — `X.Y.Z` (스토어 노출 버전) |
+| versionCode | 태그에서 파생 — `X*1000000 + Y*10000 + Z*100 + N` (예: v1.0.1-2 → 1000102) |
+| 로컬 기본값 | `app/build.gradle.kts` 의 fallback 을 **최신 빌드와 동일하게** 유지 |
 
 핵심 원칙:
 
-1. **Play 에 업로드한 versionCode 는 소모된다(재사용 불가).** 심사 중이라도 바이너리를
-   다시 올리려면 반드시 patch 를 올려 새 태그를 만든다 (예: 1.0.1 재빌드 → v1.0.2).
-2. 같은 versionName 으로 versionCode 만 올리는 변칙은 쓰지 않는다 — 태그·versionName·
-   versionCode 가 1:1 로 대응해야 아래 버전 기록만으로 어떤 바이너리인지 특정할 수 있다.
-3. 태그를 만들기 전 로컬 fallback(versionName/versionCode)을 새 버전으로 갱신해 커밋한다.
-   (디버그 빌드 About/dumpsys 표기와 릴리스가 일치해야 기기 확인 시 혼선이 없다.)
+1. **Play 에 업로드한 versionCode 는 소모된다(재사용 불가).** 심사 반려/수정으로 같은
+   버전을 다시 올릴 땐 versionName 은 그대로 두고 `-N` 만 올린다 (v1.0.1 → v1.0.1-2).
+2. versionName 을 올리는 것은 **배포(정식 출시)가 나간 뒤** 다음 릴리스부터.
+   배포 전 재빌드에 patch 를 소모하지 않는다.
+3. 태그를 만들기 전 로컬 fallback(versionName/versionCode)을 새 값으로 갱신해 커밋한다.
+   (디버그 빌드 표기와 릴리스가 일치해야 기기 확인 시 혼선이 없다.)
 4. 실기기 QA 시 주의: 릴리스(스토어) 빌드가 설치된 기기에는 디버그 빌드가
    `INSTALL_FAILED_VERSION_DOWNGRADE` / 서명 불일치로 덮어써지지 않는다 → 제거 후 설치.
 
 ## 버전 기록
 
-| 태그 | versionName | versionCode | 내용 |
-|---|---|---|---|
-| (없음) | 1.0.0 | 1 | 최초 심사 제출 |
-| v1.0.1 | 1.0.1 | 10001 | 스팟 등록/신고 API 수정, 닉네임 저장, 바텀시트 안정화, 등록 완료 플로우, 상세 UI 시안 반영, 딥링크 스킴 |
-| v1.0.2 | 1.0.2 | 10002 | 혼잡도 표시 기준 팝업, 실시간 정보 AM/PM 시간 포맷, ? 아이콘 교체 |
+| 태그 | versionName | versionCode | 상태 | 내용 |
+|---|---|---|---|---|
+| (없음) | 1.0.0 | 1(추정) | 심사 제출 | 최초 심사 제출 |
+| v1.0.1 | 1.0.1 | 10001 (구 스킴) | 업로드됨 | 스팟 등록/신고 API 수정, 닉네임 저장, 바텀시트 안정화, 등록 완료 플로우, 상세 UI 시안 반영, 딥링크 스킴 |
+| ~~v1.0.2~~ | - | ~~10002~~ | **폐기** | 1.0.1 미배포 상태에서 versionName 을 잘못 올린 빌드 — 태그/릴리스 삭제 |
+| v1.0.1-2 | 1.0.1 | 1000102 (신 스킴) | 심사용 | 위 + 혼잡도 표시 기준 팝업, 실시간 정보 AM/PM 시간 포맷, ? 아이콘 교체 |

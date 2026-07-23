@@ -53,16 +53,20 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/release.keystore"
           echo "KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
 
-      # 태그 vX.Y.Z → versionName = X.Y.Z, versionCode = X*10000 + Y*100 + Z.
+      # 태그 vX.Y.Z[-N] → versionName = X.Y.Z, versionCode = X*1000000 + Y*10000 + Z*100 + N.
+      # N = 같은 versionName 의 빌드 차수(기본 1) — 배포 전 재빌드 시 N 만 올린다.
       # (버전 규칙 상세: docs/ci-cd.md §버전 규칙)
       - name: Compute VERSION_NAME / VERSION_CODE from tag
         run: |
           TAG="${GITHUB_REF_NAME#v}"
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$TAG"
-          VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
-          echo "VERSION_NAME=$TAG" >> "$GITHUB_ENV"
+          SEMVER="${TAG%%-*}"
+          BUILD="${TAG#*-}"
+          if [ "$BUILD" = "$TAG" ]; then BUILD=1; fi
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$SEMVER"
+          VERSION_CODE=$((MAJOR * 1000000 + MINOR * 10000 + PATCH * 100 + BUILD))
+          echo "VERSION_NAME=$SEMVER" >> "$GITHUB_ENV"
           echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
-          echo "versionName=$TAG versionCode=$VERSION_CODE (tag $GITHUB_REF_NAME)"
+          echo "versionName=$SEMVER versionCode=$VERSION_CODE (tag $GITHUB_REF_NAME)"
 
       - name: Build signed release AAB
         env:
