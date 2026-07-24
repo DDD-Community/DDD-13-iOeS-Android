@@ -59,10 +59,10 @@ android {
         applicationId = "com.pickflow.app"
         minSdk = 26
         targetSdk = 35
-        // 버전 규칙(docs/ci-cd.md §버전 규칙): release-aab 워크플로가 태그 vX.Y.Z[-N] 에서
-        // versionName=X.Y.Z, versionCode=X*1000000+Y*10000+Z*100+N 을 계산해 주입한다.
-        // versionName(마케팅 버전)과 versionCode(빌드 넘버)는 분리 — 배포 전 재빌드는 N 만 증가.
-        // 로컬 기본값은 최신 빌드와 동일하게 유지한다.
+        // 버전 규칙(docs/ci-cd.md §버전 규칙): versionName(마케팅)과 versionCode(빌드 넘버) 분리.
+        // versionName 은 release-aab 워크플로가 태그 vX.Y.Z 에서 주입.
+        // versionCode 는 단조증가 정수 — 이 fallback 이 단일 출처이며 릴리스마다 +1 해 커밋한다.
+        // (과거 인코딩 스킴 X*1000000+Y*10000+Z*100+N 은 폐지. 이미 소모된 1000102 위에서 순차 증가.)
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1000102
         versionName = System.getenv("VERSION_NAME") ?: "1.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

@@ -53,6 +53,8 @@ Settings → Secrets and variables → Actions 에 등록한다.
 
 ## Play 심사용 AAB 릴리스
 
+> 로컬에서 keystore 로 직접 서명 AAB 를 뽑는 절차는 [`release-build.md`](./release-build.md) 참고.
+
 `vX.Y.Z[-N]` 태그를 푸시하면 `.github/workflows/release-aab.yml` 이 서명된 AAB 를 빌드해
 GitHub Release 에 첨부한다 (Actions 아티팩트로도 30일 보관).
 
@@ -60,30 +62,33 @@ GitHub Release 에 첨부한다 (Actions 아티팩트로도 30일 보관).
 git tag v1.0.1-2 && git push origin v1.0.1-2
 ```
 
-- versionName/versionCode 는 태그에서 파생 — 아래 "버전 규칙" 참고.
+- versionName 은 태그에서 파생, versionCode 는 build.gradle fallback — 아래 "버전 규칙" 참고.
 - 서명/비공개 키 Secrets 는 CD 워크플로와 동일한 항목을 사용한다.
 - 워크플로가 기본 브랜치에 없어도 태그 푸시 트리거는 태그 시점의 워크플로 파일로 실행된다.
 
 ## 버전 규칙
 
 **versionName(마케팅 버전)과 versionCode(빌드 넘버)는 분리한다.**
-배포가 나가기 전까지는 같은 versionName 으로 빌드 차수만 올려 재빌드한다.
 
 | 항목 | 규칙 |
 |---|---|
-| 태그 | `vX.Y.Z[-N]` — N 은 같은 versionName 의 빌드 차수(생략 시 1) |
+| 태그 | `vX.Y.Z[-N]` — N 은 같은 versionName 의 빌드 차수(생략 시 1, **기록용**) |
 | versionName | 태그에서 파생 — `X.Y.Z` (스토어 노출 버전) |
-| versionCode | 태그에서 파생 — `X*1000000 + Y*10000 + Z*100 + N` (예: v1.0.1-2 → 1000102) |
-| 로컬 기본값 | `app/build.gradle.kts` 의 fallback 을 **최신 빌드와 동일하게** 유지 |
+| versionCode | **단조증가 정수.** `app/build.gradle.kts` fallback 이 **단일 출처**이며 릴리스마다 `+1` 해 커밋한다. 태그/versionName 과 무관. |
+
+> **versionCode 스킴 전환(2026-07):** 과거 인코딩 스킴(`X*1000000 + Y*10000 + Z*100 + N`)은
+> 폐지했다. Android versionCode 의 유일한 요건은 "이전보다 큰 양의 정수"(상한 약 21억)이며,
+> 단조증가가 더 단순하고 실수가 없다. 이미 Play 에 소모된 `1000102` 위에서 순차 증가한다
+> (내려갈 수 없으므로 1 부터 리셋은 불가). **다음 릴리스 = `1000103`.**
 
 핵심 원칙:
 
-1. **Play 에 업로드한 versionCode 는 소모된다(재사용 불가).** 심사 반려/수정으로 같은
-   버전을 다시 올릴 땐 versionName 은 그대로 두고 `-N` 만 올린다 (v1.0.1 → v1.0.1-2).
+1. **Play 에 업로드한 versionCode 는 재사용 불가.** 심사 반려/재업로드도 **새 versionCode(+1)** 가 필요하다.
+   (같은 버전 재업로드 시 versionName 은 유지하고 태그만 `-N` 을 올려 기록한다.)
 2. versionName 을 올리는 것은 **배포(정식 출시)가 나간 뒤** 다음 릴리스부터.
    배포 전 재빌드에 patch 를 소모하지 않는다.
-3. 태그를 만들기 전 로컬 fallback(versionName/versionCode)을 새 값으로 갱신해 커밋한다.
-   (디버그 빌드 표기와 릴리스가 일치해야 기기 확인 시 혼선이 없다.)
+3. 태그를 만들기 전 `app/build.gradle.kts` 의 **versionCode fallback 을 `+1`**(필요 시 versionName 도)
+   갱신해 커밋한다. 이 커밋값이 로컬/CI 빌드의 단일 출처다.
 4. 실기기 QA 시 주의: 릴리스(스토어) 빌드가 설치된 기기에는 디버그 빌드가
    `INSTALL_FAILED_VERSION_DOWNGRADE` / 서명 불일치로 덮어써지지 않는다 → 제거 후 설치.
 
@@ -92,6 +97,8 @@ git tag v1.0.1-2 && git push origin v1.0.1-2
 | 태그 | versionName | versionCode | 상태 | 내용 |
 |---|---|---|---|---|
 | (없음) | 1.0.0 | 1(추정) | 심사 제출 | 최초 심사 제출 |
-| v1.0.1 | 1.0.1 | 10001 (구 스킴) | 업로드됨 | 스팟 등록/신고 API 수정, 닉네임 저장, 바텀시트 안정화, 등록 완료 플로우, 상세 UI 시안 반영, 딥링크 스킴 |
+| v1.0.1 | 1.0.1 | 10001 (구 인코딩) | 업로드됨 | 스팟 등록/신고 API 수정, 닉네임 저장, 바텀시트 안정화, 등록 완료 플로우, 상세 UI 시안 반영, 딥링크 스킴 |
 | ~~v1.0.2~~ | - | ~~10002~~ | **폐기** | 1.0.1 미배포 상태에서 versionName 을 잘못 올린 빌드 — 태그/릴리스 삭제 |
-| v1.0.1-2 | 1.0.1 | 1000102 (신 스킴) | 심사용 | 위 + 혼잡도 표시 기준 팝업, 실시간 정보 AM/PM 시간 포맷, ? 아이콘 교체 |
+| v1.0.1-2 | 1.0.1 | 1000102 (구 인코딩·마지막) | 심사용 | 위 + 혼잡도 표시 기준 팝업, 실시간 정보 AM/PM 시간 포맷, ? 아이콘 교체 |
+
+> 이후부터 versionCode 는 **단조증가**. 다음 릴리스는 `1000103` 부터 `+1`.
