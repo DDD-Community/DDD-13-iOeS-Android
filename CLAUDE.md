@@ -72,4 +72,6 @@
 - 마스터 플랜: `PLAN.md`
 - 티켓 문서: `docs/KAN-XX/<feature>-implementation-prompt.md`
 - 단계별 게이트: `docs/phases/phase-{a,b,c}-*.md`
+- CI/CD·버전 규칙: `docs/ci-cd.md`
+- 릴리스 AAB 빌드(로컬): `docs/release-build.md` (`release-build` 스킬)
 - iOS 원본: `../DDD-13-iOeS-iOS-develop/`
