@@ -63,7 +63,7 @@ android {
         // versionName 은 release-aab 워크플로가 태그 vX.Y.Z 에서 주입.
         // versionCode 는 단조증가 정수 — 이 fallback 이 단일 출처이며 릴리스마다 +1 해 커밋한다.
         // (과거 인코딩 스킴 X*1000000+Y*10000+Z*100+N 은 폐지. 이미 소모된 1000102 위에서 순차 증가.)
-        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1000102
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1000103
         versionName = System.getenv("VERSION_NAME") ?: "1.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
