@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- GA(Firebase Analytics)는 이벤트 분석에만 쓰고 광고 ID 는 수집하지 않는다.
+         play-services-measurement 가 자동 병합하는 AD_ID 권한을 제거해
+         Play Data Safety "광고 ID 수집: 아니요" 선언과 실제 매니페스트를 일치시킨다. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove" />
 
     <!-- Android 11+ package visibility: 네이버 지도 nmap:// 길찾기 + Play Store + 공유 chooser, 다이얼러 -->
     <queries>
