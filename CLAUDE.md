@@ -22,10 +22,10 @@
 
 - Kotlin 표준 4-space 인덴트.
 - 파일명 = 최상위 public 심볼명.
-- 패키지 구조: `com.pickflow.android.{app, core, common, feature}` (PLAN.md §2).
+- 패키지 구조: `com.pickflow.android.{app, core, common, feature}` (ARCHITECTURE.md §2).
 - `companion object`는 상수/팩토리만, 비즈니스 로직 금지.
 
-## 4. 아키텍처 규약 (요약, 상세는 PLAN.md §3)
+## 4. 아키텍처 규약 (요약, 상세는 ARCHITECTURE.md §3)
 
 - **MVVM + StateFlow + Hilt**. ViewModel 의존성 ≤5개, 모두 Service `interface`.
 - **No Repository**: `core/services/protocols/`의 interface가 단일 데이터 추상화.
@@ -50,7 +50,7 @@
 
 1. `app/src/main/java/com/pickflow/android/core/services/protocols/<Name>.kt`에 `interface` 선언.
 2. `core/services/impl/<Default|Stub|Noop|Mock><Name>.kt`에 구현체 작성(@Inject 생성자).
-3. `app/di/ServiceModule.kt`에 `@Binds`로 등록. `@Singleton` 여부는 PLAN.md §3.5 참고.
+3. `app/di/ServiceModule.kt`에 `@Binds`로 등록. `@Singleton` 여부는 ARCHITECTURE.md §3.5 참고.
 
 ## 7. 금지 사항
 
@@ -69,7 +69,7 @@
 
 ## 9. 참고
 
-- 마스터 플랜: `PLAN.md`
+- 아키텍처 규약: `ARCHITECTURE.md`
 - 티켓 문서: `docs/KAN-XX/<feature>-implementation-prompt.md`
 - 단계별 게이트: `docs/phases/phase-{a,b,c}-*.md`
 - CI/CD·버전 규칙: `docs/ci-cd.md`

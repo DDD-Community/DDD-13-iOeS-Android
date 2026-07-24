@@ -36,7 +36,7 @@ class LoginScreenSnapshotTest {
 
 ## 비고
 
-Paparazzi는 Compose BOM과 AGP 버전 조합에 민감하다. PLAN.md §1의 버전 카탈로그를 그대로 따른다.
+Paparazzi는 Compose BOM과 AGP 버전 조합에 민감하다. `gradle/libs.versions.toml`(ARCHITECTURE.md §1)의 버전 카탈로그를 그대로 따른다.
 
 ---
 
