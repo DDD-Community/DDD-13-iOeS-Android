@@ -29,8 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.pickflow.android.BuildConfig
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
@@ -88,12 +90,22 @@ fun MyProfileSignedInContent(
                     .testTag("myprofile-avatar"),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Person,
-                    contentDescription = null,
-                    tint = PickflowColors.gray50,
-                    modifier = Modifier.size(38.dp),
-                )
+                val imageUrl = home.profileImageUrl
+                if (!imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Person,
+                        contentDescription = null,
+                        tint = PickflowColors.gray50,
+                        modifier = Modifier.size(38.dp),
+                    )
+                }
             }
             Spacer(Modifier.size(16.dp))
             Column(modifier = Modifier.weight(1f)) {
