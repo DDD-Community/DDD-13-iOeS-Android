@@ -38,13 +38,15 @@
 
 세부 사항은 `docs/phases/`.
 
-| Phase | 도구 | 출력 |
-|---|---|---|
-| A. ViewModel 단위 | JUnit5 + Turbine + MockK | `app/src/test/.../<Feature>ViewModelTest.kt` |
-| B. UI 시나리오 | Compose UI Test (`createComposeRule`) | `app/src/androidTest/.../<Screen>UiTest.kt` |
-| C. 스냅샷 | Paparazzi (호스트 사이드) | `app/src/test/.../<Screen>SnapshotTest.kt` |
+| Phase | 도구 | 테스트 API | 출력 |
+|---|---|---|---|
+| A. ViewModel 단위 | JUnit5 + Turbine + MockK | JUnit5 (`org.junit.jupiter.api.*`) | `app/src/test/.../<Feature>ViewModelTest.kt` |
+| B. UI 시나리오 | Compose UI Test + Robolectric | JUnit4 (`org.junit.*`) | `app/src/test/.../<Screen>UiTest.kt` |
+| C. 스냅샷 | Paparazzi (호스트 사이드) | JUnit4 (`org.junit.*`) | `app/src/test/.../<Screen>SnapshotTest.kt` |
 
-각 단계는 직전 단계가 그린일 때만 진행한다.
+- 각 단계는 직전 단계가 그린일 때만 진행한다.
+- **세 Phase 모두 `./gradlew :app:testDebugUnitTest`(+ C는 `:app:verifyPaparazziDebug`)로 호스트 JVM에서 돈다.** 이 저장소에 `app/src/androidTest` 소스셋은 없고 `connectedDebugAndroidTest`는 쓰지 않는다.
+- Phase A는 JUnit5, Phase B·C는 JUnit4다. 섞으면 `@get:Rule`이 무시돼 룰이 적용되지 않는다.
 
 ## 6. 신규 Service 추가 절차 (3-step)
 
