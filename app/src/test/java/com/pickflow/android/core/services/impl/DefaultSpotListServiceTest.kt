@@ -52,7 +52,7 @@ class DefaultSpotListServiceTest {
         )
 
         val page = service.fetch(
-            theme = SpotTheme.SUNSET,
+            themes = setOf(SpotTheme.SUNSET),
             page = 0,
             coordinates = Coordinates(37.5, 127.0),
             sort = SpotSort.DISTANCE,
@@ -82,7 +82,7 @@ class DefaultSpotListServiceTest {
             )
         )
 
-        val page = service.fetch(theme = null, page = 3)
+        val page = service.fetch(themes = emptySet(), page = 3)
         assertEquals(3, page.page)
         assertEquals(false, page.hasNext)
         assertEquals(0, page.items.size)
@@ -103,8 +103,23 @@ class DefaultSpotListServiceTest {
             )
         )
         val ex = assertThrows(ApiException::class.java) {
-            runBlocking { service.fetch(theme = null, page = 0) }
+            runBlocking { service.fetch(themes = emptySet(), page = 0) }
         }
         assertEquals("LIST_001", ex.code)
+    }
+
+    @Test
+    fun `fetch with multiple themes sends one repeated theme param per selection`() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """{"success":true,"code":"OK","message":"","data":{"spots":[],"page":0,"hasNext":false}}"""
+            )
+        )
+
+        // 선택 순서와 무관하게 SpotTheme 선언 순서(햇살→윤슬→노을→야경)로 직렬화된다.
+        service.fetch(themes = setOf(SpotTheme.NIGHT, SpotTheme.SUNLIGHT), page = 0)
+
+        val url = server.takeRequest().requestUrl!!
+        assertEquals(listOf("SUNLIGHT", "NIGHT"), url.queryParameterValues("theme"))
     }
 }

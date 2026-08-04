@@ -65,7 +65,7 @@ fun HomeMapScreen(
     val curationSpots by viewModel.curationSpots.collectAsStateWithLifecycle()
     val mySpots by viewModel.mySpots.collectAsStateWithLifecycle()
     val selectedSpotId by viewModel.selectedSpotId.collectAsStateWithLifecycle()
-    val selectedMood by viewModel.selectedMood.collectAsStateWithLifecycle()
+    val selectedMoods by viewModel.selectedMoods.collectAsStateWithLifecycle()
     val mapListMode by viewModel.mapListMode.collectAsStateWithLifecycle()
     val selectedCluster by viewModel.selectedCluster.collectAsStateWithLifecycle()
     val cameraTarget by viewModel.cameraTarget.collectAsStateWithLifecycle()
@@ -167,7 +167,7 @@ fun HomeMapScreen(
                         .height(24.dp),
                 )
                 Spacer(Modifier.height(8.dp))
-                MoodFilterRow(selected = selectedMood, onSelect = viewModel::selectMood)
+                MoodFilterRow(selected = selectedMoods, onSelect = viewModel::selectMood)
             }
         }
 
@@ -276,9 +276,13 @@ fun HomeMapScreen(
     }
 }
 
-/** iOS `HomeMapView.topBar`의 무드 캡슐 행 — 노을/윤슬 2개. */
+/**
+ * iOS `HomeMapView.topBar`의 무드 캡슐 행 — 햇살/윤슬/노을/야경 4개, 다중선택.
+ *
+ * stateless — Paparazzi 스냅샷이 직접 렌더한다(`HomeMapMoodFilterSnapshotTest`).
+ */
 @Composable
-private fun MoodFilterRow(selected: MoodFilter?, onSelect: (MoodFilter) -> Unit) {
+internal fun MoodFilterRow(selected: Set<MoodFilter>, onSelect: (MoodFilter) -> Unit) {
     Row(
         modifier = Modifier
             .padding(horizontal = 16.dp)
@@ -288,7 +292,7 @@ private fun MoodFilterRow(selected: MoodFilter?, onSelect: (MoodFilter) -> Unit)
         MoodFilter.entries.forEach { mood ->
             MoodCapsule(
                 mood = mood,
-                selected = selected == mood,
+                selected = mood in selected,
                 onClick = { onSelect(mood) },
             )
         }

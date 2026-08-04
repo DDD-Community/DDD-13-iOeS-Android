@@ -203,4 +203,26 @@ class ArchiveScreenUiTest {
         }
         composeRule.onNodeWithTag("archive-toast").assertIsDisplayed()
     }
+
+    /** PV59-ARC1 — 저장 카드 셀의 무드 배지가 4종 각각으로 렌더된다. */
+    @Test
+    fun saved_cards_render_all_four_mood_badges() {
+        composeRule.setContent {
+            PickflowTheme {
+                ArchiveScreenContent(
+                    state = ArchiveLoadState.Loaded(
+                        items = SpotTheme.entries.mapIndexed { index, theme ->
+                            saved(index.toLong()).copy(theme = theme)
+                        },
+                        hasNext = false,
+                    ),
+                    selectedTab = ArchiveTab.SavedSpots,
+                    archiveName = "나의 보관함",
+                )
+            }
+        }
+        listOf("햇살", "윤슬", "노을", "야경").forEach {
+            composeRule.onNodeWithText(it).assertExists()
+        }
+    }
 }

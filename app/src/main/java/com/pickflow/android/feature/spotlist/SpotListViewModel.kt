@@ -29,8 +29,9 @@ class SpotListViewModel @Inject constructor(
     private val _spots = MutableStateFlow<LoadState<List<Spot>>>(LoadState.Idle)
     val spots: StateFlow<LoadState<List<Spot>>> = _spots.asStateFlow()
 
-    private val _theme = MutableStateFlow<SpotTheme?>(null)
-    val theme: StateFlow<SpotTheme?> = _theme.asStateFlow()
+    /** 다중선택 무드 필터. 초기값·전체 해제는 빈 Set = 필터 없음(전체 스팟). */
+    private val _themes = MutableStateFlow<Set<SpotTheme>>(emptySet())
+    val themes: StateFlow<Set<SpotTheme>> = _themes.asStateFlow()
 
     // 기본 정렬은 북마크 순(RECOMMENDED). 가까운 순(DISTANCE)은 위치 권한이 있을 때만 선택 가능.
     private val _sort = MutableStateFlow(SpotSort.RECOMMENDED)
@@ -70,8 +71,13 @@ class SpotListViewModel @Inject constructor(
         loadPage()
     }
 
-    fun selectTheme(theme: SpotTheme?) {
-        _theme.value = theme
+    /**
+     * 무드 다중선택 토글 — 이미 선택돼 있으면 그 하나만 해제한다. 전부 해제하면 전체 조회.
+     *
+     * [refresh]가 loadGeneration 을 올리므로 직전 필터의 늦은 응답은 폐기된다.
+     */
+    fun toggleTheme(theme: SpotTheme) {
+        _themes.value = _themes.value.toMutableSet().apply { if (!add(theme)) remove(theme) }
         refresh()
     }
 
@@ -128,7 +134,7 @@ class SpotListViewModel @Inject constructor(
             }
             val result = runCatching {
                 spotListService.fetch(
-                    theme = _theme.value,
+                    themes = _themes.value,
                     page = nextPage,
                     coordinates = currentCoordinates,
                     sort = _sort.value,

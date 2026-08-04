@@ -43,9 +43,12 @@ fun SpotListResponseDto.toSpotPage(): SpotPage = SpotPage(
 )
 
 // 서버는 endpoint 에 따라 2글자 코드("YS"/"SS") 또는 풀네임("YUNSEUL"/"SUNSET")으로 응답한다.
+// SL/SUNLIGHT(햇살), NT/NIGHT(야경) 코드는 PV-59 백엔드 확정시 변경 가능성 있음.
 internal fun parseTheme(value: String): SpotTheme = when (value.uppercase()) {
     "YS", "YUNSEUL" -> SpotTheme.YUNSEUL
     "SS", "SUNSET" -> SpotTheme.SUNSET
+    "SL", "SUNLIGHT" -> SpotTheme.SUNLIGHT
+    "NT", "NIGHT" -> SpotTheme.NIGHT
     else -> SpotTheme.SUNSET
 }
 

@@ -53,7 +53,7 @@ class DefaultSpotMapServiceTest {
             )
         )
 
-        service.fetchInViewport(box, SpotTheme.SUNSET)
+        service.fetchInViewport(box, setOf(SpotTheme.SUNSET))
 
         val req = server.takeRequest()
         val url = req.requestUrl!!
@@ -70,6 +70,20 @@ class DefaultSpotMapServiceTest {
     }
 
     @Test
+    fun `fetchInViewport with multiple themes sends one repeated theme param per selection`() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """{"success":true,"code":"OK","message":"","data":{"spots":[]}}"""
+            )
+        )
+
+        service.fetchInViewport(box, setOf(SpotTheme.NIGHT, SpotTheme.SUNLIGHT))
+
+        val url = server.takeRequest().requestUrl!!
+        assertEquals(listOf("SUNLIGHT", "NIGHT"), url.queryParameterValues("theme"))
+    }
+
+    @Test
     fun `fetchInViewport without theme omits theme query and maps markers`() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(
@@ -83,7 +97,7 @@ class DefaultSpotMapServiceTest {
             )
         )
 
-        val markers = service.fetchInViewport(box, theme = null)
+        val markers = service.fetchInViewport(box, themes = emptySet())
 
         val req = server.takeRequest()
         assertNull(req.requestUrl!!.queryParameter("theme"))

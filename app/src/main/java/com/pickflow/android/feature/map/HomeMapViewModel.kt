@@ -55,8 +55,9 @@ class HomeMapViewModel @Inject constructor(
     private val _zoom = MutableStateFlow(12)
     val zoom: StateFlow<Int> = _zoom.asStateFlow()
 
-    private val _selectedMood = MutableStateFlow<MoodFilter?>(null)
-    val selectedMood: StateFlow<MoodFilter?> = _selectedMood.asStateFlow()
+    /** 다중선택 무드 필터. 초기값·전체 해제는 빈 Set = 필터 없음(전체 스팟). */
+    private val _selectedMoods = MutableStateFlow<Set<MoodFilter>>(emptySet())
+    val selectedMoods: StateFlow<Set<MoodFilter>> = _selectedMoods.asStateFlow()
 
     private val _mapListMode = MutableStateFlow(MapListMode.MAP)
     val mapListMode: StateFlow<MapListMode> = _mapListMode.asStateFlow()
@@ -97,7 +98,7 @@ class HomeMapViewModel @Inject constructor(
         viewModelScope.launch {
             _curationSpots.value = LoadState.Loading
             _curationSpots.value = runCatching {
-                val all = spotListService.fetch(theme = themeForMood(_selectedMood.value), page = 0).items
+                val all = spotListService.fetch(themes = themesForMoods(_selectedMoods.value), page = 0).items
                 loadedSpots = all
                 _mySpots.value = emptyList() // 초기 fetch 는 isMySpot 정보 없음 → 전부 큐레이션 취급
                 all
@@ -120,7 +121,7 @@ class HomeMapViewModel @Inject constructor(
         viewModelScope.launch {
             _curationSpots.value = LoadState.Loading
             _curationSpots.value = runCatching {
-                val markers = spotMapService.fetchInViewport(box, themeForMood(_selectedMood.value))
+                val markers = spotMapService.fetchInViewport(box, themesForMoods(_selectedMoods.value))
                 val (mineMarkers, curationMarkers) = markers.partition { it.isMySpot }
                 _mySpots.value = mineMarkers.map(SpotMapMarker::toMySpotMarker)
                 val curationSpots = curationMarkers.map(SpotMapMarker::toSpot)
@@ -142,8 +143,11 @@ class HomeMapViewModel @Inject constructor(
         lastViewport?.let { onViewportChanged(it, level) } ?: load()
     }
 
+    /** 무드 다중선택 토글 — 이미 선택돼 있으면 그 하나만 해제한다. 전부 해제하면 전체 조회. */
     fun selectMood(mood: MoodFilter) {
-        _selectedMood.value = if (_selectedMood.value == mood) null else mood
+        _selectedMoods.value = _selectedMoods.value.toMutableSet().apply {
+            if (!add(mood)) remove(mood)
+        }
         lastViewport?.let { onViewportChanged(it, _zoom.value) } ?: load()
     }
 
@@ -259,11 +263,8 @@ class HomeMapViewModel @Inject constructor(
 
     fun spotById(id: String): Spot? = loadedSpots.firstOrNull { it.id == id }
 
-    private fun themeForMood(mood: MoodFilter?): SpotTheme? = when (mood) {
-        MoodFilter.Sunset -> SpotTheme.SUNSET
-        MoodFilter.Reflection -> SpotTheme.YUNSEUL
-        null -> null
-    }
+    private fun themesForMoods(moods: Set<MoodFilter>): Set<SpotTheme> =
+        moods.mapTo(mutableSetOf()) { it.toTheme() }
 }
 
 private fun SpotMapMarker.toSpot(): Spot = Spot(
