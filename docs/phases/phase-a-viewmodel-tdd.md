@@ -10,9 +10,10 @@
 
 1. 새 ViewModel은 **테스트가 먼저** 작성된 뒤에 구현으로 진행한다(Red → Green → Refactor).
 2. 의존성은 모두 Service `interface` 이며, `mockk()`로 대체한다. 실제 구현체 호출 금지.
-3. `Dispatchers.setMain(StandardTestDispatcher)` 패턴을 사용한다.
-4. 상태 검증은 **Turbine `.test { ... }`** 또는 `viewModel.xxx.value` 둘 중 하나로 일관되게 한다.
-5. 각 ViewModel 당 최소 시나리오:
+3. **JUnit5 API를 쓴다** — `org.junit.jupiter.api.{Test, BeforeEach, AfterEach}`, 단언은 `org.junit.jupiter.api.Assertions.*`. Phase B·C(Robolectric/Paparazzi)는 JUnit4를 쓰므로 여기서 `org.junit.Test`를 섞지 않는다.
+4. `Dispatchers.setMain(StandardTestDispatcher)` 패턴을 사용한다.
+5. 상태 검증은 **Turbine `.test { ... }`** 또는 `advanceUntilIdle()` 후 `viewModel.xxx.value` 둘 중 하나로 일관되게 한다.
+6. 각 ViewModel 당 최소 시나리오:
     - 성공(Loaded)
     - 빈 결과(Empty) — 의미가 있는 경우만
     - 실패(Failed)
@@ -52,7 +53,7 @@ class XxxViewModelTest {
 
 - `./gradlew :app:testDebugUnitTest` 그린.
 - 신규/변경 ViewModel은 적어도 성공 + 실패 시나리오 커버.
-- 테스트는 Robolectric / Android 의존성 사용 금지(순수 JVM).
+- **ViewModel 테스트는** Robolectric / Android Framework 의존 금지(순수 JVM). Robolectric은 Phase B UI 테스트 전용이며, 같은 `app/src/test/` 소스셋을 공유하더라도 Phase A 파일에는 들이지 않는다.
 
 ## 다음 단계
 

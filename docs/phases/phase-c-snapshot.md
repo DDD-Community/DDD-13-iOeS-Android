@@ -8,26 +8,31 @@
 
 ## 강제 사항
 
-1. Paparazzi는 호스트 사이드 JVM에서 실행되며 에뮬레이터를 요구하지 않는다.
-2. 스냅샷 대상: `common/designsystem/` 컴포넌트, 각 화면의 핵심 Composable(다크/라이트, 좁은/넓은 화면).
-3. PNG는 git LFS 또는 `app/src/test/snapshots/`에 커밋.
-4. 변경이 의도된 경우만 `./gradlew :app:recordPaparazziDebug`로 새 스냅샷을 채택.
+1. Paparazzi는 호스트 사이드 JVM에서 실행되며 에뮬레이터를 요구하지 않는다. 테스트 파일은 `app/src/test/java/.../<Screen>SnapshotTest.kt`에 둔다.
+2. **JUnit4 API를 쓴다** — `org.junit.Test` / `org.junit.Rule`. Phase A의 JUnit5(`org.junit.jupiter.api.*`)를 섞으면 `@get:Rule`이 무시돼 Paparazzi가 붙지 않는다. (Phase B와 동일한 제약.)
+3. 스냅샷 대상: `common/designsystem/` 컴포넌트, 각 화면의 핵심 Composable(다크/라이트, a11y fontScale).
+   - 프로덕션 `XxxScreen`을 직접 찍지 말고 **stateless 컨텐츠 Composable**(`XxxScreenContent`, `components/`)을 추출해 찍는다. ViewModel·Hilt 의존이 들어가면 결정적 렌더가 깨진다.
+4. PNG는 **`app/src/test/snapshots/images/`에 평문으로 커밋**한다(git LFS 미사용). 파일명은 Paparazzi가 `<패키지>_<클래스>_<테스트함수>.png`로 생성하므로 손대지 않는다.
+5. 변경이 의도된 경우만 `./gradlew :app:recordPaparazziDebug`로 새 스냅샷을 채택한다. diff 원인 분석 없는 블라인드 record는 금지(회귀를 정상화시킨다).
 
 ## 템플릿
 
 ```kotlin
 class LoginScreenSnapshotTest {
-    @get:Rule val paparazzi = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5)
 
-    @Test fun loaded_state() {
+    @get:Rule
+    val paparazzi = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5)
+
+    @Test
+    fun login_idle_light() {
         paparazzi.snapshot {
-            PickflowTheme {
-                LoginScreenPreview(LoadState.Idle)
-            }
+            PickflowTheme { LoginScreenContent(state = LoadState.Idle) }
         }
     }
 }
 ```
+
+케이스별로 캔버스 크기·fontScale이 달라야 하면 `DeviceConfig`를 직접 만들어 넘긴다(가로형 캔버스는 `orientation = ScreenOrientation.LANDSCAPE` 지정 필수 — layoutlib이 세로로 강제 회전한다). 실제 예시는 `SpotListSnapshotTest.kt` / `OnboardingSnapshotTest.kt`의 `device(...)` 헬퍼 참고.
 
 ## 통과 기준
 
@@ -55,7 +60,21 @@ raw 텍스트 / Material 컴포넌트 / 이모지 placeholder로 자리만 잡�
 | SpotDetail | 36 | 36 | ✅ 완료 |
 | SpotDetailBottomSheet | 7 | 7 | ✅ 완료 |
 | MapClustering | 20 | 20 | ✅ 완료 |
-| **합계** | **165** | **165** | **165/165 ✅** |
+| **iOS 대응 합계** | **165** | **165** | **165/165 ✅** |
+
+### Android 자체 추가 (iOS 대응 범위 밖)
+
+iOS에 대응 스냅샷이 없는, Android 쪽에서 독립적으로 추가한 그룹.
+
+| 그룹 | Android 장수 | 비고 |
+|---|---|---|
+| Archive | 17 | 보관함 목록·이름 변경 다이얼로그 |
+| MapMarker | 9 | 지도 마커 선택/미선택 상태 |
+| Notice | 5 | 공지 목록·상세 |
+| PaparazziSetup(smoke) | 1 | 하네스 동작 확인용 |
+| **소계** | **32** | |
+
+**저장소 전체 스냅샷: 197장** (`app/src/test/snapshots/images/`). 그룹을 추가·삭제하면 이 표를 함께 갱신한다.
 
 ### LoginView (12/12 완료)
 
@@ -177,7 +196,8 @@ raw 텍스트 / Material 컴포넌트 / 이모지 placeholder로 자리만 잡�
 
 ## 최종 결과 — iOS 165장 1:1 대응 완료 ✅
 
-7개 그룹 165장 전부 Android Paparazzi 스냅샷으로 대응 완료.
+7개 그룹 165장 전부 Android Paparazzi 스냅샷으로 대응 완료(여기에 Android 자체 추가 32장을
+더해 저장소 전체는 197장).
 `./gradlew :app:assembleDebug` · `:app:testDebugUnitTest` 그린, 미대응 0건.
 공통 패턴: 정적 다크 토큰을 쓰는 화면은 light/dark 동일 record, a11y는 fontScale 2.0
 (MyProfile은 iOS pretendard가 a11y 비반응이라 예외), 커스텀 에셋은 raw 텍스트 /
