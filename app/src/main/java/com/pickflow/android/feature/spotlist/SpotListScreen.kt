@@ -60,6 +60,7 @@ import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotSort
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.feature.map.MoodFilter
+import com.pickflow.android.feature.map.components.MoodFilterRow
 import com.pickflow.android.feature.map.toMood
 import com.pickflow.android.feature.map.toTheme
 
@@ -110,8 +111,8 @@ fun SpotListScreen(
         MoodFilterRow(
             selected = themes.mapTo(mutableSetOf()) { it.toMood() },
             onSelect = { mood -> viewModel.toggleTheme(mood.toTheme()) },
+            testTag = "spotlist-mood",
         )
-        Spacer(Modifier.height(8.dp))
         LoadStateContent(
             state = spots,
             emptyMessage = "아직 저장한 스팟이 없어요.",
@@ -297,49 +298,6 @@ private fun SortRow(option: SpotSort, selected: Boolean, onClick: () -> Unit) {
                 color = PickflowColors.sunsetOrange,
             )
         }
-    }
-}
-
-/** iOS `HomeMapView.MoodFilterRow` 와 동일한 무드 캡슐 — 아이콘 + 라벨. */
-@Composable
-private fun MoodFilterRow(selected: Set<MoodFilter>, onSelect: (MoodFilter) -> Unit) {
-    Row(
-        modifier = Modifier
-            .padding(horizontal = 20.dp, vertical = 4.dp)
-            .testTag("spotlist-mood"),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        MoodFilter.entries.forEach { mood ->
-            MoodCapsule(mood = mood, selected = mood in selected) { onSelect(mood) }
-        }
-    }
-}
-
-@Composable
-private fun MoodCapsule(mood: MoodFilter, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .then(
-                if (selected) {
-                    Modifier.border(1.dp, PickflowColors.sunsetOrange, RoundedCornerShape(8.dp))
-                } else Modifier,
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Image(
-            painter = painterResource(mood.iconRes),
-            contentDescription = mood.displayName,
-            modifier = Modifier.size(20.dp),
-        )
-        Text(
-            text = mood.displayName,
-            style = PickflowTypography.bodyLargeBold,
-            color = if (selected) PickflowColors.gray0 else PickflowColors.gray10,
-        )
     }
 }
 

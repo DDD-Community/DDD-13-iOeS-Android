@@ -15,6 +15,7 @@ import com.android.resources.Density
 import com.android.resources.ScreenOrientation
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTheme
+import com.pickflow.android.feature.map.components.MoodFilterRow
 import com.pickflow.android.feature.spotlist.components.SpotListCell
 import com.pickflow.android.feature.spotlist.components.SpotListGridItem
 import com.pickflow.android.feature.spotlist.components.SpotListMood
@@ -82,7 +83,7 @@ class HomeMapMoodFilterSnapshotTest {
         paparazzi.snapshot {
             PickflowTheme {
                 Canvas(alignment = Alignment.CenterStart) {
-                    MoodFilterRow(selected = selected, onSelect = {})
+                    MoodFilterRow(selected = selected, onSelect = {}, testTag = "snapshot-moodfilter")
                 }
             }
         }

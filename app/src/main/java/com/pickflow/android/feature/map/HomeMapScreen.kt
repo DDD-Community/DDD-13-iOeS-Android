@@ -54,6 +54,7 @@ import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.feature.map.components.MoodFilterRow
 
 @Composable
 fun HomeMapScreen(
@@ -167,7 +168,11 @@ fun HomeMapScreen(
                         .height(24.dp),
                 )
                 Spacer(Modifier.height(8.dp))
-                MoodFilterRow(selected = selectedMoods, onSelect = viewModel::selectMood)
+                MoodFilterRow(
+                    selected = selectedMoods,
+                    onSelect = viewModel::selectMood,
+                    testTag = "homemap-moodfilter",
+                )
             }
         }
 
@@ -273,61 +278,6 @@ fun HomeMapScreen(
                     .clickable(enabled = false) {},
             )
         }
-    }
-}
-
-/**
- * iOS `HomeMapView.topBar`의 무드 캡슐 행 — 햇살/윤슬/노을/야경 4개, 다중선택.
- *
- * stateless — Paparazzi 스냅샷이 직접 렌더한다(`HomeMapMoodFilterSnapshotTest`).
- */
-@Composable
-internal fun MoodFilterRow(selected: Set<MoodFilter>, onSelect: (MoodFilter) -> Unit) {
-    Row(
-        modifier = Modifier
-            .padding(horizontal = 16.dp)
-            .testTag("homemap-moodfilter"),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        MoodFilter.entries.forEach { mood ->
-            MoodCapsule(
-                mood = mood,
-                selected = mood in selected,
-                onClick = { onSelect(mood) },
-            )
-        }
-    }
-}
-
-/** iOS `moodCapsuleButton` 1:1 — 이모지+라벨, gray95, corner8, 선택 시 sunsetOrange 보더. */
-@Composable
-private fun MoodCapsule(mood: MoodFilter, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(PickflowColors.gray95)
-            .then(
-                if (selected) {
-                    Modifier.border(1.dp, PickflowColors.sunsetOrange, RoundedCornerShape(8.dp))
-                } else {
-                    Modifier
-                },
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Image(
-            painter = painterResource(mood.iconRes),
-            contentDescription = mood.displayName,
-            modifier = Modifier.size(16.dp),
-        )
-        Text(
-            text = mood.displayName,
-            style = PickflowTypography.bodyMediumBold,
-            color = if (selected) PickflowColors.gray0 else PickflowColors.gray30,
-        )
     }
 }
 
