@@ -375,8 +375,14 @@ private fun LabeledSection(title: String, content: @Composable () -> Unit) {
     }
 }
 
+/**
+ * 사진 카테고리 칩 — **단독 선택**(무드 필터의 다중선택과 다르다).
+ *
+ * stateless — Paparazzi 스냅샷이 직접 렌더한다(`SpotRegistrationThemeChipSnapshotTest`).
+ * 등록 폼은 로그인이 필요해 비회원 상태의 에뮬레이터로는 진입할 수 없기 때문이다.
+ */
 @Composable
-private fun ThemeChipGroup(selected: SpotTheme?, onToggle: (SpotTheme) -> Unit) {
+internal fun ThemeChipGroup(selected: SpotTheme?, onToggle: (SpotTheme) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         SpotTheme.entries.forEach { t ->
             val isSelected = selected == t

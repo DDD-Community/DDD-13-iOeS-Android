@@ -230,20 +230,36 @@ adb logcat -d | grep -oE "GET https://[^ ]*v1/spots[^ ]*" \
 
 ## 7. 판정표 (PR 본문에 붙여넣기)
 
-| ID | 시나리오 | 결과 | 증적 |
-|---|---|---|---|
-| EXP-01 | 무드 4종 · 순서 | ⬜ Pass / ⬜ Fail | |
-| EXP-02 | 초기 미선택 | ⬜ / ⬜ | |
-| EXP-03 | 다중선택 | ⬜ / ⬜ | |
-| EXP-04 | 재탭 개별 해제 · 전체 해제 | ⬜ / ⬜ | |
-| EXP-05 | 기존 무드 회귀 | ⬜ / ⬜ | |
-| REG-01 | 등록 칩 4종 · 순서 | ⬜ / ⬜ | |
-| REG-02 | 등록 단독 선택 | ⬜ / ⬜ | |
-| CARD-01 | 리스트 카드 배지 | ⬜ / ⬜ | |
-| CARD-02 | 지도 시트 배지 | ⬜ / ⬜ | |
-| NET-01 | HTTP 400 0건 | ⬜ / ⬜ | |
+### 최근 실행 결과 (2026-08-05, Pixel_8_API_35)
 
-**테스트 환경**: AVD ⬜ Pixel_8_API_35 / ⬜ Medium_Phone_API_35 · 커밋 `________` · 일시 `________`
+| ID | 시나리오 | 결과 | 증적 (`docs/PV-59/screenshots/`) |
+|---|---|---|---|
+| EXP-01 | 무드 4종 · 순서 | ✅ Pass | `PV59-EXP-01-map.png`, `-list.png` |
+| EXP-02 | 초기 미선택 | ✅ Pass | `PV59-EXP-02-initial-map.png`, `-list.png` |
+| EXP-03 | 다중선택 | ✅ Pass | `PV59-EXP-03-multi-map.png`, `-list.png` |
+| EXP-04 | 재탭 개별 해제 · 전체 해제 | ✅ Pass | `PV59-EXP-04-after-retap-*.png`, `-cleared-*.png` |
+| EXP-05 | 기존 무드 회귀 | ✅ Pass | `PV59-EXP-05-sunset-*.png`, `-yunseul-*.png` |
+| REG-01 | 등록 칩 4종 · 순서 | ✅ Pass※ | `PV59-REG-01-chips.png` |
+| REG-02 | 등록 단독 선택 | ✅ Pass※ | `PV59-REG-02-sunlight-selected.png`, `-night-selected.png` |
+| CARD-01 | 리스트 카드 배지 | ✅ Pass | `PV59-CARD-01-list.png`, `-list-scrolled.png` |
+| CARD-02 | 지도 시트 배지 | ✅ Pass | `PV59-CARD-02-map-all.png`, `-sheet.png` |
+| NET-01 | HTTP 400 0건 | ✅ Pass | `PV59-NET-01-log.txt` (200 ×31, 400 ×0) |
+
+※ **REG-01/02 는 에뮬레이터가 아니라 Paparazzi 증적이다.** 등록 폼은 로그인이 필요해
+비회원 상태로는 진입할 수 없다(로그인 유도 팝업에서 막힘). 동작 검증은
+`SpotRegistrationScreenUiTest`(Robolectric)가, 렌더 검증은
+`SpotRegistrationThemeChipSnapshotTest`(Paparazzi)가 담당한다.
+
+**빈 판정표** (재실행 시 복사해 쓰기)
+
+| ID | 결과 | 증적 |
+|---|---|---|
+| EXP-01 / 02 / 03 / 04 / 05 | ⬜ Pass / ⬜ Fail | |
+| REG-01 / 02 | ⬜ / ⬜ | |
+| CARD-01 / 02 | ⬜ / ⬜ | |
+| NET-01 | ⬜ / ⬜ | |
+
+**테스트 환경**: AVD `________` · 커밋 `________` · 일시 `________`
 
 ---
 

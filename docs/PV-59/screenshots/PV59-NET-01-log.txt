@@ -1,0 +1,5 @@
+   3 theme=SUNSET
+   5 theme=YUNSEUL
+== 응답 코드 분포 ==
+  31 <-- 200
+== 400 건수: 0 ==
