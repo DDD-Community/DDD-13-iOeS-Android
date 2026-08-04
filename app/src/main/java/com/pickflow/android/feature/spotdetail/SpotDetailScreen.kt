@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -124,7 +125,10 @@ fun SpotDetailScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding(),
+                // targetSdk 35(edge-to-edge 강제)에서 하단 콘텐츠가 내비게이션 바에 가려지지 않도록.
+                // (예: 3버튼 내비게이션의 갤럭시 S24 울트라에서 "잘못된 정보가 있나요?" 잘림 제보)
+                .statusBarsPadding()
+                .navigationBarsPadding(),
         ) {
             SpotDetailNavBar(
                 onBack = onBack,
