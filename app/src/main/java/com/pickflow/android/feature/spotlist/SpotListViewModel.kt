@@ -51,13 +51,22 @@ class SpotListViewModel @Inject constructor(
     // page 기반 페이지네이션 (0-base). nextPage = 다음에 요청할 페이지 번호.
     private var nextPage: Int = 0
     private var hasMore: Boolean = true
+    // 페이지 로딩 in-flight 가드 — 빠른 스크롤로 loadNextPage 가 연타돼도 중복 요청을 막는다.
+    private var isLoadingPage: Boolean = false
+    // refresh/필터 전환마다 증가. 이전 세대의 늦은 응답이 stale 데이터를 섞거나 가드를 잘못 푸는 걸 막는다.
+    private var loadGeneration: Int = 0
     private val accumulated = mutableListOf<Spot>()
+    // 누적된 spotId 집합 — 서버가 페이지 경계에서 같은 스팟을 겹쳐 내려도 중복 key 크래시를 방지.
+    private val accumulatedIds = mutableSetOf<String>()
     private var currentCoordinates: Coordinates? = null
 
     fun refresh() {
+        loadGeneration++
         nextPage = 0
         hasMore = true
+        isLoadingPage = false
         accumulated.clear()
+        accumulatedIds.clear()
         loadPage()
     }
 
@@ -72,7 +81,7 @@ class SpotListViewModel @Inject constructor(
     }
 
     fun loadNextPage() {
-        if (!hasMore) return
+        if (!hasMore || isLoadingPage) return
         loadPage()
     }
 
@@ -108,22 +117,29 @@ class SpotListViewModel @Inject constructor(
     }
 
     private fun loadPage() {
+        val generation = loadGeneration
         val isFirstPage = accumulated.isEmpty()
+        isLoadingPage = true
         viewModelScope.launch {
             if (isFirstPage) _spots.value = LoadState.Loading
             // iOS와 동일하게 매 호출마다 최신 위치 시도. 권한 없으면 null.
             if (currentCoordinates == null) {
                 currentCoordinates = runCatching { locationService.currentLocation() }.getOrNull()
             }
-            runCatching {
+            val result = runCatching {
                 spotListService.fetch(
                     theme = _theme.value,
                     page = nextPage,
                     coordinates = currentCoordinates,
                     sort = _sort.value,
                 )
-            }.onSuccess { page ->
-                accumulated.addAll(page.items)
+            }
+            // refresh/필터 전환으로 세대가 바뀌었으면 이 응답은 폐기 — stale 누적/가드 해제 방지.
+            if (generation != loadGeneration) return@launch
+            result.onSuccess { page ->
+                // 이미 누적된 id 는 걸러 append → LazyGrid 중복 key 크래시 방지.
+                val newItems = page.items.filter { accumulatedIds.add(it.id) }
+                accumulated.addAll(newItems)
                 hasMore = page.hasNext
                 nextPage = page.page + 1
                 emitState()
@@ -135,6 +151,7 @@ class SpotListViewModel @Inject constructor(
                     _toast.value = "다음 페이지를 불러오지 못했어요."
                 }
             }
+            isLoadingPage = false
         }
     }
 

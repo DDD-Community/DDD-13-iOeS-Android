@@ -10,6 +10,7 @@ import com.pickflow.android.core.services.protocols.SpotPage
 import com.pickflow.android.core.services.protocols.SpotSort
 import com.pickflow.android.core.services.protocols.SpotTheme
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -86,6 +87,49 @@ class SpotListViewModelTest {
 
         vm.loadNextPage(); advanceUntilIdle()
         assertEquals(2, (vm.spots.value as LoadState.Loaded).value.size)
+    }
+
+    @Test
+    fun `overlapping ids across pages are deduped to keep grid keys unique`() = runTest(testDispatcher) {
+        // 서버가 페이지 경계에서 같은 스팟(b)을 겹쳐 내려도 중복 없이 누적돼야 한다.
+        // (LazyVerticalStaggeredGrid 의 key={it.id} 중복 → IllegalArgumentException 크래시 방지)
+        coEvery {
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("a"), spot("b")), page = 0, hasNext = true)
+        coEvery {
+            listService.fetch(theme = null, page = 1, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("b"), spot("c")), page = 1, hasNext = false)
+
+        val vm = viewModel()
+        vm.refresh(); advanceUntilIdle()
+        vm.loadNextPage(); advanceUntilIdle()
+
+        val ids = (vm.spots.value as LoadState.Loaded).value.map { it.id }
+        assertEquals(listOf("a", "b", "c"), ids)
+        assertEquals(ids.size, ids.toSet().size)
+    }
+
+    @Test
+    fun `concurrent loadNextPage during in-flight load fires only one fetch`() = runTest(testDispatcher) {
+        coEvery {
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("a")), page = 0, hasNext = true)
+        coEvery {
+            listService.fetch(theme = null, page = 1, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("b")), page = 1, hasNext = true)
+
+        val vm = viewModel()
+        vm.refresh(); advanceUntilIdle()
+
+        // 빠른 스크롤로 loadNextPage 가 연타되는 상황 — 첫 호출이 in-flight 인 동안 둘째는 무시돼야 한다.
+        vm.loadNextPage()
+        vm.loadNextPage()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            listService.fetch(theme = null, page = 1, coordinates = null, sort = SpotSort.RECOMMENDED)
+        }
+        assertEquals(listOf("a", "b"), (vm.spots.value as LoadState.Loaded).value.map { it.id })
     }
 
     @Test
