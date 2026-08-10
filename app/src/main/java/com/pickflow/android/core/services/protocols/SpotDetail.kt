@@ -30,7 +30,18 @@ data class SpotDetail(
     val bookmarkCount: Long,
     val isBookmarked: Boolean,
     val isMySpot: Boolean,
+    val source: SpotSource = SpotSource.Curated(displayName = ""),
+    val mySpotStatus: MySpotStatus? = null,
+    val rejectionReason: String? = null,
+    val recommendationCount: Long = 0,
+    val isRecommended: Boolean = false,
 )
+
+sealed interface SpotSource {
+    data object User : SpotSource
+
+    data class Curated(val displayName: String) : SpotSource
+}
 
 data class SpotWeather(
     val sky: WeatherSky,

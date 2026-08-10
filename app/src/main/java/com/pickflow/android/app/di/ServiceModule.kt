@@ -3,9 +3,7 @@ package com.pickflow.android.app.di
 import com.pickflow.android.core.services.impl.DefaultArchiveService
 import com.pickflow.android.core.services.impl.DefaultAuthService
 import com.pickflow.android.core.services.impl.DefaultBoardService
-import com.pickflow.android.core.services.impl.DefaultBookmarkService
 import com.pickflow.android.core.services.impl.DefaultMySpotAlarmService
-import com.pickflow.android.core.services.impl.DefaultMySpotService
 import com.pickflow.android.core.services.impl.DefaultSpotReportService
 import com.pickflow.android.core.services.impl.DefaultSocialLoginService
 import com.pickflow.android.core.services.impl.DefaultUserService
@@ -34,6 +32,8 @@ import com.pickflow.android.core.services.protocols.BoardService
 import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.MySpotAlarmService
 import com.pickflow.android.core.services.protocols.MySpotService
+import com.pickflow.android.core.services.protocols.RecommendationService
+import com.pickflow.android.core.services.protocols.ReviewResultService
 import com.pickflow.android.core.services.protocols.SpotReportService
 import com.pickflow.android.core.services.protocols.OnboardingCompletionStore
 import com.pickflow.android.core.services.protocols.ShareIntentService
@@ -44,6 +44,10 @@ import com.pickflow.android.core.services.protocols.SpotService
 import com.pickflow.android.core.services.protocols.SocialLoginService
 import com.pickflow.android.core.services.protocols.TokenStore
 import com.pickflow.android.core.services.protocols.UserService
+import com.pickflow.android.core.services.stub.StubBookmarkService
+import com.pickflow.android.core.services.stub.StubMySpotService
+import com.pickflow.android.core.services.stub.StubRecommendationService
+import com.pickflow.android.core.services.stub.StubReviewResultService
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -88,13 +92,20 @@ abstract class ServiceModule {
     @Binds
     // PV-59 임시: 백엔드가 신규 무드/다중 theme 를 지원하면 DefaultSpotListService 로 되돌린다.
     // docs/PV-59/backend-compat-rollback.md
+    // PV-41 의 StubSpotListService 는 바인딩하지 않는다 — 실서버 경로를 유지한다.
     abstract fun bindSpotListService(impl: MoodCompatSpotListService): SpotListService
 
     @Binds
-    abstract fun bindBookmarkService(impl: DefaultBookmarkService): BookmarkService
+    abstract fun bindBookmarkService(impl: StubBookmarkService): BookmarkService
 
     @Binds
-    abstract fun bindMySpotService(impl: DefaultMySpotService): MySpotService
+    abstract fun bindMySpotService(impl: StubMySpotService): MySpotService
+
+    @Binds
+    abstract fun bindRecommendationService(impl: StubRecommendationService): RecommendationService
+
+    @Binds
+    abstract fun bindReviewResultService(impl: StubReviewResultService): ReviewResultService
 
     @Binds
     abstract fun bindBoardService(impl: DefaultBoardService): BoardService
@@ -113,6 +124,7 @@ abstract class ServiceModule {
 
     @Binds
     // PV-59 임시: 위와 동일. 백엔드 완료 시 DefaultSpotMapService 로 복귀.
+    // PV-41 의 StubSpotMapService 는 바인딩하지 않는다 — 실서버 경로를 유지한다.
     abstract fun bindSpotMapService(impl: MoodCompatSpotMapService): SpotMapService
 
     @Binds

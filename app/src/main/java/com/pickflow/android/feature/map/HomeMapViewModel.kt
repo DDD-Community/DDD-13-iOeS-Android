@@ -9,12 +9,14 @@ import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.MoodFilterStore
+import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotMapMarker
 import com.pickflow.android.core.services.protocols.SpotMapService
 import com.pickflow.android.core.services.protocols.SpotPreview
 import com.pickflow.android.core.services.protocols.SpotService
+import com.pickflow.android.core.services.protocols.SpotSource
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.core.services.protocols.ViewportBox
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -131,10 +133,10 @@ class HomeMapViewModel @Inject constructor(
     }
 
     /**
-     * 지도의 카메라가 멈출 때마다 호출 — viewport API 응답을 isMySpot 으로 partition.
+     * 지도의 카메라가 멈출 때마다 호출 — viewport API 응답을 공개 상태로 partition.
      *
-     * `isMySpot=false` → 큐레이션 → [_curationSpots] 로 emit (SDK Clusterer 입력)
-     * `isMySpot=true`  → 마이스팟 → [_mySpots] 로 직접 emit (클러스터링 미참여)
+     * 작성자 소유 `DRAFT`만 [_mySpots]로 emit하고, 큐레이션 및 `PUBLISHED`는
+     * [_curationSpots]로 emit한다. 검수 중·반려·다른 작성자의 비공개 스팟은 제외한다.
      */
     fun onViewportChanged(box: ViewportBox, zoomLevel: Int) {
         lastViewport = box
@@ -143,11 +145,18 @@ class HomeMapViewModel @Inject constructor(
             _curationSpots.value = LoadState.Loading
             _curationSpots.value = runCatching {
                 val markers = spotMapService.fetchInViewport(box, moodFilterStore.selected.value)
-                val (mineMarkers, curationMarkers) = markers.partition { it.isMySpot }
+                val mineMarkers = markers.filter { marker ->
+                    marker.source == SpotSource.User &&
+                        marker.status == MySpotStatus.DRAFT &&
+                        marker.isOwnedByCurrentUser
+                }
+                val publicMarkers = markers.filter { marker ->
+                    marker.source is SpotSource.Curated || marker.status == MySpotStatus.PUBLISHED
+                }
                 _mySpots.value = mineMarkers.map(SpotMapMarker::toMySpotMarker)
-                val curationSpots = curationMarkers.map(SpotMapMarker::toSpot)
-                loadedSpots = curationSpots + mineMarkers.map(SpotMapMarker::toSpot)
-                curationSpots
+                val publicSpots = publicMarkers.map(SpotMapMarker::toSpot)
+                loadedSpots = publicSpots + mineMarkers.map(SpotMapMarker::toSpot)
+                publicSpots
             }.fold(
                 onSuccess = { if (it.isEmpty()) LoadState.Empty else LoadState.Loaded(it) },
                 onFailure = {

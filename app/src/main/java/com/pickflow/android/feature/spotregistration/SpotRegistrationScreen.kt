@@ -22,17 +22,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,6 +50,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -56,7 +61,9 @@ import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.core.services.protocols.AddressSuggestion
 import com.pickflow.android.core.services.protocols.ImagePayload
+import com.pickflow.android.core.services.protocols.MySpotDetail
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.feature.spotlist.label
 import com.pickflow.android.feature.spotregistration.components.CaptureDatePickerSheet
@@ -64,7 +71,7 @@ import com.pickflow.android.feature.spotregistration.components.CaptureTimePicke
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val DATE_DISPLAY = DateTimeFormatter.ofPattern("M월 d일 EEE", Locale.KOREAN)
+private val DATE_DISPLAY = DateTimeFormatter.ofPattern("M월 d일", Locale.KOREAN)
 private val TIME_DISPLAY = DateTimeFormatter.ofPattern("a h:mm", Locale.KOREAN)
 
 /**
@@ -87,11 +94,15 @@ fun SpotRegistrationScreen(
     val comment by viewModel.comment.collectAsStateWithLifecycle()
     val imagePayload by viewModel.imagePayload.collectAsStateWithLifecycle()
     val selectedImageUri by viewModel.selectedImageUri.collectAsStateWithLifecycle()
+    val mode by viewModel.mode.collectAsStateWithLifecycle()
+    val revisionLoadState by viewModel.revisionLoadState.collectAsStateWithLifecycle()
+    val existingImageUrl by viewModel.existingImageUrl.collectAsStateWithLifecycle()
     val submission by viewModel.submission.collectAsStateWithLifecycle()
     val isRegisterEnabled by viewModel.isRegisterEnabled.collectAsStateWithLifecycle()
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+    var showResubmitSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(submission) {
         (submission as? LoadState.Loaded)?.let { onRegistered(it.value.spotId.toString()) }
@@ -127,6 +138,84 @@ fun SpotRegistrationScreen(
         )
     }
 
+    SpotRegistrationContent(
+        mode = mode,
+        revisionLoadState = revisionLoadState,
+        selectedAddress = selectedAddress,
+        distanceText = distanceText,
+        spotName = spotName,
+        theme = theme,
+        capturedDate = capturedDate,
+        capturedTime = capturedTime,
+        comment = comment,
+        selectedImageUri = selectedImageUri,
+        hasReplacementImage = imagePayload != null,
+        existingImageUrl = existingImageUrl,
+        submission = submission,
+        isRegisterEnabled = isRegisterEnabled,
+        showResubmitSheet = showResubmitSheet,
+        onBack = onBack,
+        onSubmit = {
+            if (mode == SpotRegistrationMode.REVISE) {
+                showResubmitSheet = true
+            } else {
+                viewModel.submit()
+            }
+        },
+        onConfirmResubmit = {
+            showResubmitSheet = false
+            viewModel.submit()
+        },
+        onDismissResubmit = { showResubmitSheet = false },
+        onPhotoPick = {
+            photoLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+            )
+        },
+        onOpenSearch = onOpenSearch,
+        onSpotNameChange = viewModel::setSpotName,
+        onThemeToggle = viewModel::toggleTheme,
+        onDateClick = { showDatePicker = true },
+        onTimeClick = { showTimePicker = true },
+        onCommentChange = viewModel::setComment,
+    )
+}
+
+/** ViewModel/Hilt 의존이 없는 등록·반려 편집 화면 본체. */
+@Composable
+fun SpotRegistrationContent(
+    mode: SpotRegistrationMode,
+    revisionLoadState: LoadState<MySpotDetail>,
+    selectedAddress: AddressSuggestion?,
+    distanceText: String,
+    spotName: String,
+    theme: SpotTheme?,
+    capturedDate: java.time.LocalDate?,
+    capturedTime: java.time.LocalTime?,
+    comment: String,
+    selectedImageUri: String?,
+    hasReplacementImage: Boolean,
+    existingImageUrl: String?,
+    submission: LoadState<SpotRegistrationSubmissionResult>,
+    isRegisterEnabled: Boolean,
+    showResubmitSheet: Boolean,
+    onBack: () -> Unit = {},
+    onSubmit: () -> Unit = {},
+    onConfirmResubmit: () -> Unit = {},
+    onDismissResubmit: () -> Unit = {},
+    onPhotoPick: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onSpotNameChange: (String) -> Unit = {},
+    onThemeToggle: (SpotTheme) -> Unit = {},
+    onDateClick: () -> Unit = {},
+    onTimeClick: () -> Unit = {},
+    onCommentChange: (String) -> Unit = {},
+) {
+    if (mode == SpotRegistrationMode.REVISE && revisionLoadState !is LoadState.Loaded) {
+        RevisionLoadStateContent(revisionLoadState)
+        return
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -134,10 +223,12 @@ fun SpotRegistrationScreen(
             .testTag("spotregistration-screen"),
     ) {
         RegistrationHeader(
+            title = if (mode == SpotRegistrationMode.REVISE) "스팟 수정" else "스팟 등록",
+            actionLabel = if (mode == SpotRegistrationMode.REVISE) "다시 신청" else "등록",
             isRegisterEnabled = isRegisterEnabled,
             isSubmitting = submission is LoadState.Loading,
             onBack = onBack,
-            onSubmit = viewModel::submit,
+            onSubmit = onSubmit,
         )
 
         Column(
@@ -149,12 +240,10 @@ fun SpotRegistrationScreen(
         ) {
             PhotoPickerCard(
                 previewUri = selectedImageUri,
-                hasImage = imagePayload != null,
-                onPick = {
-                    photoLauncher.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                    )
-                },
+                hasImage = hasReplacementImage || existingImageUrl != null,
+                isExistingImage = mode == SpotRegistrationMode.REVISE &&
+                    !hasReplacementImage && existingImageUrl != null,
+                onPick = onPhotoPick,
             )
 
             selectedAddress?.let { address ->
@@ -170,7 +259,7 @@ fun SpotRegistrationScreen(
             LabeledSection("스팟 이름") {
                 CountedInput(
                     value = spotName,
-                    onValueChange = viewModel::setSpotName,
+                    onValueChange = onSpotNameChange,
                     placeholder = "이 장소를 무엇이라 부를까요?",
                     count = spotName.length,
                     maxCount = SpotRegistrationViewModel.MAX_NAME_LENGTH,
@@ -180,7 +269,7 @@ fun SpotRegistrationScreen(
             }
 
             LabeledSection("사진 카테고리") {
-                ThemeChipGroup(selected = theme, onToggle = viewModel::toggleTheme)
+                ThemeChipGroup(selected = theme, onToggle = onThemeToggle)
             }
 
             LabeledSection("촬영 기록 정보") {
@@ -190,14 +279,14 @@ fun SpotRegistrationScreen(
                         placeholder = "날짜 선택",
                         modifier = Modifier.weight(1f),
                         testTag = "registration-date",
-                        onClick = { showDatePicker = true },
+                        onClick = onDateClick,
                     )
                     SelectionField(
                         value = capturedTime?.format(TIME_DISPLAY),
                         placeholder = "시간 선택",
                         modifier = Modifier.weight(1f),
                         testTag = "registration-time",
-                        onClick = { showTimePicker = true },
+                        onClick = onTimeClick,
                     )
                 }
             }
@@ -205,7 +294,7 @@ fun SpotRegistrationScreen(
             LabeledSection("한 줄 코멘트") {
                 CountedInput(
                     value = comment,
-                    onValueChange = viewModel::setComment,
+                    onValueChange = onCommentChange,
                     placeholder = "다른 사람을 위한 꿀팁이나\n촬영 후기를 남겨주세요.",
                     count = comment.length,
                     maxCount = SpotRegistrationViewModel.MAX_COMMENT_LENGTH,
@@ -223,10 +312,46 @@ fun SpotRegistrationScreen(
             }
         }
     }
+
+    if (showResubmitSheet) {
+        RegistrationResubmitSheet(
+            onConfirm = onConfirmResubmit,
+            onDismiss = onDismissResubmit,
+        )
+    }
+}
+
+@Composable
+private fun RevisionLoadStateContent(state: LoadState<MySpotDetail>) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PickflowColors.gray95)
+            .testTag(
+                if (state is LoadState.Failed) {
+                    "registration-revision-error"
+                } else {
+                    "registration-revision-loading"
+                },
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (state is LoadState.Failed) {
+            Text(
+                text = "편집 정보를 불러오지 못했어요.",
+                style = PickflowTypography.bodyMedium,
+                color = PickflowColors.gray30,
+            )
+        } else {
+            CircularProgressIndicator(color = PickflowColors.sunsetOrange)
+        }
+    }
 }
 
 @Composable
 private fun RegistrationHeader(
+    title: String,
+    actionLabel: String,
     isRegisterEnabled: Boolean,
     isSubmitting: Boolean,
     onBack: () -> Unit,
@@ -244,10 +369,11 @@ private fun RegistrationHeader(
     ) {
         Box(
             modifier = Modifier
-                .size(44.dp)
+                .width(72.dp)
+                .height(44.dp)
                 .clickable(onClick = onBack)
                 .testTag("registration-back"),
-            contentAlignment = Alignment.Center,
+            contentAlignment = Alignment.CenterStart,
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
@@ -256,7 +382,7 @@ private fun RegistrationHeader(
             )
         }
         Text(
-            text = "스팟 등록",
+            text = title,
             style = PickflowTypography.headingMedium,
             color = PickflowColors.gray0,
             modifier = Modifier.weight(1f),
@@ -264,18 +390,20 @@ private fun RegistrationHeader(
         )
         Box(
             modifier = Modifier
-                .size(44.dp)
+                .width(72.dp)
+                .height(44.dp)
                 .clickable(enabled = isRegisterEnabled && !isSubmitting, onClick = onSubmit)
                 .testTag("registration-submit"),
-            contentAlignment = Alignment.Center,
+            contentAlignment = Alignment.CenterEnd,
         ) {
             if (isSubmitting) {
                 CircularProgressIndicator(color = PickflowColors.gray0, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
             } else {
                 Text(
-                    text = "등록",
+                    text = actionLabel,
                     style = PickflowTypography.headingSmall,
                     color = if (isRegisterEnabled) PickflowColors.spotOrange else PickflowColors.spotDisabled,
+                    maxLines = 1,
                 )
             }
         }
@@ -283,7 +411,12 @@ private fun RegistrationHeader(
 }
 
 @Composable
-private fun PhotoPickerCard(previewUri: String?, hasImage: Boolean, onPick: () -> Unit) {
+private fun PhotoPickerCard(
+    previewUri: String?,
+    hasImage: Boolean,
+    isExistingImage: Boolean,
+    onPick: () -> Unit,
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -291,7 +424,7 @@ private fun PhotoPickerCard(previewUri: String?, hasImage: Boolean, onPick: () -
             .clip(RoundedCornerShape(12.dp))
             .background(PickflowColors.spotPhotoCardBackground)
             .clickable(onClick = onPick)
-            .testTag("registration-photo-card"),
+            .testTag(if (isExistingImage) "registration-existing-image" else "registration-photo-card"),
         contentAlignment = Alignment.Center,
     ) {
         if (previewUri != null && hasImage) {
@@ -323,6 +456,77 @@ private fun PhotoPickerCard(previewUri: String?, hasImage: Boolean, onPick: () -
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun RegistrationResubmitSheet(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = PickflowColors.gray95,
+        dragHandle = null,
+    ) {
+        RegistrationResubmitSheetContent(
+            onConfirm = onConfirm,
+            onDismiss = onDismiss,
+        )
+    }
+}
+
+@Composable
+fun RegistrationResubmitSheetContent(
+    onConfirm: () -> Unit = {},
+    onDismiss: () -> Unit = {},
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(top = 24.dp, bottom = 32.dp)
+            .testTag("registration-resubmit-sheet"),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "다시 신청할까요?",
+            style = PickflowTypography.headingMedium,
+            color = PickflowColors.gray0,
+        )
+        Text(
+            text = "제출하면 검수가 다시 시작돼요.",
+            style = PickflowTypography.bodyMedium,
+            color = PickflowColors.gray30,
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(PickflowColors.sunsetOrange)
+                .clickable(onClick = onConfirm)
+                .testTag("registration-resubmit-confirm"),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("신청하기", style = PickflowTypography.bodyLargeBold, color = PickflowColors.gray0)
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(PickflowColors.gray80)
+                .clickable(onClick = onDismiss)
+                .testTag("registration-resubmit-cancel"),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("계속 수정할게요", style = PickflowTypography.bodyLargeBold, color = PickflowColors.gray0)
+        }
+    }
+}
+
+@Composable
 private fun SpotAddressCard(title: String, address: String, distanceText: String) {
     Column(
         modifier = Modifier
@@ -334,7 +538,12 @@ private fun SpotAddressCard(title: String, address: String, distanceText: String
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(title, style = PickflowTypography.bodyLargeBold, color = PickflowColors.gray0)
-            Text(address, style = PickflowTypography.bodySmall, color = PickflowColors.spotTertiaryText)
+            Text(
+                text = address,
+                style = PickflowTypography.bodySmall,
+                color = PickflowColors.spotTertiaryText,
+                modifier = Modifier.testTag("registration-address"),
+            )
         }
         if (distanceText.isNotBlank()) {
             Text(
@@ -419,8 +628,12 @@ internal fun ThemeChipGroup(selected: SpotTheme?, onToggle: (SpotTheme) -> Unit)
                             Modifier
                         },
                     )
-                    .clickable { onToggle(t) }
-                    .padding(vertical = 8.dp),
+                    .selectable(
+                        selected = isSelected,
+                        onClick = { onToggle(t) },
+                    )
+                    .padding(vertical = 8.dp)
+                    .testTag("registration-theme-${t.name.lowercase()}"),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
             ) {
@@ -471,7 +684,12 @@ private fun SelectionField(
             overflow = TextOverflow.Ellipsis,
         )
         if (value != null) {
-            Text("수정", style = PickflowTypography.labelMedium, color = PickflowColors.spotOrange)
+            Text(
+                text = "수정",
+                style = PickflowTypography.labelMedium,
+                color = PickflowColors.spotOrange,
+                modifier = Modifier.clearAndSetSemantics {},
+            )
         }
     }
 }

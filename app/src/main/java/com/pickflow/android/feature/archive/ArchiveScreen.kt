@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -39,10 +40,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pickflow.android.common.designsystem.PickflowColors
@@ -51,6 +58,7 @@ import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.MySpot
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.SavedSpot
+import com.pickflow.android.core.services.protocols.SavedSpotAvailability
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.feature.archive.components.ArchiveEmptyContent
 import com.pickflow.android.feature.archive.components.ArchiveHeader
@@ -154,6 +162,7 @@ fun ArchiveScreenContent(
     onRenameClick: () -> Unit = {},
     onCoverImageClick: () -> Unit = {},
 ) {
+    var privateSpotToDelete by remember { mutableStateOf<Long?>(null) }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -177,6 +186,7 @@ fun ArchiveScreenContent(
                 onRegisterClick = onRegisterClick,
                 onCellClick = onCellClick,
                 onBookmarkTap = onBookmarkTap,
+                onPrivateSpotClick = { privateSpotToDelete = it },
                 onCellAppear = onCellAppear,
                 onMyCellAppear = onMyCellAppear,
                 onRenameClick = onRenameClick,
@@ -185,6 +195,16 @@ fun ArchiveScreenContent(
         }
 
         toast?.let { ToastOverlay(it) }
+    }
+
+    privateSpotToDelete?.let { spotId ->
+        ArchivePrivateDeleteDialog(
+            onDismiss = { privateSpotToDelete = null },
+            onConfirm = {
+                privateSpotToDelete = null
+                onBookmarkTap(spotId)
+            },
+        )
     }
 }
 
@@ -201,6 +221,7 @@ private fun ArchiveScrollableContent(
     onRegisterClick: () -> Unit,
     onCellClick: (Long) -> Unit,
     onBookmarkTap: (Long) -> Unit,
+    onPrivateSpotClick: (Long) -> Unit,
     onCellAppear: (SavedSpot) -> Unit,
     onMyCellAppear: (MySpot) -> Unit,
     onRenameClick: () -> Unit,
@@ -256,6 +277,7 @@ private fun ArchiveScrollableContent(
                     state = state,
                     onCellClick = onCellClick,
                     onBookmarkTap = onBookmarkTap,
+                    onPrivateSpotClick = onPrivateSpotClick,
                     onCellAppear = onCellAppear,
                     onExploreClick = onExploreClick,
                 )
@@ -353,22 +375,25 @@ private fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScop
 
 @Composable
 private fun MySpotStatusBadge(status: MySpotStatus, modifier: Modifier = Modifier) {
-    val (label, bg) = when (status) {
-        MySpotStatus.PENDING -> "검토중" to PickflowColors.gray80
-        MySpotStatus.REJECTED -> "반려됨" to PickflowColors.sunsetOrange
-        MySpotStatus.PUBLISHED -> return // 배지 없음
+    val (label, bg, tag) = when (status) {
+        MySpotStatus.PENDING -> Triple("검수중", PickflowColors.gray80, "pending")
+        MySpotStatus.RE_REVIEW_PENDING -> Triple("검수중", PickflowColors.gray80, "re-review-pending")
+        MySpotStatus.REJECTED -> Triple("반려됨", PickflowColors.sunsetOrange, "rejected")
+        MySpotStatus.DRAFT,
+        MySpotStatus.PUBLISHED,
+        -> return
     }
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(4.dp))
             .background(bg)
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-            .testTag("archive-my-badge-${status.name.lowercase()}"),
+            .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         Text(
             text = label,
-            style = PickflowTypography.labelSmall,
+            style = PickflowTypography.bodySmallBold,
             color = PickflowColors.gray0,
+            modifier = Modifier.testTag("archive-my-badge-$tag"),
         )
     }
 }
@@ -377,6 +402,7 @@ private fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScop
     state: ArchiveLoadState,
     onCellClick: (Long) -> Unit,
     onBookmarkTap: (Long) -> Unit,
+    onPrivateSpotClick: (Long) -> Unit,
     onCellAppear: (SavedSpot) -> Unit,
     onExploreClick: () -> Unit,
 ) {
@@ -428,12 +454,17 @@ private fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScop
             }
             items(state.items, key = { it.id }) { saved ->
                 LaunchedEffect(saved.id) { onCellAppear(saved) }
+                val isPrivate = saved.availability == SavedSpotAvailability.AUTHOR_PRIVATE
                 Box(
                     modifier = Modifier
                         .padding(horizontal = 8.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .clickable { onCellClick(saved.id) }
-                        .testTag("archive-cell-${saved.id}"),
+                        .clickable {
+                            if (isPrivate) onPrivateSpotClick(saved.id) else onCellClick(saved.id)
+                        }
+                        .testTag(
+                            if (isPrivate) "archive-private-${saved.id}" else "archive-cell-${saved.id}",
+                        ),
                 ) {
                     SpotListCell(
                         item = SpotListGridItem(
@@ -446,19 +477,96 @@ private fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScop
                         ),
                         isBookmarked = true,
                         bookmarkCount = null,
+                        modifier = Modifier.alpha(if (isPrivate) 0.28f else 1f),
                     )
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                            .size(32.dp)
-                            .clickable { onBookmarkTap(saved.id) }
-                            .testTag("archive-bookmark-${saved.id}"),
-                    )
+                    if (isPrivate) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .fillMaxWidth()
+                                .aspectRatio(if (saved.id % 2L == 0L) 1f / 1.2f else 1f / 0.9f),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "등록한 유저가\n비공개로 전환하였어요",
+                                style = PickflowTypography.bodySmallBold,
+                                color = PickflowColors.gray20,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .semantics { contentDescription = "비공개로 전환됨" },
+                            )
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .size(32.dp)
+                                .clickable { onBookmarkTap(saved.id) }
+                                .testTag("archive-bookmark-${saved.id}"),
+                        )
+                    }
                 }
             }
         }
         ArchiveLoadState.SignedOut -> Unit
+    }
+}
+
+@Composable
+private fun ArchivePrivateDeleteDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        ArchivePrivateDeleteDialogContent(onConfirm = onConfirm)
+    }
+}
+
+@Composable
+fun ArchivePrivateDeleteDialogContent(
+    onConfirm: () -> Unit = {},
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(PickflowColors.gray90)
+            .padding(24.dp)
+            .testTag("archive-private-modal"),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "비공개로 전환된 스팟이에요",
+            style = PickflowTypography.headingSmall,
+            color = PickflowColors.gray0,
+        )
+        Text(
+            text = "작성자가 스팟을 비공개로 전환했어요.\n목록에서 삭제할 수 있어요.",
+            style = PickflowTypography.bodyMedium,
+            color = PickflowColors.gray30,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(PickflowColors.sunsetOrange)
+                .clickable(onClick = onConfirm)
+                .testTag("archive-private-delete-confirm"),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "목록에서 삭제",
+                style = PickflowTypography.bodyLargeBold,
+                color = PickflowColors.gray0,
+            )
+        }
     }
 }
 
