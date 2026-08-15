@@ -9,7 +9,10 @@ import com.pickflow.android.core.services.protocols.MySpotPage
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.MySpotTransitionConflictException
 import com.pickflow.android.core.services.protocols.MySpotTransitionResult
+import com.pickflow.android.core.services.protocols.MySpotUnpublishResult
+import com.pickflow.android.core.services.protocols.MySpotUpdateResult
 import com.pickflow.android.core.services.protocols.RecommendationResult
+import com.pickflow.android.core.services.protocols.RejectionReason
 import com.pickflow.android.core.services.protocols.ReviewDecision
 import com.pickflow.android.core.services.protocols.ReviewResult
 import com.pickflow.android.core.services.protocols.ReviewResultStatus
@@ -108,7 +111,7 @@ class StubSpotBackend @Inject constructor() {
                 capturedTime = draft.capturedTime,
                 comment = draft.comment,
                 status = MySpotStatus.DRAFT,
-                rejectionReason = null,
+                rejection = null,
                 recommendationCount = 0,
                 isRecommended = false,
                 source = com.pickflow.android.core.services.protocols.SpotSource.User,
@@ -122,37 +125,66 @@ class StubSpotBackend @Inject constructor() {
         }
     }
 
-    internal suspend fun requestOpen(spotId: Long): MySpotTransitionResult = transition(
-        operation = StubOperation.REQUEST_OPEN,
-        spotId = spotId,
-        allowed = setOf(MySpotStatus.DRAFT),
-        destination = MySpotStatus.PENDING,
-    )
+    /** DRAFT -> PENDING, REJECTED -> RE_REVIEW_PENDING. 재신청 시 반려 정보를 지운다. */
+    internal suspend fun requestOpen(spotId: Long): MySpotTransitionResult {
+        before(StubOperation.REQUEST_OPEN, spotId)
+        return stateMutex.withLock {
+            val record = ownedRecord(spotId)
+            requireStatus(record, setOf(MySpotStatus.DRAFT, MySpotStatus.REJECTED))
+            val wasRejected = record.status == MySpotStatus.REJECTED
+            record.status = if (wasRejected) {
+                MySpotStatus.RE_REVIEW_PENDING
+            } else {
+                MySpotStatus.PENDING
+            }
+            if (wasRejected) record.rejection = null
+            record.updatedAt = now()
+            record.toTransitionResult()
+        }
+    }
 
-    internal suspend fun withdrawRequest(spotId: Long): MySpotTransitionResult = transition(
-        operation = StubOperation.WITHDRAW_REQUEST,
-        spotId = spotId,
-        allowed = setOf(MySpotStatus.PENDING, MySpotStatus.RE_REVIEW_PENDING),
-        destination = MySpotStatus.DRAFT,
-    )
+    /**
+     * 공개 해제. 검수중이면 철회, 공개면 비공개 전환이며 둘 다 DRAFT 로 되돌린다.
+     * DRAFT 는 해제할 대상이 없다.
+     */
+    internal suspend fun unpublish(spotId: Long): MySpotUnpublishResult {
+        before(StubOperation.UNPUBLISH, spotId)
+        return stateMutex.withLock {
+            val record = ownedRecord(spotId)
+            requireStatus(
+                record,
+                setOf(MySpotStatus.PENDING, MySpotStatus.RE_REVIEW_PENDING, MySpotStatus.PUBLISHED),
+            )
+            val previousStatus = record.status
+            record.status = MySpotStatus.DRAFT
+            record.updatedAt = now()
+            MySpotUnpublishResult(
+                spotId = record.id,
+                previousStatus = previousStatus,
+                status = record.status,
+                updatedAt = record.updatedAt,
+            )
+        }
+    }
 
     internal suspend fun withdrawRejection(spotId: Long): MySpotTransitionResult = transition(
         operation = StubOperation.WITHDRAW_REJECTION,
         spotId = spotId,
         allowed = setOf(MySpotStatus.REJECTED),
         destination = MySpotStatus.DRAFT,
-        clearRejectionReason = true,
+        clearRejection = true,
     )
 
-    internal suspend fun reviseAndResubmit(
+    /** 수정만 수행한다. 상태는 그대로 두고, 이미지 미첨부 시 기존 이미지를 유지한다. */
+    internal suspend fun update(
         spotId: Long,
         draft: SpotDraft,
         replacementImage: ImagePayload?,
-    ): MySpotTransitionResult {
-        before(StubOperation.REVISE_AND_RESUBMIT, spotId)
+    ): MySpotUpdateResult {
+        before(StubOperation.UPDATE, spotId)
         return stateMutex.withLock {
             val record = ownedRecord(spotId)
-            requireStatus(record, setOf(MySpotStatus.REJECTED))
+            requireStatus(record, setOf(MySpotStatus.DRAFT, MySpotStatus.REJECTED))
             record.name = draft.name
             record.theme = draft.theme
             record.latitude = draft.latitude
@@ -162,19 +194,14 @@ class StubSpotBackend @Inject constructor() {
             record.capturedTime = draft.capturedTime
             record.comment = draft.comment
             replacementImage?.let { record.imageUrl = "stub://images/${it.filename}" }
-            record.status = MySpotStatus.RE_REVIEW_PENDING
-            record.rejectionReason = null
             record.updatedAt = now()
-            record.toTransitionResult()
+            MySpotUpdateResult(
+                spotId = record.id,
+                status = record.status,
+                imageUrl = record.imageUrl,
+            )
         }
     }
-
-    internal suspend fun cancelOpen(spotId: Long): MySpotTransitionResult = transition(
-        operation = StubOperation.CANCEL_OPEN,
-        spotId = spotId,
-        allowed = setOf(MySpotStatus.PUBLISHED),
-        destination = MySpotStatus.DRAFT,
-    )
 
     internal suspend fun delete(spotId: Long) {
         before(StubOperation.DELETE, spotId)
@@ -321,7 +348,8 @@ class StubSpotBackend @Inject constructor() {
     suspend fun completeReview(
         spotId: Long,
         decision: ReviewDecision,
-        rejectionReason: String? = null,
+        rejectionReason: RejectionReason? = null,
+        rejectionDetail: String? = null,
     ): ReviewResult = stateMutex.withLock {
         val record = ownedRecord(spotId)
         requireStatus(record, setOf(MySpotStatus.PENDING, MySpotStatus.RE_REVIEW_PENDING))
@@ -329,12 +357,16 @@ class StubSpotBackend @Inject constructor() {
             ReviewDecision.APPROVED -> MySpotStatus.PUBLISHED
             ReviewDecision.REJECTED -> MySpotStatus.REJECTED
         }
-        record.rejectionReason = if (decision == ReviewDecision.REJECTED) {
-            rejectionReason ?: "스팟 정보를 보완해 주세요"
+        record.updatedAt = now()
+        record.rejection = if (decision == ReviewDecision.REJECTED) {
+            StubRejections.of(
+                reason = rejectionReason ?: RejectionReason.LOW_QUALITY,
+                detail = rejectionDetail,
+                rejectedAt = record.updatedAt,
+            )
         } else {
             null
         }
-        record.updatedAt = now()
         val result = ReviewResult(
             resultId = nextReviewResultId++,
             spotId = spotId,
@@ -386,14 +418,14 @@ class StubSpotBackend @Inject constructor() {
         spotId: Long,
         allowed: Set<MySpotStatus>,
         destination: MySpotStatus,
-        clearRejectionReason: Boolean = false,
+        clearRejection: Boolean = false,
     ): MySpotTransitionResult {
         before(operation, spotId)
         return stateMutex.withLock {
             val record = ownedRecord(spotId)
             requireStatus(record, allowed)
             record.status = destination
-            if (clearRejectionReason) record.rejectionReason = null
+            if (clearRejection) record.rejection = null
             record.updatedAt = now()
             record.toTransitionResult()
         }
@@ -484,7 +516,7 @@ private fun StubSpotRecord.toMySpotDetail(): MySpotDetail = MySpotDetail(
     capturedTime = capturedTime,
     comment = comment,
     status = status,
-    rejectionReason = rejectionReason,
+    rejection = rejection,
     recommendationCount = recommendationCount,
     isRecommended = isRecommended,
     source = source,

@@ -17,7 +17,10 @@ import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.MySpotDetail
 import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.MySpotStatus
+import com.pickflow.android.core.services.protocols.RejectionReason
+import com.pickflow.android.core.services.protocols.SpotRejection
 import com.pickflow.android.core.services.protocols.MySpotTransitionResult
+import com.pickflow.android.core.services.protocols.MySpotUpdateResult
 import com.pickflow.android.core.services.protocols.SpotSource
 import com.pickflow.android.core.services.protocols.SpotTheme
 import io.mockk.coEvery
@@ -58,7 +61,13 @@ class SpotRegistrationRevisionScreenUiTest {
         capturedTime = "19:40",
         comment = "기존 코멘트",
         status = MySpotStatus.REJECTED,
-        rejectionReason = "사진이 흐려요",
+        rejection = SpotRejection(
+            reason = RejectionReason.LOW_QUALITY,
+            reasonLabel = "사진 상태 불량",
+            guideMessage = "사진이 흐려요",
+            detail = null,
+            rejectedAt = "2026-08-06T10:00:00Z",
+        ),
         recommendationCount = 3L,
         isRecommended = false,
         source = SpotSource.User,
@@ -141,7 +150,13 @@ class SpotRegistrationRevisionScreenUiTest {
     fun resubmit_keeps_existing_image() {
         val service = mockk<MySpotService>()
         coEvery { service.detail(SPOT_ID) } returns rejectedDetail()
-        coEvery { service.reviseAndResubmit(SPOT_ID, any(), null) } returns
+        coEvery { service.update(SPOT_ID, any(), null) } returns
+            MySpotUpdateResult(
+                spotId = SPOT_ID,
+                status = MySpotStatus.REJECTED,
+                imageUrl = "https://cdn.example.com/41.jpg",
+            )
+        coEvery { service.requestOpen(SPOT_ID) } returns
             MySpotTransitionResult(
                 spotId = SPOT_ID,
                 status = MySpotStatus.RE_REVIEW_PENDING,
@@ -153,13 +168,15 @@ class SpotRegistrationRevisionScreenUiTest {
         composeRule.onNodeWithTag("registration-submit").assertIsEnabled().performClick()
 
         composeRule.onNodeWithTag("registration-resubmit-sheet").assertIsDisplayed()
-        coVerify(exactly = 0) { service.reviseAndResubmit(any(), any(), any()) }
+        coVerify(exactly = 0) { service.update(any(), any(), any()) }
+        coVerify(exactly = 0) { service.requestOpen(any()) }
         composeRule.onNodeWithTag("registration-resubmit-confirm").performClick()
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("registration-resubmit-sheet").assertDoesNotExist()
         composeRule.onNodeWithTag("registration-name").assertTextContains("기존 노을 스팟")
-        coVerify(exactly = 1) { service.reviseAndResubmit(SPOT_ID, any(), null) }
+        coVerify(exactly = 1) { service.update(SPOT_ID, any(), null) }
+        coVerify(exactly = 1) { service.requestOpen(SPOT_ID) }
     }
 
     @Test
@@ -189,7 +206,8 @@ class SpotRegistrationRevisionScreenUiTest {
             assertEquals("content://replacement", viewModel.selectedImageUri.value)
             assertSame(replacement, viewModel.imagePayload.value)
         }
-        coVerify(exactly = 0) { service.reviseAndResubmit(any(), any(), any()) }
+        coVerify(exactly = 0) { service.update(any(), any(), any()) }
+        coVerify(exactly = 0) { service.requestOpen(any()) }
     }
 
     private companion object {

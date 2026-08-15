@@ -10,6 +10,9 @@ import com.pickflow.android.core.services.protocols.MySpotDetail
 import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.MySpotTransitionResult
+import com.pickflow.android.core.services.protocols.MySpotUpdateResult
+import com.pickflow.android.core.services.protocols.RejectionReason
+import com.pickflow.android.core.services.protocols.SpotRejection
 import com.pickflow.android.core.services.protocols.SpotSource
 import com.pickflow.android.core.services.protocols.SpotDraft
 import com.pickflow.android.core.services.protocols.SpotTheme
@@ -77,7 +80,13 @@ class SpotRegistrationViewModelTest {
         capturedTime = "19:40",
         comment = "기존 코멘트",
         status = MySpotStatus.REJECTED,
-        rejectionReason = "사진이 흐려요",
+        rejection = SpotRejection(
+            reason = RejectionReason.LOW_QUALITY,
+            reasonLabel = "사진 상태 불량",
+            guideMessage = "사진이 흐려요",
+            detail = null,
+            rejectedAt = "2026-08-06T10:00:00Z",
+        ),
         recommendationCount = 3L,
         isRecommended = false,
         source = SpotSource.User,
@@ -204,7 +213,13 @@ class SpotRegistrationViewModelTest {
     @Test
     fun `revise submit without replacement keeps existing server image`() = runTest(testDispatcher) {
         coEvery { mySpotService.detail(41L) } returns rejectedDetail()
-        coEvery { mySpotService.reviseAndResubmit(41L, any(), null) } returns
+        coEvery { mySpotService.update(41L, any(), null) } returns
+            MySpotUpdateResult(
+                spotId = 41L,
+                status = MySpotStatus.REJECTED,
+                imageUrl = "https://cdn.example.com/41.jpg",
+            )
+        coEvery { mySpotService.requestOpen(41L) } returns
             MySpotTransitionResult(
                 spotId = 41L,
                 status = MySpotStatus.RE_REVIEW_PENDING,
@@ -221,7 +236,8 @@ class SpotRegistrationViewModelTest {
         val state = vm.submission.value as LoadState.Loaded
         assertEquals(MySpotStatus.RE_REVIEW_PENDING, state.value.status)
         assertEquals("https://cdn.example.com/41.jpg", vm.existingImageUrl.value)
-        coVerify(exactly = 1) { mySpotService.reviseAndResubmit(41L, any(), null) }
+        coVerify(exactly = 1) { mySpotService.update(41L, any(), null) }
+        coVerify(exactly = 1) { mySpotService.requestOpen(41L) }
         coVerify(exactly = 0) { mySpotService.create(any(), any()) }
     }
 
@@ -229,7 +245,13 @@ class SpotRegistrationViewModelTest {
     fun `revise submit sends only newly selected replacement image`() = runTest(testDispatcher) {
         val replacement = image().copy(filename = "replacement.jpg")
         coEvery { mySpotService.detail(41L) } returns rejectedDetail()
-        coEvery { mySpotService.reviseAndResubmit(41L, any(), replacement) } returns
+        coEvery { mySpotService.update(41L, any(), replacement) } returns
+            MySpotUpdateResult(
+                spotId = 41L,
+                status = MySpotStatus.REJECTED,
+                imageUrl = "https://cdn.example.com/41.jpg",
+            )
+        coEvery { mySpotService.requestOpen(41L) } returns
             MySpotTransitionResult(
                 spotId = 41L,
                 status = MySpotStatus.RE_REVIEW_PENDING,
@@ -244,14 +266,52 @@ class SpotRegistrationViewModelTest {
         advanceUntilIdle()
 
         assertEquals("content://replacement", vm.selectedImageUri.value)
-        coVerify(exactly = 1) { mySpotService.reviseAndResubmit(41L, any(), replacement) }
+        coVerify(exactly = 1) { mySpotService.update(41L, any(), replacement) }
+        coVerify(exactly = 1) { mySpotService.requestOpen(41L) }
+    }
+
+    @Test
+    fun `resubmit retry after saved revision does not send update twice`() = runTest(testDispatcher) {
+        coEvery { mySpotService.detail(41L) } returns rejectedDetail()
+        coEvery { mySpotService.update(41L, any(), null) } returns
+            MySpotUpdateResult(
+                spotId = 41L,
+                status = MySpotStatus.REJECTED,
+                imageUrl = "https://cdn.example.com/41.jpg",
+            )
+        coEvery { mySpotService.requestOpen(41L) } throws RuntimeException("network") andThen
+            MySpotTransitionResult(
+                spotId = 41L,
+                status = MySpotStatus.RE_REVIEW_PENDING,
+                updatedAt = "2026-08-06T10:01:00Z",
+            )
+        val vm = vm()
+        vm.loadRevision(41L)
+        advanceUntilIdle()
+        vm.setSpotName("보완한 노을 스팟")
+
+        vm.submit()
+        advanceUntilIdle()
+
+        // 수정은 저장됐고 재신청만 실패한 상태.
+        assertTrue(vm.submission.value is LoadState.Failed)
+        assertTrue(vm.isRevisionSaved.value)
+
+        vm.submit()
+        advanceUntilIdle()
+
+        val state = vm.submission.value as LoadState.Loaded
+        assertEquals(MySpotStatus.RE_REVIEW_PENDING, state.value.status)
+        assertFalse(vm.isRevisionSaved.value)
+        coVerify(exactly = 1) { mySpotService.update(41L, any(), null) }
+        coVerify(exactly = 2) { mySpotService.requestOpen(41L) }
     }
 
     @Test
     fun `revise failure keeps prefilled form and replacement selection`() = runTest(testDispatcher) {
         val replacement = image().copy(filename = "replacement.jpg")
         coEvery { mySpotService.detail(41L) } returns rejectedDetail()
-        coEvery { mySpotService.reviseAndResubmit(41L, any(), replacement) } throws
+        coEvery { mySpotService.update(41L, any(), replacement) } throws
             RuntimeException("network")
         val vm = vm()
         vm.loadRevision(41L)

@@ -4,6 +4,7 @@ import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.ImagePayload
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.MySpotTransitionConflictException
+import com.pickflow.android.core.services.protocols.RejectionReason
 import com.pickflow.android.core.services.protocols.ReviewDecision
 import com.pickflow.android.core.services.protocols.SavedSpotAvailability
 import com.pickflow.android.core.services.protocols.SpotDraft
@@ -52,7 +53,10 @@ class StubSpotBackendTest {
 
         assertTrue(services.map.fetchInViewport(viewport).any { it.spotId == draftId })
         assertTrue(services.list.fetch(null, 0).items.any { it.id == draftId.toString() })
-        assertEquals(MySpotStatus.DRAFT, services.mySpot.cancelOpen(draftId).status)
+        val unpublished = services.mySpot.unpublish(draftId)
+        assertEquals(MySpotStatus.DRAFT, unpublished.status)
+        assertEquals(MySpotStatus.PUBLISHED, unpublished.previousStatus)
+        assertFalse(unpublished.wasOpenRequest)
         assertTrue(services.map.fetchInViewport(viewport).any { it.spotId == draftId })
         assertFalse(services.list.fetch(null, 0).items.any { it.id == draftId.toString() })
     }
@@ -61,19 +65,20 @@ class StubSpotBackendTest {
     fun `pending rereview and rejected withdrawals return to draft`() = runTest {
         val services = services()
 
-        assertEquals(
-            MySpotStatus.DRAFT,
-            services.mySpot.withdrawRequest(StubSpotFixtures.PENDING_SPOT_ID).status,
-        )
-        assertEquals(
-            MySpotStatus.DRAFT,
-            services.mySpot.withdrawRequest(StubSpotFixtures.RE_REVIEW_PENDING_SPOT_ID).status,
-        )
+        val fromPending = services.mySpot.unpublish(StubSpotFixtures.PENDING_SPOT_ID)
+        assertEquals(MySpotStatus.DRAFT, fromPending.status)
+        assertEquals(MySpotStatus.PENDING, fromPending.previousStatus)
+        assertTrue(fromPending.wasOpenRequest)
+
+        val fromReReview = services.mySpot.unpublish(StubSpotFixtures.RE_REVIEW_PENDING_SPOT_ID)
+        assertEquals(MySpotStatus.DRAFT, fromReReview.status)
+        assertEquals(MySpotStatus.RE_REVIEW_PENDING, fromReReview.previousStatus)
+        assertTrue(fromReReview.wasOpenRequest)
         assertEquals(
             MySpotStatus.DRAFT,
             services.mySpot.withdrawRejection(StubSpotFixtures.REJECTED_SPOT_ID).status,
         )
-        assertNull(services.mySpot.detail(StubSpotFixtures.REJECTED_SPOT_ID).rejectionReason)
+        assertNull(services.mySpot.detail(StubSpotFixtures.REJECTED_SPOT_ID).rejection)
     }
 
     @Test
@@ -113,13 +118,17 @@ class StubSpotBackendTest {
             comment = "보완한 코멘트",
         )
 
-        val result = services.mySpot.reviseAndResubmit(rejectedId, revisedDraft, null)
+        // 수정만으로는 상태가 바뀌지 않고, 재신청에서 RE_REVIEW_PENDING 으로 전이된다.
+        val updated = services.mySpot.update(rejectedId, revisedDraft, null)
+        assertEquals(MySpotStatus.REJECTED, updated.status)
+
+        val result = services.mySpot.requestOpen(rejectedId)
         val after = services.mySpot.detail(rejectedId)
 
         assertEquals(MySpotStatus.RE_REVIEW_PENDING, result.status)
         assertEquals(before.imageUrl, after.imageUrl)
         assertEquals("보완한 스팟", after.name)
-        assertNull(after.rejectionReason)
+        assertNull(after.rejection)
     }
 
     @Test
@@ -145,7 +154,7 @@ class StubSpotBackendTest {
         val publishedId = StubSpotFixtures.PUBLISHED_USER_SPOT_ID
         val recommendation = services.recommendation.recommend(publishedId)
 
-        services.mySpot.cancelOpen(publishedId)
+        services.mySpot.unpublish(publishedId)
         val saved = services.bookmark.savedSpots(page = 0).items.single { it.id == publishedId }
 
         assertEquals(SavedSpotAvailability.AUTHOR_PRIVATE, saved.availability)
@@ -163,7 +172,7 @@ class StubSpotBackendTest {
         val rereviewId = StubSpotFixtures.RE_REVIEW_PENDING_SPOT_ID
 
         val approved = services.backend.completeReview(pendingId, ReviewDecision.APPROVED)
-        val rejected = services.backend.completeReview(rereviewId, ReviewDecision.REJECTED, "사진이 흐려요")
+        val rejected = services.backend.completeReview(rereviewId, ReviewDecision.REJECTED, RejectionReason.LOW_QUALITY)
 
         val before = services.reviewResult.status()
         assertTrue(before.hasIndicator)
@@ -202,13 +211,13 @@ class StubSpotBackendTest {
     fun `configured delay and review race are deterministic`() = runTest {
         val services = services()
         val id = StubSpotFixtures.PENDING_SPOT_ID
-        services.backend.enqueue(StubOperation.WITHDRAW_REQUEST, StubResponse.Delay(1_000))
+        services.backend.enqueue(StubOperation.UNPUBLISH, StubResponse.Delay(1_000))
         services.backend.enqueue(
-            StubOperation.WITHDRAW_REQUEST,
+            StubOperation.UNPUBLISH,
             StubResponse.ReviewRace(ReviewDecision.APPROVED),
         )
 
-        val request = backgroundScope.async { runCatching { services.mySpot.withdrawRequest(id) } }
+        val request = backgroundScope.async { runCatching { services.mySpot.unpublish(id) } }
         advanceTimeBy(999)
         assertFalse(request.isCompleted)
         advanceTimeBy(1)

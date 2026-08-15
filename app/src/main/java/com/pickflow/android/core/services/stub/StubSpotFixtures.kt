@@ -1,6 +1,8 @@
 package com.pickflow.android.core.services.stub
 
 import com.pickflow.android.core.services.protocols.MySpotStatus
+import com.pickflow.android.core.services.protocols.RejectionReason
+import com.pickflow.android.core.services.protocols.SpotRejection
 import com.pickflow.android.core.services.protocols.SpotSource
 import com.pickflow.android.core.services.protocols.SpotTheme
 
@@ -28,7 +30,10 @@ object StubSpotFixtures {
             "보완이 필요한 노을",
             MySpotStatus.REJECTED,
             latitude = 37.53,
-            rejectionReason = "사진에서 스팟을 확인하기 어려워요",
+            rejection = StubRejections.of(
+                RejectionReason.LOW_QUALITY,
+                guideMessage = "사진에서 스팟을 확인하기 어려워요",
+            ),
         ),
         record(
             PUBLISHED_USER_SPOT_ID,
@@ -50,7 +55,7 @@ object StubSpotFixtures {
             capturedTime = "19:30",
             comment = "운영 큐레이션 스팟",
             status = MySpotStatus.PUBLISHED,
-            rejectionReason = null,
+            rejection = null,
             recommendationCount = 105,
             isRecommended = false,
             source = SpotSource.Curated("한국관광공사"),
@@ -72,7 +77,7 @@ object StubSpotFixtures {
             capturedTime = "19:00",
             comment = "운영 삭제 fixture",
             status = MySpotStatus.PUBLISHED,
-            rejectionReason = null,
+            rejection = null,
             recommendationCount = 0,
             isRecommended = false,
             source = SpotSource.Curated("Pickflow 운영자"),
@@ -91,7 +96,7 @@ object StubSpotFixtures {
         status: MySpotStatus,
         theme: SpotTheme = SpotTheme.SUNSET,
         latitude: Double = 37.50,
-        rejectionReason: String? = null,
+        rejection: SpotRejection? = null,
         recommendationCount: Long = 0,
         bookmarked: Boolean = false,
     ) = StubSpotRecord(
@@ -106,7 +111,7 @@ object StubSpotFixtures {
         capturedTime = "19:20",
         comment = "PV-41 deterministic fixture",
         status = status,
-        rejectionReason = rejectionReason,
+        rejection = rejection,
         recommendationCount = recommendationCount,
         isRecommended = false,
         source = SpotSource.User,
@@ -130,7 +135,7 @@ internal data class StubSpotRecord(
     var capturedTime: String,
     var comment: String,
     var status: MySpotStatus,
-    var rejectionReason: String?,
+    var rejection: SpotRejection?,
     var recommendationCount: Long,
     var isRecommended: Boolean,
     val source: SpotSource,
@@ -141,3 +146,38 @@ internal data class StubSpotRecord(
     val createdAt: String,
     var updatedAt: String,
 )
+
+/**
+ * 반려 표시 문구는 프로덕션에서 서버가 `reasonLabel` / `guideMessage` 로 내려준다.
+ * 스텁은 화면 검증용 고정 문구만 제공한다.
+ */
+internal object StubRejections {
+    fun of(
+        reason: RejectionReason,
+        guideMessage: String? = null,
+        detail: String? = null,
+        rejectedAt: String = "2026-08-01T10:00:00Z",
+    ): SpotRejection = SpotRejection(
+        reason = reason,
+        reasonLabel = label(reason),
+        guideMessage = guideMessage ?: guide(reason),
+        detail = detail,
+        rejectedAt = rejectedAt,
+    )
+
+    fun label(reason: RejectionReason): String = when (reason) {
+        RejectionReason.DUPLICATE -> "중복 스팟"
+        RejectionReason.LOW_QUALITY -> "사진 상태 불량"
+        RejectionReason.LOCATION_MISMATCH -> "위치 불일치"
+        RejectionReason.FILTER_MISMATCH -> "테마 불일치"
+        RejectionReason.ETC -> "기타"
+    }
+
+    private fun guide(reason: RejectionReason): String = when (reason) {
+        RejectionReason.DUPLICATE -> "이미 등록된 스팟이 있어요"
+        RejectionReason.LOW_QUALITY -> "사진에서 스팟을 확인하기 어려워요"
+        RejectionReason.LOCATION_MISMATCH -> "사진과 위치가 일치하지 않아요"
+        RejectionReason.FILTER_MISMATCH -> "선택한 테마와 사진이 맞지 않아요"
+        RejectionReason.ETC -> "등록 정보를 다시 확인해주세요"
+    }
+}

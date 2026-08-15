@@ -7,6 +7,8 @@ import com.pickflow.android.core.services.protocols.MySpotDetail
 import com.pickflow.android.core.services.protocols.MySpotPage
 import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.MySpotTransitionResult
+import com.pickflow.android.core.services.protocols.MySpotUnpublishResult
+import com.pickflow.android.core.services.protocols.MySpotUpdateResult
 import com.pickflow.android.core.services.protocols.SpotDraft
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -26,19 +28,16 @@ class StubMySpotService @Inject constructor(
     override suspend fun requestOpen(spotId: Long): MySpotTransitionResult =
         backend.requestOpen(spotId)
 
-    override suspend fun withdrawRequest(spotId: Long): MySpotTransitionResult =
-        backend.withdrawRequest(spotId)
+    override suspend fun unpublish(spotId: Long): MySpotUnpublishResult = backend.unpublish(spotId)
 
     override suspend fun withdrawRejection(spotId: Long): MySpotTransitionResult =
         backend.withdrawRejection(spotId)
 
-    override suspend fun reviseAndResubmit(
+    override suspend fun update(
         spotId: Long,
         draft: SpotDraft,
         replacementImage: ImagePayload?,
-    ): MySpotTransitionResult = backend.reviseAndResubmit(spotId, draft, replacementImage)
-
-    override suspend fun cancelOpen(spotId: Long): MySpotTransitionResult = backend.cancelOpen(spotId)
+    ): MySpotUpdateResult = backend.update(spotId, draft, replacementImage)
 
     override suspend fun delete(spotId: Long) = backend.delete(spotId)
 }

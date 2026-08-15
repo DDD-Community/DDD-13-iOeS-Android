@@ -8,6 +8,8 @@ import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.AddressSuggestion
 import com.pickflow.android.core.services.protocols.MySpotDetail
 import com.pickflow.android.core.services.protocols.MySpotStatus
+import com.pickflow.android.core.services.protocols.RejectionReason
+import com.pickflow.android.core.services.protocols.SpotRejection
 import com.pickflow.android.core.services.protocols.SpotSource
 import com.pickflow.android.core.services.protocols.SpotTheme
 import java.time.LocalDate
@@ -71,7 +73,13 @@ class SpotRegistrationRevisionSnapshotTest {
         capturedTime = "19:40",
         comment = "기존 코멘트",
         status = MySpotStatus.REJECTED,
-        rejectionReason = "사진이 흐려요",
+        rejection = SpotRejection(
+            reason = RejectionReason.LOW_QUALITY,
+            reasonLabel = "사진 상태 불량",
+            guideMessage = "사진이 흐려요",
+            detail = null,
+            rejectedAt = "2026-08-06T10:00:00Z",
+        ),
         recommendationCount = 3L,
         isRecommended = false,
         source = SpotSource.User,

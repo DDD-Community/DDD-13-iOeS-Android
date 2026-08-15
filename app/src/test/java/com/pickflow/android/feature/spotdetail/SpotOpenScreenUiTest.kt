@@ -14,6 +14,8 @@ import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.MySpotDetail
 import com.pickflow.android.core.services.protocols.MySpotStatus
+import com.pickflow.android.core.services.protocols.RejectionReason
+import com.pickflow.android.core.services.protocols.SpotRejection
 import com.pickflow.android.core.services.protocols.SpotSource
 import com.pickflow.android.core.services.protocols.SpotTheme
 import org.junit.Assert.assertEquals
@@ -130,7 +132,13 @@ class SpotOpenScreenUiTest {
             LoadState.Loaded(
                 detail(
                     status = MySpotStatus.REJECTED,
-                    rejectionReason = "장소를 식별할 수 있는 사진이 필요해요.",
+                    rejection = SpotRejection(
+                        reason = RejectionReason.LOW_QUALITY,
+                        reasonLabel = "사진 상태 불량",
+                        guideMessage = "장소를 식별할 수 있는 사진이 필요해요.",
+                        detail = null,
+                        rejectedAt = "2026-08-06T10:00:00Z",
+                    ),
                 ),
             ),
         )
@@ -357,7 +365,7 @@ class SpotOpenScreenUiTest {
 
     private fun detail(
         status: MySpotStatus,
-        rejectionReason: String? = null,
+        rejection: SpotRejection? = null,
         source: SpotSource = SpotSource.User,
     ) = MySpotDetail(
         id = SPOT_ID,
@@ -371,7 +379,7 @@ class SpotOpenScreenUiTest {
         capturedTime = "19:20",
         comment = "노을이 예뻐요",
         status = status,
-        rejectionReason = rejectionReason,
+        rejection = rejection,
         recommendationCount = 7L,
         isRecommended = false,
         source = source,

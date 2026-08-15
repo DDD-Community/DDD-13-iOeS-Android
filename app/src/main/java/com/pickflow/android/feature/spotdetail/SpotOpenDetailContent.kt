@@ -324,7 +324,8 @@ private fun SpotOpenHeader(detail: MySpotDetail) {
                     color = PickflowColors.gray0,
                 )
                 Text(
-                    text = detail.rejectionReason ?: "등록 정보를 다시 확인해주세요.",
+                    text = detail.rejection?.let { it.guideMessage ?: it.reasonLabel }
+                        ?: "등록 정보를 다시 확인해주세요.",
                     style = PickflowTypography.bodyMediumBold,
                     color = PickflowColors.gray30,
                 )

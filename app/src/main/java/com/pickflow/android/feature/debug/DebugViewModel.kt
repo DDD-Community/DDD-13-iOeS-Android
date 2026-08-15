@@ -2,6 +2,7 @@ package com.pickflow.android.feature.debug
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pickflow.android.core.services.protocols.RejectionReason
 import com.pickflow.android.core.services.protocols.ReviewDecision
 import com.pickflow.android.core.services.stub.StubOperation
 import com.pickflow.android.core.services.stub.StubScenario
@@ -57,7 +58,7 @@ class DebugViewModel @Inject constructor(
         backend.completeReview(
             StubSpotFixtures.PENDING_SPOT_ID,
             ReviewDecision.REJECTED,
-            "사진에서 스팟을 확인하기 어려워요",
+            RejectionReason.LOW_QUALITY,
         )
     }
 

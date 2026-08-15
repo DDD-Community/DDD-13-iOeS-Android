@@ -112,10 +112,10 @@ fun SpotOpenScreen(
             showPublishedModal = publishedResult != null,
             onBack = onBack,
             onRequestOpen = openViewModel::requestOpen,
-            onWithdrawRequest = openViewModel::withdrawRequest,
+            onWithdrawRequest = openViewModel::unpublish,
             onWithdrawRejection = openViewModel::withdrawRejection,
             onRevise = onRevise,
-            onCancelOpen = openViewModel::cancelOpen,
+            onCancelOpen = openViewModel::unpublish,
             onDelete = openViewModel::delete,
             onToggleRecommendation = recommendationViewModel::toggleRecommendation,
             onAcknowledgePublishedModal = {

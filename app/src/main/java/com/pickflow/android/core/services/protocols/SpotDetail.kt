@@ -32,7 +32,7 @@ data class SpotDetail(
     val isMySpot: Boolean,
     val source: SpotSource = SpotSource.Curated(displayName = ""),
     val mySpotStatus: MySpotStatus? = null,
-    val rejectionReason: String? = null,
+    val rejection: SpotRejection? = null,
     val recommendationCount: Long = 0,
     val isRecommended: Boolean = false,
 )

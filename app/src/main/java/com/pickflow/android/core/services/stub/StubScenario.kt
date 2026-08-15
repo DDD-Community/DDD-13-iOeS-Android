@@ -1,5 +1,6 @@
 package com.pickflow.android.core.services.stub
 
+import com.pickflow.android.core.services.protocols.RejectionReason
 import com.pickflow.android.core.services.protocols.ReviewDecision
 
 enum class StubOperation {
@@ -7,10 +8,9 @@ enum class StubOperation {
     MY_SPOT_DETAIL,
     CREATE,
     REQUEST_OPEN,
-    WITHDRAW_REQUEST,
+    UNPUBLISH,
     WITHDRAW_REJECTION,
-    REVISE_AND_RESUBMIT,
-    CANCEL_OPEN,
+    UPDATE,
     DELETE,
     RECOMMEND,
     CANCEL_RECOMMENDATION,
@@ -33,7 +33,7 @@ sealed interface StubResponse {
 
     data class ReviewRace(
         val decision: ReviewDecision,
-        val rejectionReason: String? = null,
+        val rejectionReason: RejectionReason? = null,
     ) : StubResponse
 }
 
@@ -51,7 +51,7 @@ data class StubScenario(
 
         fun withdrawalReviewRace(decision: ReviewDecision) = StubScenario(
             mapOf(
-                StubOperation.WITHDRAW_REQUEST to listOf(StubResponse.ReviewRace(decision)),
+                StubOperation.UNPUBLISH to listOf(StubResponse.ReviewRace(decision)),
             ),
         )
     }

@@ -58,6 +58,13 @@ class SpotRegistrationViewModel @Inject constructor(
 
     private var revisionSpotId: Long? = null
 
+    /**
+     * 보완 내용은 저장됐지만 재신청이 실패한 상태.
+     * 재시도 시 수정을 다시 보내지 않고 재신청만 수행한다.
+     */
+    private val _isRevisionSaved = MutableStateFlow(false)
+    val isRevisionSaved: StateFlow<Boolean> = _isRevisionSaved.asStateFlow()
+
     private val _imagePayload = MutableStateFlow<ImagePayload?>(null)
     val imagePayload: StateFlow<ImagePayload?> = _imagePayload.asStateFlow()
 
@@ -230,13 +237,21 @@ class SpotRegistrationViewModel @Inject constructor(
                         val created = mySpotService.create(draft, checkNotNull(image))
                         SpotRegistrationSubmissionResult(created.spotId, created.status)
                     }
+                    // 서버는 수정(PUT)과 재신청(POST open-requests)이 분리된 2-step 이다.
+                    // 수정이 저장된 뒤 재신청만 실패하면 재시도 시 수정을 다시 보내지 않는다.
                     SpotRegistrationMode.REVISE -> {
-                        val revised = mySpotService.reviseAndResubmit(
-                            spotId = checkNotNull(reviseSpotId),
-                            draft = draft,
-                            replacementImage = image,
-                        )
-                        SpotRegistrationSubmissionResult(revised.spotId, revised.status)
+                        val spotId = checkNotNull(reviseSpotId)
+                        if (!_isRevisionSaved.value) {
+                            mySpotService.update(
+                                spotId = spotId,
+                                draft = draft,
+                                replacementImage = image,
+                            )
+                            _isRevisionSaved.value = true
+                        }
+                        val reopened = mySpotService.requestOpen(spotId)
+                        _isRevisionSaved.value = false
+                        SpotRegistrationSubmissionResult(reopened.spotId, reopened.status)
                     }
                 }
             }

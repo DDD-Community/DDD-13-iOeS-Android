@@ -7,6 +7,7 @@ import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.MySpotTransitionConflictException
 import com.pickflow.android.core.services.protocols.MySpotTransitionResult
+import com.pickflow.android.core.services.protocols.MySpotUnpublishResult
 import com.pickflow.android.core.services.protocols.SpotSource
 import com.pickflow.android.core.services.protocols.SpotTheme
 import io.mockk.coEvery
@@ -58,7 +59,7 @@ class SpotOpenViewModelTest {
         capturedTime = "19:20",
         comment = "노을이 예뻐요",
         status = status,
-        rejectionReason = null,
+        rejection = null,
         recommendationCount = 7L,
         isRecommended = false,
         source = SpotSource.User,
@@ -70,6 +71,38 @@ class SpotOpenViewModelTest {
         status = status,
         updatedAt = "2026-08-06T10:01:00Z",
     )
+
+    private fun unpublished(previousStatus: MySpotStatus) = MySpotUnpublishResult(
+        spotId = 41L,
+        previousStatus = previousStatus,
+        status = MySpotStatus.DRAFT,
+        updatedAt = "2026-08-06T10:01:00Z",
+    )
+
+    @Test
+    fun `unpublish toast follows previous status`() = runTest(testDispatcher) {
+        coEvery { service.detail(41L) } returns detail(MySpotStatus.PENDING)
+        coEvery { service.unpublish(41L) } returns unpublished(MySpotStatus.PENDING)
+        val withdrawing = SpotOpenViewModel(service)
+        withdrawing.load(41L)
+        advanceUntilIdle()
+
+        withdrawing.unpublish()
+        advanceUntilIdle()
+
+        assertEquals("오픈 신청을 철회했어요", withdrawing.toast.value)
+
+        coEvery { service.detail(41L) } returns detail(MySpotStatus.PUBLISHED)
+        coEvery { service.unpublish(41L) } returns unpublished(MySpotStatus.PUBLISHED)
+        val hiding = SpotOpenViewModel(service)
+        hiding.load(41L)
+        advanceUntilIdle()
+
+        hiding.unpublish()
+        advanceUntilIdle()
+
+        assertEquals("스팟을 비공개로 전환했어요", hiding.toast.value)
+    }
 
     @Test
     fun `load returns Loaded detail`() = runTest(testDispatcher) {
@@ -127,22 +160,18 @@ class SpotOpenViewModelTest {
     fun `each state action delegates to matching service transition`() = runTest(testDispatcher) {
         coEvery { service.detail(41L) } returns detail(MySpotStatus.REJECTED)
         coEvery { service.withdrawRejection(41L) } returns result(MySpotStatus.DRAFT)
-        coEvery { service.withdrawRequest(41L) } returns result(MySpotStatus.DRAFT)
-        coEvery { service.cancelOpen(41L) } returns result(MySpotStatus.DRAFT)
+        coEvery { service.unpublish(41L) } returns unpublished(MySpotStatus.PENDING)
         val viewModel = SpotOpenViewModel(service)
         viewModel.load(41L)
         advanceUntilIdle()
 
         viewModel.withdrawRejection()
         advanceUntilIdle()
-        viewModel.withdrawRequest()
-        advanceUntilIdle()
-        viewModel.cancelOpen()
+        viewModel.unpublish()
         advanceUntilIdle()
 
         coVerify(exactly = 1) { service.withdrawRejection(41L) }
-        coVerify(exactly = 1) { service.withdrawRequest(41L) }
-        coVerify(exactly = 1) { service.cancelOpen(41L) }
+        coVerify(exactly = 1) { service.unpublish(41L) }
         assertEquals(MySpotStatus.DRAFT, viewModel.loadedDetail().status)
     }
 
@@ -150,12 +179,12 @@ class SpotOpenViewModelTest {
     fun `transition failure keeps previous detail and shows retry toast`() = runTest(testDispatcher) {
         val original = detail(MySpotStatus.PUBLISHED)
         coEvery { service.detail(41L) } returns original
-        coEvery { service.cancelOpen(41L) } throws RuntimeException("network")
+        coEvery { service.unpublish(41L) } throws RuntimeException("network")
         val viewModel = SpotOpenViewModel(service)
         viewModel.load(41L)
         advanceUntilIdle()
 
-        viewModel.cancelOpen()
+        viewModel.unpublish()
         advanceUntilIdle()
 
         assertEquals(LoadState.Loaded(original), viewModel.detail.value)
@@ -168,7 +197,7 @@ class SpotOpenViewModelTest {
         val pending = detail(MySpotStatus.PENDING)
         val published = detail(MySpotStatus.PUBLISHED)
         coEvery { service.detail(41L) } returnsMany listOf(pending, published)
-        coEvery { service.withdrawRequest(41L) } throws MySpotTransitionConflictException(
+        coEvery { service.unpublish(41L) } throws MySpotTransitionConflictException(
             41L,
             MySpotStatus.PUBLISHED,
         )
@@ -176,7 +205,7 @@ class SpotOpenViewModelTest {
         viewModel.load(41L)
         advanceUntilIdle()
 
-        viewModel.withdrawRequest()
+        viewModel.unpublish()
         advanceUntilIdle()
 
         assertEquals(LoadState.Loaded(published), viewModel.detail.value)
