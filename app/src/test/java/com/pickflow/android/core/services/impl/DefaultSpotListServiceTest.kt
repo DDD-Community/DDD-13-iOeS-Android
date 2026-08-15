@@ -117,9 +117,9 @@ class DefaultSpotListServiceTest {
         )
 
         // 선택 순서와 무관하게 SpotTheme 선언 순서(햇살→윤슬→노을→야경)로 직렬화된다.
-        service.fetch(themes = setOf(SpotTheme.NIGHT, SpotTheme.SUNLIGHT), page = 0)
+        service.fetch(themes = setOf(SpotTheme.NIGHT_VIEW, SpotTheme.SUNLIGHT), page = 0)
 
         val url = server.takeRequest().requestUrl!!
-        assertEquals(listOf("SUNLIGHT", "NIGHT"), url.queryParameterValues("theme"))
+        assertEquals(listOf("SUNLIGHT", "NIGHT_VIEW"), url.queryParameterValues("theme"))
     }
 }

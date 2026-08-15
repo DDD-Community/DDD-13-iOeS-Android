@@ -70,7 +70,7 @@ class SpotRegistrationScreenUiTest {
             composeRule.onNodeWithText(it).assertExists()
         }
         assertEquals(
-            listOf(SpotTheme.SUNLIGHT, SpotTheme.YUNSEUL, SpotTheme.SUNSET, SpotTheme.NIGHT),
+            listOf(SpotTheme.SUNLIGHT, SpotTheme.YUNSEUL, SpotTheme.SUNSET, SpotTheme.NIGHT_VIEW),
             SpotTheme.entries,
         )
     }
@@ -95,7 +95,7 @@ class SpotRegistrationScreenUiTest {
 
         composeRule.onNodeWithText("야경").performScrollTo().performClick()
         composeRule.waitForIdle()
-        assertEquals(SpotTheme.NIGHT, vm.theme.value)
+        assertEquals(SpotTheme.NIGHT_VIEW, vm.theme.value)
     }
 
     /** PV59-REG4 — 같은 칩 재탭 시 해제된다. */

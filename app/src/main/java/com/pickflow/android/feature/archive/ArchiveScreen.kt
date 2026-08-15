@@ -573,5 +573,5 @@ private fun SpotTheme.toMood(): SpotListMood = when (this) {
     SpotTheme.SUNLIGHT -> SpotListMood.Sunlight
     SpotTheme.YUNSEUL -> SpotListMood.Reflection
     SpotTheme.SUNSET -> SpotListMood.Sunset
-    SpotTheme.NIGHT -> SpotListMood.Night
+    SpotTheme.NIGHT_VIEW -> SpotListMood.Night
 }

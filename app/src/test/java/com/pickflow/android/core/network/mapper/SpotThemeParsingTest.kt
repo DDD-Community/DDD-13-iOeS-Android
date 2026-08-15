@@ -6,7 +6,8 @@ import org.junit.jupiter.api.Test
 
 /**
  * `parseTheme` — 서버가 2글자 코드/풀네임 어느 쪽으로 응답해도 같은 도메인 값으로 접힌다.
- * SUNLIGHT/NIGHT 코드는 PV-59 백엔드 확정시 변경 가능성 있음.
+ * 요청 enum 은 풀네임(SUNSET/YUNSEUL/SUNLIGHT/NIGHT_VIEW), 응답은 2글자 코드(SS/YS)다.
+ * 신규 2종의 2글자 코드(SL/NV)는 문서 미기재 — 추정값이다.
  */
 class SpotThemeParsingTest {
 
@@ -18,14 +19,14 @@ class SpotThemeParsingTest {
         assertEquals(SpotTheme.YUNSEUL, parseTheme("YUNSEUL"))
         assertEquals(SpotTheme.SUNSET, parseTheme("SS"))
         assertEquals(SpotTheme.SUNSET, parseTheme("SUNSET"))
-        assertEquals(SpotTheme.NIGHT, parseTheme("NT"))
-        assertEquals(SpotTheme.NIGHT, parseTheme("NIGHT"))
+        assertEquals(SpotTheme.NIGHT_VIEW, parseTheme("NV"))
+        assertEquals(SpotTheme.NIGHT_VIEW, parseTheme("NIGHT_VIEW"))
     }
 
     @Test
     fun `parses case insensitively`() {
         assertEquals(SpotTheme.SUNLIGHT, parseTheme("sunlight"))
-        assertEquals(SpotTheme.NIGHT, parseTheme("night"))
+        assertEquals(SpotTheme.NIGHT_VIEW, parseTheme("night_view"))
     }
 
     @Test
@@ -38,7 +39,7 @@ class SpotThemeParsingTest {
     fun `declaration order drives the mood filter display order`() {
         // 무드 행·등록 칩은 entries 를 그대로 순회한다. 순서가 곧 UI 순서다.
         assertEquals(
-            listOf(SpotTheme.SUNLIGHT, SpotTheme.YUNSEUL, SpotTheme.SUNSET, SpotTheme.NIGHT),
+            listOf(SpotTheme.SUNLIGHT, SpotTheme.YUNSEUL, SpotTheme.SUNSET, SpotTheme.NIGHT_VIEW),
             SpotTheme.entries,
         )
     }

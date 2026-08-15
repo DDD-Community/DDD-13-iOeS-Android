@@ -37,7 +37,7 @@ class SpotRegistrationThemeChipSnapshotTest {
 
     /** PV59-REG-02 — 야경 단독 선택. 햇살이 함께 켜져 있으면 단독 선택 회귀다. */
     @Test
-    fun registration_theme_chips_night_selected_dark() = chips(SpotTheme.NIGHT)
+    fun registration_theme_chips_night_selected_dark() = chips(SpotTheme.NIGHT_VIEW)
 
     private fun chips(selected: SpotTheme?) {
         paparazzi.snapshot {

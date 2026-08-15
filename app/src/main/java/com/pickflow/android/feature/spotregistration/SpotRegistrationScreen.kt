@@ -512,5 +512,5 @@ private fun SpotTheme.iconRes(): Int = when (this) {
     SpotTheme.SUNLIGHT -> R.drawable.ic_sunny
     SpotTheme.YUNSEUL -> R.drawable.ic_reflection
     SpotTheme.SUNSET -> R.drawable.ic_sunset
-    SpotTheme.NIGHT -> R.drawable.ic_night
+    SpotTheme.NIGHT_VIEW -> R.drawable.ic_night
 }

@@ -161,14 +161,14 @@ class SpotListViewModelTest {
         vm.toggleTheme(SpotTheme.SUNLIGHT); advanceUntilIdle()
         assertEquals(setOf(SpotTheme.SUNLIGHT), vm.themes.value)
 
-        vm.toggleTheme(SpotTheme.NIGHT); advanceUntilIdle()
-        assertEquals(setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT), vm.themes.value)
+        vm.toggleTheme(SpotTheme.NIGHT_VIEW); advanceUntilIdle()
+        assertEquals(setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT_VIEW), vm.themes.value)
 
         vm.toggleTheme(SpotTheme.SUNLIGHT); advanceUntilIdle()
-        assertEquals(setOf(SpotTheme.NIGHT), vm.themes.value)
+        assertEquals(setOf(SpotTheme.NIGHT_VIEW), vm.themes.value)
 
         // 전부 해제 = 필터 없음. 빈 결과가 아니라 전체 조회로 되돌아간다.
-        vm.toggleTheme(SpotTheme.NIGHT); advanceUntilIdle()
+        vm.toggleTheme(SpotTheme.NIGHT_VIEW); advanceUntilIdle()
         assertEquals(emptySet<SpotTheme>(), vm.themes.value)
         assertTrue(vm.spots.value is LoadState.Loaded)
     }
@@ -186,7 +186,7 @@ class SpotListViewModelTest {
             SpotPage(items = listOf(spot("stale")), page = 0, hasNext = false)
         }
         coEvery {
-            listService.fetch(themes = setOf(SpotTheme.NIGHT), page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+            listService.fetch(themes = setOf(SpotTheme.NIGHT_VIEW), page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
         } returns SpotPage(items = listOf(spot("fresh")), page = 0, hasNext = false)
 
         val vm = viewModel()
@@ -194,10 +194,10 @@ class SpotListViewModelTest {
 
         vm.toggleTheme(SpotTheme.SUNLIGHT) // 느린 응답 in-flight
         vm.toggleTheme(SpotTheme.SUNLIGHT) // 곧바로 해제
-        vm.toggleTheme(SpotTheme.NIGHT)
+        vm.toggleTheme(SpotTheme.NIGHT_VIEW)
         advanceUntilIdle()
 
-        assertEquals(setOf(SpotTheme.NIGHT), vm.themes.value)
+        assertEquals(setOf(SpotTheme.NIGHT_VIEW), vm.themes.value)
         assertEquals(listOf("fresh"), (vm.spots.value as LoadState.Loaded).value.map { it.id })
     }
 

@@ -42,19 +42,19 @@ class MoodBackendCompatTest {
         // SUNLIGHT/NIGHT 를 보내면 서버가 400 C002 를 돌려준다.
         assertEquals(
             emptySet<SpotTheme>(),
-            MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT)),
+            MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT_VIEW)),
         )
         assertEquals(
             setOf(SpotTheme.YUNSEUL),
-            MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.YUNSEUL, SpotTheme.NIGHT)),
+            MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.YUNSEUL, SpotTheme.NIGHT_VIEW)),
         )
     }
 
     @Test
     fun `network is skipped when only stub-only moods are selected`() {
         assertTrue(MoodBackendCompat.shouldSkipNetwork(setOf(SpotTheme.SUNLIGHT)))
-        assertTrue(MoodBackendCompat.shouldSkipNetwork(setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT)))
-        assertFalse(MoodBackendCompat.shouldSkipNetwork(setOf(SpotTheme.SUNSET, SpotTheme.NIGHT)))
+        assertTrue(MoodBackendCompat.shouldSkipNetwork(setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT_VIEW)))
+        assertFalse(MoodBackendCompat.shouldSkipNetwork(setOf(SpotTheme.SUNSET, SpotTheme.NIGHT_VIEW)))
         // 전체 해제는 "전체 조회"이지 skip 이 아니다.
         assertFalse(MoodBackendCompat.shouldSkipNetwork(emptySet()))
     }
@@ -68,7 +68,7 @@ class MoodBackendCompatTest {
         )
         val filtered = MoodBackendCompat.filterServerItems(
             items = items,
-            selected = setOf(SpotTheme.YUNSEUL, SpotTheme.NIGHT),
+            selected = setOf(SpotTheme.YUNSEUL, SpotTheme.NIGHT_VIEW),
             themeOf = { it.theme },
         )
         assertEquals(listOf("b"), filtered.map { it.id })
@@ -101,7 +101,7 @@ class MoodBackendCompatTest {
             bottomLeft = Coordinates(37.50, 126.90),
             bottomRight = Coordinates(37.50, 127.10),
         )
-        val markers = MoodBackendCompat.stubMarkers(box, setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT))
+        val markers = MoodBackendCompat.stubMarkers(box, setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT_VIEW))
         assertTrue(markers.isNotEmpty())
         markers.forEach {
             assertTrue(it.coordinates.latitude in 37.50..37.60, "lat=${it.coordinates.latitude}")

@@ -77,10 +77,10 @@ class DefaultSpotMapServiceTest {
             )
         )
 
-        service.fetchInViewport(box, setOf(SpotTheme.NIGHT, SpotTheme.SUNLIGHT))
+        service.fetchInViewport(box, setOf(SpotTheme.NIGHT_VIEW, SpotTheme.SUNLIGHT))
 
         val url = server.takeRequest().requestUrl!!
-        assertEquals(listOf("SUNLIGHT", "NIGHT"), url.queryParameterValues("theme"))
+        assertEquals(listOf("SUNLIGHT", "NIGHT_VIEW"), url.queryParameterValues("theme"))
     }
 
     @Test

@@ -21,7 +21,7 @@ fun MoodFilter.toTheme(): SpotTheme = when (this) {
     MoodFilter.Sunlight -> SpotTheme.SUNLIGHT
     MoodFilter.Reflection -> SpotTheme.YUNSEUL
     MoodFilter.Sunset -> SpotTheme.SUNSET
-    MoodFilter.Night -> SpotTheme.NIGHT
+    MoodFilter.Night -> SpotTheme.NIGHT_VIEW
 }
 
 /** 도메인 테마 → UI 무드. */
@@ -29,5 +29,5 @@ fun SpotTheme.toMood(): MoodFilter = when (this) {
     SpotTheme.SUNLIGHT -> MoodFilter.Sunlight
     SpotTheme.YUNSEUL -> MoodFilter.Reflection
     SpotTheme.SUNSET -> MoodFilter.Sunset
-    SpotTheme.NIGHT -> MoodFilter.Night
+    SpotTheme.NIGHT_VIEW -> MoodFilter.Night
 }

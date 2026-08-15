@@ -203,5 +203,5 @@ private fun SpotTheme.toDetailTheme(): SpotDetailTheme = when (this) {
     SpotTheme.SUNLIGHT -> SpotDetailTheme.Sunlight
     SpotTheme.YUNSEUL -> SpotDetailTheme.Reflection
     SpotTheme.SUNSET -> SpotDetailTheme.Sunset
-    SpotTheme.NIGHT -> SpotDetailTheme.Night
+    SpotTheme.NIGHT_VIEW -> SpotDetailTheme.Night
 }

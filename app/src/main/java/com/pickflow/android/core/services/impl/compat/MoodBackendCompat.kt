@@ -140,7 +140,7 @@ object MoodBackendCompat {
             StubSeed("${STUB_ID_PREFIX}sunlight-2", "서울숲 은행나무길", 37.5445, 127.0374, 5.2),
             StubSeed("${STUB_ID_PREFIX}sunlight-3", "올림픽공원 들꽃마루", 37.5202, 127.1214, 9.8),
         )
-        SpotTheme.NIGHT -> listOf(
+        SpotTheme.NIGHT_VIEW -> listOf(
             StubSeed("${STUB_ID_PREFIX}night-1", "반포대교 무지개분수", 37.5127, 126.9959, 4.6),
             StubSeed("${STUB_ID_PREFIX}night-2", "낙산공원 성곽길", 37.5806, 127.0074, 2.3),
             StubSeed("${STUB_ID_PREFIX}night-3", "노들섬 야경 데크", 37.5177, 126.9583, 6.4),

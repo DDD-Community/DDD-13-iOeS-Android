@@ -23,7 +23,7 @@ data class Spot(
  *
  * 서버 전송값은 `name` 그대로 쓴다. SUNLIGHT/NIGHT 는 PV-59 백엔드 확정시 변경 가능성 있음.
  */
-enum class SpotTheme { SUNLIGHT, YUNSEUL, SUNSET, NIGHT }
+enum class SpotTheme { SUNLIGHT, YUNSEUL, SUNSET, NIGHT_VIEW }
 
 data class SpotPage(
     val items: List<Spot>,

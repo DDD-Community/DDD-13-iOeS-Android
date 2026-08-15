@@ -127,7 +127,7 @@ class SpotListScreenUiTest {
         composeRule.moodCapsule("햇살").performClick()
         composeRule.moodCapsule("야경").performClick()
         composeRule.waitForIdle()
-        assertEquals(setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT), vm.themes.value)
+        assertEquals(setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT_VIEW), vm.themes.value)
     }
 
     /** PV59-LST4 — 전체 해제는 "필터 없음"이지 "빈 결과"가 아니다. */

@@ -42,13 +42,21 @@ fun SpotListResponseDto.toSpotPage(): SpotPage = SpotPage(
     hasNext = hasNext,
 )
 
-// 서버는 endpoint 에 따라 2글자 코드("YS"/"SS") 또는 풀네임("YUNSEUL"/"SUNSET")으로 응답한다.
-// SL/SUNLIGHT(햇살), NT/NIGHT(야경) 코드는 PV-59 백엔드 확정시 변경 가능성 있음.
+/**
+ * 서버 `theme` 문자열 → 도메인 [SpotTheme].
+ *
+ * 요청 파라미터는 풀네임 enum(`SUNSET`/`YUNSEUL`/`SUNLIGHT`/`NIGHT_VIEW`)인데
+ * **응답 본문은 2글자 코드("SS"/"YS")로 내려온다**(API 문서 `GET /v1/spots` 응답 예시).
+ * 어느 쪽으로 오든 같은 값으로 접히도록 둘 다 받는다.
+ *
+ * `SL`/`NV`는 기존 `SS`/`YS` 규칙에서 유추한 값이다 — 신규 2종의 2글자 코드는
+ * API 문서에 명시돼 있지 않다. 실제 응답 확인 후 정정할 것.
+ */
 internal fun parseTheme(value: String): SpotTheme = when (value.uppercase()) {
     "YS", "YUNSEUL" -> SpotTheme.YUNSEUL
     "SS", "SUNSET" -> SpotTheme.SUNSET
     "SL", "SUNLIGHT" -> SpotTheme.SUNLIGHT
-    "NT", "NIGHT" -> SpotTheme.NIGHT
+    "NV", "NIGHT_VIEW", "NIGHT" -> SpotTheme.NIGHT_VIEW
     else -> SpotTheme.SUNSET
 }
 
