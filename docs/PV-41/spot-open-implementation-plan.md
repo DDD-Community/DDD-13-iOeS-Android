@@ -30,6 +30,7 @@
 | [06-archive.md](06-archive.md) | MY 스팟 목록, 비공개 북마크 |
 | [07-review-notification.md](07-review-notification.md) | 검수 결과 스낵바, 탭 인디케이터, 승인 모달 |
 | [08-test-and-rollout.md](08-test-and-rollout.md) | 구현 순서, TDD, QA 완료 기준 |
+| [09-api-mapping.md](09-api-mapping.md) | **서버 API ↔ 클라이언트 구현 매핑, 조정 필요 항목, 잔여 미확정 계약** |
 
 ## 범위
 
