@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 /**
  * `parseTheme` — 서버가 2글자 코드/풀네임 어느 쪽으로 응답해도 같은 도메인 값으로 접힌다.
  * 요청 enum 은 풀네임(SUNSET/YUNSEUL/SUNLIGHT/NIGHT_VIEW), 응답은 2글자 코드(SS/YS)다.
- * 신규 2종의 2글자 코드(SL/NV)는 문서 미기재 — 추정값이다.
+ * 신규 2종의 2글자 코드 SL/NV 는 개발 서버 실응답으로 확인했다(2026-08-18).
  */
 class SpotThemeParsingTest {
 

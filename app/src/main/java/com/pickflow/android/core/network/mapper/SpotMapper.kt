@@ -49,8 +49,8 @@ fun SpotListResponseDto.toSpotPage(): SpotPage = SpotPage(
  * **응답 본문은 2글자 코드("SS"/"YS")로 내려온다**(API 문서 `GET /v1/spots` 응답 예시).
  * 어느 쪽으로 오든 같은 값으로 접히도록 둘 다 받는다.
  *
- * `SL`/`NV`는 기존 `SS`/`YS` 규칙에서 유추한 값이다 — 신규 2종의 2글자 코드는
- * API 문서에 명시돼 있지 않다. 실제 응답 확인 후 정정할 것.
+ * 2글자 코드는 개발 서버 실응답으로 확인했다(2026-08-18):
+ * `SUNSET`→`SS`, `YUNSEUL`→`YS`, `SUNLIGHT`→`SL`, `NIGHT_VIEW`→`NV`.
  */
 internal fun parseTheme(value: String): SpotTheme = when (value.uppercase()) {
     "YS", "YUNSEUL" -> SpotTheme.YUNSEUL

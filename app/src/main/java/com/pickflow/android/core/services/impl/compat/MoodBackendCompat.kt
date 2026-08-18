@@ -1,5 +1,6 @@
 package com.pickflow.android.core.services.impl.compat
 
+import com.pickflow.android.BuildConfig
 import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotMapMarker
@@ -11,18 +12,19 @@ import com.pickflow.android.core.services.protocols.ViewportBox
  *
  * ## 왜 필요한가
  *
- * 2026-08-04 기준 운영 서버(`pickflow-api.us`) 실측 결과:
+ * PV-85 로 빌드타입별 서버가 갈렸고(debug=개발, release=운영), 두 환경의 능력이 다르다.
+ * 2026-08-18 실측:
  *
- * | 요청 | 결과 |
- * |---|---|
- * | `?theme=SUNSET` / `?theme=YUNSEUL` | 200 정상 |
- * | `?theme=SUNLIGHT` / `?theme=NIGHT` | **400 C002** "요청 타입이 올바르지 않습니다" |
- * | `?theme=SL` / `?theme=NT` | 400 C002 |
- * | `?theme=SUNSET,YUNSEUL` (CSV) | 400 C002 |
- * | `?theme=SUNSET&theme=YUNSEUL` (반복) | **200 이지만 첫 값만 적용** (SUNSET 결과와 동일) |
+ * | 요청 | 개발(debug) | 운영(release) |
+ * |---|---|---|
+ * | `?theme=SUNSET` / `?theme=YUNSEUL` | 200 | 200 |
+ * | `?theme=SUNLIGHT` | **200** `{SL:6}` | **400 C002** |
+ * | `?theme=NIGHT_VIEW` | **200** `{NV:2}` | **400 C002** |
+ * | `?theme=A&theme=B` (반복) | **200 이지만 첫 값만 적용** | 동일 |
+ * | `?theme=A,B` (CSV) | 400 | 400 |
  *
- * 즉 서버는 (a) 신규 무드 2종을 모르고, (b) 다중 필터를 조용히 무시한다.
- * (b)가 특히 위험하다 — 200을 주므로 클라이언트가 오작동을 감지할 수 없다.
+ * 즉 **신규 2종은 개발 서버에만 배포돼 있고, 다중 필터는 양쪽 다 미지원**이다.
+ * 다중 쪽이 특히 위험하다 — 400이 아니라 200을 주므로 오작동을 감지할 수 없다.
  *
  * ## 무엇을 하는가
  *
@@ -44,10 +46,20 @@ object MoodBackendCompat {
      */
     const val BACKEND_SUPPORTS_MOOD_V2 = false
 
-    /** 서버가 현재 `theme` 쿼리로 받아주는 값. 나머지는 400을 돌려준다. */
-    val SERVER_KNOWN_THEMES: Set<SpotTheme> = setOf(SpotTheme.SUNSET, SpotTheme.YUNSEUL)
+    /**
+     * 서버가 `theme` 쿼리로 받아주는 값. 나머지를 보내면 400 이 온다.
+     *
+     * **빌드타입에 따라 다르다**(PV-85 로 debug=개발 서버, release=운영 서버로 분리).
+     * 개발 서버에는 신규 2종이 배포돼 있어 실데이터가 나오므로 stub 이 필요 없다.
+     */
+    val SERVER_KNOWN_THEMES: Set<SpotTheme> =
+        if (BuildConfig.DEBUG) SpotTheme.entries.toSet()
+        else setOf(SpotTheme.SUNSET, SpotTheme.YUNSEUL)
 
-    /** 서버가 아직 모르는 값 — stub 으로 대체한다. */
+    /**
+     * 서버가 아직 모르는 값 — stub 으로 대체한다.
+     * 개발 서버(debug)에서는 비어 있다 = **debug 빌드에는 stub 이 뜨지 않는다.**
+     */
     val STUB_ONLY_THEMES: Set<SpotTheme> = SpotTheme.entries.toSet() - SERVER_KNOWN_THEMES
 
     /**
@@ -56,14 +68,19 @@ object MoodBackendCompat {
      * 서버는 값을 1개만 처리하므로, 2개 이상이면 빈 Set(=전체 조회)을 돌려주고
      * 걸러내는 일은 [filterServerItems]가 맡는다.
      */
-    fun serverQueryThemes(selected: Set<SpotTheme>): Set<SpotTheme> {
-        val known = selected intersect SERVER_KNOWN_THEMES
+    fun serverQueryThemes(
+        selected: Set<SpotTheme>,
+        serverKnown: Set<SpotTheme> = SERVER_KNOWN_THEMES,
+    ): Set<SpotTheme> {
+        val known = selected intersect serverKnown
         return if (known.size == 1) known else emptySet()
     }
 
     /** 서버가 아는 무드가 하나도 선택되지 않았다면 네트워크를 탈 이유가 없다. */
-    fun shouldSkipNetwork(selected: Set<SpotTheme>): Boolean =
-        selected.isNotEmpty() && (selected intersect SERVER_KNOWN_THEMES).isEmpty()
+    fun shouldSkipNetwork(
+        selected: Set<SpotTheme>,
+        serverKnown: Set<SpotTheme> = SERVER_KNOWN_THEMES,
+    ): Boolean = selected.isNotEmpty() && (selected intersect serverKnown).isEmpty()
 
     /**
      * 서버 응답을 선택된 무드로 다시 거른다.
@@ -74,18 +91,22 @@ object MoodBackendCompat {
     fun <T> filterServerItems(
         items: List<T>,
         selected: Set<SpotTheme>,
+        serverKnown: Set<SpotTheme> = SERVER_KNOWN_THEMES,
         themeOf: (T) -> SpotTheme,
     ): List<T> {
         if (selected.isEmpty()) return items
-        val known = selected intersect SERVER_KNOWN_THEMES
+        val known = selected intersect serverKnown
         return items.filter { themeOf(it) in known }
     }
 
     // MARK: - Stub 데이터
 
     /** 선택된 무드 중 서버가 모르는 것들에 대한 가짜 스팟. 이름에 `[STUB]` 접두사. */
-    fun stubSpots(selected: Set<SpotTheme>): List<Spot> =
-        (selected intersect STUB_ONLY_THEMES).flatMap { theme ->
+    fun stubSpots(
+        selected: Set<SpotTheme>,
+        stubOnly: Set<SpotTheme> = STUB_ONLY_THEMES,
+    ): List<Spot> =
+        (selected intersect stubOnly).flatMap { theme ->
             stubSeeds(theme).map { seed ->
                 Spot(
                     id = seed.id,
@@ -101,8 +122,12 @@ object MoodBackendCompat {
         }
 
     /** 지도 viewport 용 가짜 마커 — 현재 보이는 영역 중앙 근처에 흩뿌린다. */
-    fun stubMarkers(box: ViewportBox, selected: Set<SpotTheme>): List<SpotMapMarker> {
-        val themes = selected intersect STUB_ONLY_THEMES
+    fun stubMarkers(
+        box: ViewportBox,
+        selected: Set<SpotTheme>,
+        stubOnly: Set<SpotTheme> = STUB_ONLY_THEMES,
+    ): List<SpotMapMarker> {
+        val themes = selected intersect stubOnly
         if (themes.isEmpty()) return emptyList()
         val centerLat = (box.topLeft.latitude + box.bottomLeft.latitude) / 2
         val centerLng = (box.topLeft.longitude + box.topRight.longitude) / 2
