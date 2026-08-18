@@ -2,7 +2,9 @@ package com.pickflow.android.feature.spotlist
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
@@ -21,7 +23,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [34], qualifiers = "w411dp-h950dp-xhdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class SpotListScreenUiTest {
 
@@ -63,5 +65,64 @@ class SpotListScreenUiTest {
             }
         }
         composeRule.onNodeWithTag("state-empty").assertIsDisplayed()
+    }
+
+    @Test
+    fun cell_meta_shows_mood_and_like_count() {
+        val listService = mockk<SpotListService>()
+        coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(
+            items = listOf(
+                Spot("s1", "윤슬 스팟", SpotTheme.YUNSEUL, 0.0, 0.0, likeCount = 34),
+            ),
+            page = 0,
+            hasNext = false,
+        )
+        val vm = SpotListViewModel(
+            listService, mockk<BookmarkService>(relaxed = true), authService(), mockk(relaxed = true),
+        )
+
+        composeRule.setContent {
+            PickflowTheme {
+                SpotListScreen(onOpenSpotDetail = {}, onRequireLogin = {}, viewModel = vm)
+            }
+        }
+        composeRule.onNodeWithText("추천 34").assertIsDisplayed()
+        composeRule.onNodeWithText("북마크 34").assertDoesNotExist()
+    }
+
+    @Test
+    fun bookmarked_spot_from_response_renders_as_bookmarked() {
+        val listService = mockk<SpotListService>()
+        coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(
+            items = listOf(Spot("s1", "Spot One", SpotTheme.SUNSET, 0.0, 0.0, isBookmarked = true)),
+            page = 0,
+            hasNext = false,
+        )
+        val vm = SpotListViewModel(
+            listService, mockk<BookmarkService>(relaxed = true), authService(), mockk(relaxed = true),
+        )
+
+        composeRule.setContent {
+            PickflowTheme {
+                SpotListScreen(onOpenSpotDetail = {}, onRequireLogin = {}, viewModel = vm)
+            }
+        }
+        composeRule.onNodeWithContentDescription("북마크 해제").assertIsDisplayed()
+    }
+
+    @Test
+    fun sort_header_shows_recommended_label() {
+        val listService = mockk<SpotListService>()
+        coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(emptyList(), 0, false)
+        val vm = SpotListViewModel(
+            listService, mockk<BookmarkService>(relaxed = true), authService(), mockk(relaxed = true),
+        )
+
+        composeRule.setContent {
+            PickflowTheme {
+                SpotListScreen(onOpenSpotDetail = {}, onRequireLogin = {}, viewModel = vm)
+            }
+        }
+        composeRule.onNodeWithText("추천 순").assertIsDisplayed()
     }
 }

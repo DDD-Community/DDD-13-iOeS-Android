@@ -36,8 +36,6 @@ import coil.compose.AsyncImage
 @Composable
 fun SpotListCell(
     item: SpotListGridItem,
-    isBookmarked: Boolean,
-    bookmarkCount: Int?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -45,7 +43,7 @@ fun SpotListCell(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         ThumbnailBox(item = item)
-        MetaRow(item = item, isBookmarked = isBookmarked, bookmarkCount = bookmarkCount)
+        MetaRow(item = item)
     }
 }
 
@@ -119,7 +117,7 @@ private fun DistanceBadge(distanceKm: Double) {
 }
 
 @Composable
-private fun MetaRow(item: SpotListGridItem, isBookmarked: Boolean, bookmarkCount: Int?) {
+private fun MetaRow(item: SpotListGridItem) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -142,10 +140,10 @@ private fun MetaRow(item: SpotListGridItem, isBookmarked: Boolean, bookmarkCount
                     style = PickflowTypography.bodySmall,
                     color = PickflowColors.gray10,
                 )
-                if (bookmarkCount != null) {
+                item.likeCount?.let { count ->
                     Text(text = "·", style = PickflowTypography.bodySmall, color = PickflowColors.gray50)
                     Text(
-                        text = "북마크 $bookmarkCount",
+                        text = "추천 $count",
                         style = PickflowTypography.bodySmall,
                         color = PickflowColors.gray10,
                     )
@@ -155,10 +153,10 @@ private fun MetaRow(item: SpotListGridItem, isBookmarked: Boolean, bookmarkCount
         Box(modifier = Modifier.padding(10.dp)) {
             Icon(
                 painter = painterResource(
-                    id = if (isBookmarked) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark_border,
+                    id = if (item.isBookmarked) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark_border,
                 ),
                 contentDescription = "북마크",
-                tint = if (isBookmarked) PickflowColors.gray0 else PickflowColors.gray30,
+                tint = if (item.isBookmarked) PickflowColors.gray0 else PickflowColors.gray30,
                 modifier = Modifier.size(24.dp),
             )
         }
