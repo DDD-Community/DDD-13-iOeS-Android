@@ -44,9 +44,51 @@ Settings → Secrets and variables → Actions.
 > 서비스 계정 JSON 은 절대 커밋하지 않는다. 로컬 파일명은 `firebase-service-account.json`
 > 으로 두면 `.gitignore` 가 막아 준다.
 
-## 3. 로컬에서 배포하기
+## 3. 로컬에서 배포하기 (명령 한 줄)
 
-`secrets.properties` 에 두 줄 추가:
+```sh
+./gradlew assembleDebug appDistributionUploadDebug
+```
+
+빌드 → 업로드까지 한 번에 간다. 업로드 태스크는 빌드를 자동으로 끌고 오지 않으므로
+`assembleDebug` 를 함께 적어야 한다.
+
+- **appId** — `app/google-services.json` 에서 생성된 `google_app_id` 리소스를 플러그인이 읽는다. 따로 적을 필요 없다.
+- **테스터 그룹** — `qa` (`app/build.gradle.kts` 의 `groups`)
+- **릴리스 노트** — 최근 커밋 메시지(`git log -1 --pretty=%s`)
+
+그때그때 덮어쓰려면:
+
+```sh
+./gradlew assembleDebug appDistributionUploadDebug \
+  --groups=qa,designer --releaseNotes="스팟 상세 하단 여백 수정"
+```
+
+### 최초 1회 설치·인증
+
+플러그인은 `serviceCredentialsFile` → `GOOGLE_APPLICATION_CREDENTIALS` →
+`FIREBASE_TOKEN` → application-default 순으로 자격증명을 찾는다.
+로컬 배포는 **`FIREBASE_TOKEN` 방식이 가장 짧다.**
+
+```sh
+# 1) Firebase CLI 설치
+npm i -g firebase-tools
+
+# 2) 브라우저 인증 → 토큰이 출력된다
+firebase login:ci
+
+# 3) 출력된 토큰을 셸 프로필에 저장 (한 번만)
+echo 'export FIREBASE_TOKEN=<위에서 출력된 토큰>' >> ~/.zshrc
+source ~/.zshrc
+```
+
+이후로는 위 gradle 한 줄만 실행하면 된다.
+
+> `FIREBASE_TOKEN` 은 장기 유효한 자격증명이다. 저장소에 커밋하지 않는다.
+
+### 서비스 계정 키를 쓰는 방법(대안)
+
+CLI 설치 없이 가려면 §2 의 서비스 계정 JSON 을 받아 `secrets.properties` 에 적는다.
 
 ```properties
 FIREBASE_APP_ID=1:000000000000:android:abcdef0123456789
@@ -55,17 +97,14 @@ FIREBASE_SERVICE_ACCOUNT_FILE=firebase-service-account.json
 
 (환경변수 `FIREBASE_APP_ID` / `FIREBASE_SERVICE_ACCOUNT_FILE` 가 있으면 그쪽이 우선한다.)
 
-```sh
-# 빌드 + 업로드
-./gradlew assembleDebug appDistributionUploadDebug
+### 콘솔에 직접 올리기
 
-# 테스터 그룹/릴리스 노트를 그때그때 덮어쓰기
-./gradlew assembleDebug appDistributionUploadDebug \
-  --groups=qa,designer --releaseNotes="스팟 상세 하단 여백 수정"
-```
+자동화 없이 웹으로만 올려도 된다. `./gradlew assembleDebug` 로 나온
+`app/build/outputs/apk/debug/app-debug.apk` 를 Firebase 콘솔 → App Distribution →
+릴리스 배포 화면에 드래그하고 그룹·릴리스 노트를 입력하면 끝이다.
 
-두 값이 모두 비어 있어도 `assembleDebug` / `testDebugUnitTest` 는 그대로 성공한다.
-업로드 태스크를 실행할 때만 실패한다.
+> 어느 방식이든 값이 비어 있어도 `assembleDebug` / `testDebugUnitTest` 는 그대로 성공한다.
+> 업로드 태스크를 실행할 때만 실패한다.
 
 ## 4. 테스터 그룹 관리
 
