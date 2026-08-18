@@ -35,8 +35,18 @@ class SpotListViewModelTest {
     private lateinit var authService: AuthService
     private lateinit var locationService: LocationService
 
-    private fun spot(id: String, theme: SpotTheme = SpotTheme.SUNSET) =
-        Spot(id = id, name = id, theme = theme, latitude = 0.0, longitude = 0.0)
+    private fun spot(
+        id: String,
+        theme: SpotTheme = SpotTheme.SUNSET,
+        isBookmarked: Boolean = false,
+    ) = Spot(
+        id = id,
+        name = id,
+        theme = theme,
+        latitude = 0.0,
+        longitude = 0.0,
+        isBookmarked = isBookmarked,
+    )
 
     @BeforeEach
     fun setUp() {
@@ -185,12 +195,85 @@ class SpotListViewModelTest {
     }
 
     @Test
-    fun `toggleBookmark refreshes bookmarkedIds when logged in`() = runTest(testDispatcher) {
-        coEvery { bookmarkService.toggle("a") } returns true
-        coEvery { bookmarkService.bookmarkedIds() } returns setOf("a")
+    fun `refresh seeds bookmarkedIds from the response isBookmarked`() = runTest(testDispatcher) {
+        coEvery {
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(
+            items = listOf(spot("a", isBookmarked = true), spot("b")),
+            page = 0,
+            hasNext = false,
+        )
+
+        val vm = viewModel()
+        vm.refresh(); advanceUntilIdle()
+        assertEquals(setOf("a"), vm.bookmarkedIds.value)
+    }
+
+    @Test
+    fun `next page adds its own bookmarked ids without dropping earlier ones`() = runTest(testDispatcher) {
+        coEvery {
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("a", isBookmarked = true)), page = 0, hasNext = true)
+        coEvery {
+            listService.fetch(theme = null, page = 1, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("b", isBookmarked = true)), page = 1, hasNext = false)
+
+        val vm = viewModel()
+        vm.refresh(); advanceUntilIdle()
+        vm.loadNextPage(); advanceUntilIdle()
+        assertEquals(setOf("a", "b"), vm.bookmarkedIds.value)
+    }
+
+    @Test
+    fun `next page does not resurrect an id the user just un-bookmarked`() = runTest(testDispatcher) {
+        // 낙관적 해제 직후 도착한 다음 페이지 응답이 stale isBookmarked=true 로 상태를 되돌리면 안 된다.
+        coEvery {
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("a", isBookmarked = true)), page = 0, hasNext = true)
+        coEvery {
+            listService.fetch(theme = null, page = 1, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("b")), page = 1, hasNext = false)
+        coEvery { bookmarkService.remove("a") } returns 0L
+
+        val vm = viewModel()
+        vm.refresh(); advanceUntilIdle()
+        vm.toggleBookmark("a"); advanceUntilIdle()
+        vm.loadNextPage(); advanceUntilIdle()
+
+        assertEquals(emptySet<String>(), vm.bookmarkedIds.value)
+        coVerify(exactly = 1) { bookmarkService.remove("a") }
+    }
+
+    @Test
+    fun `refresh clears bookmarkedIds seeded by the previous load`() = runTest(testDispatcher) {
+        coEvery {
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("a", isBookmarked = true)), page = 0, hasNext = false)
+        coEvery {
+            listService.fetch(theme = SpotTheme.YUNSEUL, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(items = listOf(spot("b", SpotTheme.YUNSEUL)), page = 0, hasNext = false)
+
+        val vm = viewModel()
+        vm.refresh(); advanceUntilIdle()
+        vm.selectTheme(SpotTheme.YUNSEUL); advanceUntilIdle()
+        assertEquals(emptySet<String>(), vm.bookmarkedIds.value)
+    }
+
+    @Test
+    fun `toggleBookmark adds optimistically and calls the service`() = runTest(testDispatcher) {
+        coEvery { bookmarkService.add("a") } returns 1L
         val vm = viewModel()
         vm.toggleBookmark("a"); advanceUntilIdle()
         assertEquals(setOf("a"), vm.bookmarkedIds.value)
+        coVerify(exactly = 1) { bookmarkService.add("a") }
+    }
+
+    @Test
+    fun `toggleBookmark rolls back when the service fails`() = runTest(testDispatcher) {
+        coEvery { bookmarkService.add("a") } throws RuntimeException("net")
+        val vm = viewModel()
+        vm.toggleBookmark("a"); advanceUntilIdle()
+        assertEquals(emptySet<String>(), vm.bookmarkedIds.value)
     }
 
     @Test

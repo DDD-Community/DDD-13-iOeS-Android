@@ -34,6 +34,10 @@ fun SpotItemDto.toSpot(): Spot = Spot(
     imageUrl = thumbnailUrl?.takeIf { it.isNotBlank() },
     address = "",
     distanceKm = distanceKm,
+    bookmarkCount = bookmarkCount,
+    isBookmarked = isBookmarked,
+    likeCount = likeCount,
+    isLiked = isLiked,
 )
 
 fun SpotListResponseDto.toSpotPage(): SpotPage = SpotPage(

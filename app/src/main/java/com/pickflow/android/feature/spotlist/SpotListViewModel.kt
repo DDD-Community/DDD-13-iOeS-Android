@@ -32,10 +32,11 @@ class SpotListViewModel @Inject constructor(
     private val _theme = MutableStateFlow<SpotTheme?>(null)
     val theme: StateFlow<SpotTheme?> = _theme.asStateFlow()
 
-    // 기본 정렬은 북마크 순(RECOMMENDED). 가까운 순(DISTANCE)은 위치 권한이 있을 때만 선택 가능.
+    // 기본 정렬은 추천 순(RECOMMENDED). 가까운 순(DISTANCE)은 위치 권한이 있을 때만 선택 가능.
     private val _sort = MutableStateFlow(SpotSort.RECOMMENDED)
     val sort: StateFlow<SpotSort> = _sort.asStateFlow()
 
+    // 응답의 isBookmarked 로 채운다(서버가 단일 출처). 사용자의 낙관적 토글이 그 위에 얹힌다.
     private val _bookmarkedIds = MutableStateFlow<Set<String>>(emptySet())
     val bookmarkedIds: StateFlow<Set<String>> = _bookmarkedIds.asStateFlow()
 
@@ -67,6 +68,7 @@ class SpotListViewModel @Inject constructor(
         isLoadingPage = false
         accumulated.clear()
         accumulatedIds.clear()
+        _bookmarkedIds.value = emptySet()
         loadPage()
     }
 
@@ -140,6 +142,9 @@ class SpotListViewModel @Inject constructor(
                 // 이미 누적된 id 는 걸러 append → LazyGrid 중복 key 크래시 방지.
                 val newItems = page.items.filter { accumulatedIds.add(it.id) }
                 accumulated.addAll(newItems)
+                // 신규 항목의 서버값만 합친다. 이미 화면에 있던 id 를 덮어쓰면
+                // 방금 낙관적으로 해제한 북마크가 stale 응답으로 되살아난다.
+                _bookmarkedIds.value += newItems.filter { it.isBookmarked }.map { it.id }
                 hasMore = page.hasNext
                 nextPage = page.page + 1
                 emitState()
