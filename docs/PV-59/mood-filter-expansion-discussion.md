@@ -75,14 +75,22 @@
 
 ---
 
-## 5. 지도 ↔ 리스트 필터 상태 비공유
+## 5. 지도 ↔ 리스트 필터 상태 공유 ✅ 해결됨
 
-`HomeMapViewModel.selectedMoods`와 `SpotListViewModel.themes`는 서로 모른다.
-지도에서 "야경"을 고르고 리스트로 전환하면 필터가 풀린 채로 보인다.
-기존 단일선택 때부터 그랬던 동작이라 이번에 바꾸지 않았다.
+~~두 ViewModel 이 선택을 각자 들고 있어 전환 시 필터가 풀렸다.~~
 
-- (a) 현행 유지 (기존 동작과 일관)
-- (b) 공유 상태로 승격 (탐색 탭 단위 ViewModel 또는 SavedStateHandle)
+**(b) 공유 상태로 승격**을 채택해 해결했다.
+`MoodFilterStore`(`core/services/protocols/`) + `InMemoryMoodFilterStore`(`@Singleton`)를 두고
+두 ViewModel 이 같은 인스턴스를 주입받는다.
+
+- 선택 상태의 소유권이 ViewModel 밖으로 나가면서 각자의 `MutableStateFlow` 가 사라졌다.
+- 재조회는 각 ViewModel 이 `store.selected` 를 구독해 스스로 한다.
+  `drop(1)` 로 최초 값은 건너뛰어 화면 진입 시 중복 요청을 막는다.
+- 토글 함수는 이제 `store.toggle()` 위임 한 줄이다.
+
+> ⚠️ `HomeMapViewModel` 의존성이 7개 → **8개**가 됐다. ARCHITECTURE 규약(≤5)을
+> 이미 넘고 있던 상태라 이번에 더 벌어졌다. 지도 화면 자체의 책임 분리가 필요하다 —
+> 별도 티켓 대상.
 
 ---
 
