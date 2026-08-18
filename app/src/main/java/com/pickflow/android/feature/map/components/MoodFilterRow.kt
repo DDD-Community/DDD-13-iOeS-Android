@@ -31,7 +31,7 @@ import com.pickflow.android.feature.map.MoodFilter
  * 패딩·아이콘 크기·타이포가 서로 달랐다(PV-59에서 통합).
  *
  * 사양(Figma `729:7837` Default / `733:11506` Selected):
- * - 캡슐: 패딩 14×8, 코너 8, 배경 `gray95`(#131416), 아이콘–라벨 간격 6
+ * - 캡슐: **84×40 고정**, 코너 8, 배경 `gray95`(#131416), 아이콘–라벨 간격 6 (내용은 중앙 정렬)
  * - 아이콘 20dp, 라벨 `bodyLargeBold`(17sp), 라벨색은 선택 여부와 무관하게 `gray0`
  * - 선택 시에만 `sunsetOrange`(#FA6133) 1dp 보더가 붙는다
  * - 행: 패딩 16×8, 캡슐 간격 8
@@ -68,6 +68,7 @@ private fun MoodCapsule(mood: MoodFilter, selected: Boolean, onClick: () -> Unit
     Box {
         Row(
             modifier = Modifier
+                .size(width = CAPSULE_WIDTH, height = CAPSULE_HEIGHT)
                 .clip(RoundedCornerShape(8.dp))
                 .background(PickflowColors.gray95)
                 .then(
@@ -77,10 +78,9 @@ private fun MoodCapsule(mood: MoodFilter, selected: Boolean, onClick: () -> Unit
                         Modifier
                     },
                 )
-                .clickable(onClick = onClick)
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .clickable(onClick = onClick),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
         ) {
             Image(
                 painter = painterResource(mood.iconRes),
@@ -108,6 +108,10 @@ private fun MoodCapsule(mood: MoodFilter, selected: Boolean, onClick: () -> Unit
         }
     }
 }
+
+/** 캡슐 고정 크기 — 라벨 길이와 무관하게 4개 칩의 폭이 같아야 한다. */
+private val CAPSULE_WIDTH = 84.dp
+private val CAPSULE_HEIGHT = 40.dp
 
 /** 신규 무드 표시 dot 지름 — Figma 4×4. */
 private val NEW_DOT_SIZE = 4.dp
