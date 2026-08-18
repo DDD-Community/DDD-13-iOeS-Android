@@ -7,6 +7,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,9 +49,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.core.services.protocols.ImagePayload
@@ -227,15 +230,16 @@ fun AccountManagementScreen(
                             )
                         }
                     }
-                    Box(
+                    // 카메라 배지. 벡터 자체가 흰 원 배경 + 테두리를 포함하므로 별도 Box 로 감싸지 않는다.
+                    // 멀티컬러라 tint 를 걸면 뭉개지므로 Icon 이 아니라 Image 로 그린다.
+                    Image(
+                        painter = painterResource(R.drawable.ic_my_camera),
+                        contentDescription = null,
                         modifier = Modifier
-                            .size(32.dp)
+                            .size(36.dp)
                             .align(Alignment.BottomEnd)
-                            .background(PickflowColors.gray80, CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(text = "📷", style = PickflowTypography.bodyMedium)
-                    }
+                            .testTag("account-profile-camera"),
+                    )
                 }
             }
 
