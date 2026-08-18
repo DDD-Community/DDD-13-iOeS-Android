@@ -5,9 +5,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,32 +64,54 @@ fun MoodFilterRow(
 
 @Composable
 private fun MoodCapsule(mood: MoodFilter, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(PickflowColors.gray95)
-            .then(
-                if (selected) {
-                    Modifier.border(1.dp, PickflowColors.sunsetOrange, RoundedCornerShape(8.dp))
-                } else {
-                    Modifier
-                },
+    // 캡슐 자체는 코너로 clip 되므로, 신규 dot 은 clip 밖(형제)에 그려 모서리에 걸치게 둔다.
+    Box {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(PickflowColors.gray95)
+                .then(
+                    if (selected) {
+                        Modifier.border(1.dp, PickflowColors.sunsetOrange, RoundedCornerShape(8.dp))
+                    } else {
+                        Modifier
+                    },
+                )
+                .clickable(onClick = onClick)
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Image(
+                painter = painterResource(mood.iconRes),
+                contentDescription = mood.displayName,
+                modifier = Modifier.size(20.dp),
             )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Image(
-            painter = painterResource(mood.iconRes),
-            contentDescription = mood.displayName,
-            modifier = Modifier.size(20.dp),
-        )
-        Text(
-            text = mood.displayName,
-            style = PickflowTypography.bodyLargeBold,
-            // Figma는 Default/Selected 모두 흰색이다. 구분은 보더가 진다.
-            color = PickflowColors.gray0,
-        )
+            Text(
+                text = mood.displayName,
+                style = PickflowTypography.bodyLargeBold,
+                // Figma는 Default/Selected 모두 흰색이다. 구분은 보더가 진다.
+                color = PickflowColors.gray0,
+            )
+        }
+
+        if (mood.isNew) {
+            // Figma: 4×4, color/Dark/Primary/normal(#FA6133). 캡슐 안쪽 우상단.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = -NEW_DOT_END_INSET, y = NEW_DOT_TOP_INSET)
+                    .size(NEW_DOT_SIZE)
+                    .background(PickflowColors.sunsetOrange, CircleShape)
+                    .testTag("mood-new-dot-${mood.name}"),
+            )
+        }
     }
 }
+
+/** 신규 무드 표시 dot 지름 — Figma 4×4. */
+private val NEW_DOT_SIZE = 4.dp
+
+/** dot 우측/상단 여백 — 코너(8dp) 곡선 안쪽에 들어오도록. */
+private val NEW_DOT_END_INSET = 5.dp
+private val NEW_DOT_TOP_INSET = 3.dp

@@ -9,11 +9,22 @@ import com.pickflow.android.core.services.protocols.SpotTheme
  * 선언 순서 = 표시 순서. `MoodFilterRow` 는 `entries` 를 그대로 순회하므로
  * 순서를 바꾸면 UI 순서가 바뀐다(별도 정렬 로직 없음).
  */
-enum class MoodFilter(val displayName: String, val iconRes: Int) {
-    Sunlight("햇살", R.drawable.ic_sunny),
+enum class MoodFilter(
+    val displayName: String,
+    val iconRes: Int,
+    /**
+     * 캡슐 우상단 신규 표시 dot 노출 여부.
+     *
+     * **서버 값과 무관한 순수 클라이언트 표기다.** 신규 무드가 더 늘거나 표시를 내릴 때
+     * 이 플래그만 손대면 되고, 그리는 쪽([com.pickflow.android.feature.map.components.MoodFilterRow])은
+     * 건드릴 필요가 없다. 탐색 탭(지도/리스트) 전용이며 스팟 등록 폼에는 쓰지 않는다.
+     */
+    val isNew: Boolean = false,
+) {
+    Sunlight("햇살", R.drawable.ic_sunny, isNew = true),
     Reflection("윤슬", R.drawable.ic_reflection),
     Sunset("노을", R.drawable.ic_sunset),
-    Night("야경", R.drawable.ic_night),
+    Night("야경", R.drawable.ic_night, isNew = true),
 }
 
 /** UI 무드 → 도메인 테마. 지도·리스트가 공유한다(각 화면에서 재정의 금지). */

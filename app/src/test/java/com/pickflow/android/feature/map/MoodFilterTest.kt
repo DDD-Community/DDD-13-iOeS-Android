@@ -25,6 +25,15 @@ class MoodFilterTest {
         }
     }
 
+    /** 신규 표시 dot 은 햇살·야경에만 붙는다. 서버 값과 무관한 클라이언트 표기다. */
+    @Test
+    fun `only the two new moods carry the new dot`() {
+        assertEquals(
+            listOf(MoodFilter.Sunlight, MoodFilter.Night),
+            MoodFilter.entries.filter { it.isNew },
+        )
+    }
+
     @Test
     fun `mood order matches domain theme order`() {
         assertEquals(SpotTheme.entries.map { it.toMood() }, MoodFilter.entries)
