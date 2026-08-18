@@ -100,7 +100,7 @@ private fun MoodCapsule(mood: MoodFilter, selected: Boolean, onClick: () -> Unit
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .offset(x = -NEW_DOT_END_INSET, y = NEW_DOT_TOP_INSET)
+                    .offset(x = -NEW_DOT_INSET, y = NEW_DOT_INSET)
                     .size(NEW_DOT_SIZE)
                     .background(PickflowColors.sunsetOrange, CircleShape)
                     .testTag("mood-new-dot-${mood.name}"),
@@ -112,6 +112,5 @@ private fun MoodCapsule(mood: MoodFilter, selected: Boolean, onClick: () -> Unit
 /** 신규 무드 표시 dot 지름 — Figma 4×4. */
 private val NEW_DOT_SIZE = 4.dp
 
-/** dot 우측/상단 여백 — 코너(8dp) 곡선 안쪽에 들어오도록. */
-private val NEW_DOT_END_INSET = 5.dp
-private val NEW_DOT_TOP_INSET = 3.dp
+/** dot 과 캡슐 우측/상단 모서리 사이 여백. */
+private val NEW_DOT_INSET = 8.dp
