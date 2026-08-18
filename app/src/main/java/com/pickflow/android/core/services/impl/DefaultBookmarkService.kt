@@ -6,48 +6,23 @@ import com.pickflow.android.core.network.unwrap
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.SavedSpotPage
-import java.util.Collections
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Phase D-3: add/remove는 서버 연동, toggle은 로컬 캐시 기준으로 add/remove 라우팅.
- * isBookmarked/bookmarkedIds는 로컬 캐시 (Phase D-3 savedSpots 통합 시 서버 응답으로 대체).
- */
+/** 북마크 지정/해제/조회 모두 서버가 단일 출처다. 로컬 캐시를 두지 않는다. */
 @Singleton
 class DefaultBookmarkService @Inject constructor(
     private val bookmarkApi: BookmarkApi,
 ) : BookmarkService {
-    private val store: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
-
     override suspend fun add(spotId: String): Long {
         val longId = spotId.toLongIdOrThrow()
-        val count = bookmarkApi.addBookmark(longId).unwrap().bookmarkCount
-        synchronized(store) { store.add(spotId) }
-        return count
+        return bookmarkApi.addBookmark(longId).unwrap().bookmarkCount
     }
 
     override suspend fun remove(spotId: String): Long {
         val longId = spotId.toLongIdOrThrow()
-        val count = bookmarkApi.removeBookmark(longId).unwrap().bookmarkCount
-        synchronized(store) { store.remove(spotId) }
-        return count
+        return bookmarkApi.removeBookmark(longId).unwrap().bookmarkCount
     }
-
-    override suspend fun isBookmarked(spotId: String): Boolean = store.contains(spotId)
-
-    override suspend fun toggle(spotId: String): Boolean {
-        // 캐시 기준 분기: 캐시에 있으면 remove, 없으면 add. add/remove가 캐시 갱신을 담당.
-        return if (isBookmarked(spotId)) {
-            remove(spotId)
-            false
-        } else {
-            add(spotId)
-            true
-        }
-    }
-
-    override suspend fun bookmarkedIds(): Set<String> = synchronized(store) { store.toSet() }
 
     override suspend fun savedSpots(page: Int, coordinates: Coordinates?): SavedSpotPage =
         bookmarkApi.getSavedSpots(

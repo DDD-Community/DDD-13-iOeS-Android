@@ -100,17 +100,16 @@ class SpotDetailViewModelTest {
     }
 
     @Test
-    fun `load falls back to bookmarkService on failure`() = runTest(testDispatcher) {
+    fun `load failure leaves bookmarked false`() = runTest(testDispatcher) {
         val boom = RuntimeException("not found")
         coEvery { spotService.spot("9") } throws boom
-        coEvery { bookmarkService.isBookmarked("9") } returns true
 
         val vm = vm()
         vm.load("9"); advanceUntilIdle()
 
         val state = vm.spot.value
         assertTrue(state is LoadState.Failed && state.error === boom)
-        assertTrue(vm.bookmarked.value)
+        assertFalse(vm.bookmarked.value)
     }
 
     @Test

@@ -82,8 +82,8 @@ class SpotDetailViewModel @Inject constructor(
                 onSuccess = { LoadState.Loaded(it) },
                 onFailure = { LoadState.Failed(it) },
             )
-            _bookmarked.value = result.getOrNull()?.isBookmarked
-                ?: bookmarkService.isBookmarked(spotId)
+            // 서버 응답이 단일 출처. 로드 실패 시엔 알 수 없으므로 false.
+            _bookmarked.value = result.getOrNull()?.isBookmarked ?: false
         }
     }
 

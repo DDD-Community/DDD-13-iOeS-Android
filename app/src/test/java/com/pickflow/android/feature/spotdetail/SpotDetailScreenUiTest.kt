@@ -63,7 +63,6 @@ class SpotDetailScreenUiTest {
             isBookmarked = false,
             isMySpot = false,
         )
-        coEvery { bookmarkService.isBookmarked("s1") } returns false
         val vm = SpotDetailViewModel(
             spotService,
             bookmarkService,

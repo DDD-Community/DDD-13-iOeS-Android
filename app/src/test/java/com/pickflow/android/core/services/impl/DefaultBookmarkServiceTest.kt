@@ -10,9 +10,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import retrofit2.Retrofit
@@ -37,7 +35,7 @@ class DefaultBookmarkServiceTest {
     fun tearDown() = server.shutdown()
 
     @Test
-    fun `add sends POST and returns bookmarkCount, also updates local cache`() = runBlocking {
+    fun `add sends POST and returns bookmarkCount`() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(201).setBody(
                 """{"success":true,"code":"OK","message":"","data":{"bookmarkCount":7}}"""
@@ -47,8 +45,6 @@ class DefaultBookmarkServiceTest {
         val count = service.add("42")
 
         assertEquals(7L, count)
-        assertTrue(service.isBookmarked("42"))
-        assertEquals(setOf("42"), service.bookmarkedIds())
 
         val req = server.takeRequest()
         assertEquals("POST", req.method)
@@ -56,16 +52,15 @@ class DefaultBookmarkServiceTest {
     }
 
     @Test
-    fun `add rejects non-numeric id and leaves cache untouched`() = runBlocking {
+    fun `add rejects non-numeric id without hitting the server`() = runBlocking {
         assertThrows(IllegalArgumentException::class.java) {
             runBlocking { service.add("not-a-long") }
         }
-        assertFalse(service.isBookmarked("not-a-long"))
         assertEquals(0, server.requestCount)
     }
 
     @Test
-    fun `add propagates ApiException on success=false and leaves cache untouched`() = runBlocking {
+    fun `add propagates ApiException on success=false`() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(
                 """{"success":false,"code":"BOOK_001","message":"already bookmarked","data":null}"""
@@ -76,8 +71,5 @@ class DefaultBookmarkServiceTest {
             runBlocking { service.add("1") }
         }
         assertEquals("BOOK_001", ex.code)
-        assertFalse(service.isBookmarked("1"))
     }
-
-    // toggle 라우팅(add/remove)은 DefaultBookmarkServiceRemoveTest 에서 검증.
 }
