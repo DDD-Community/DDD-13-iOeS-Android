@@ -1,11 +1,12 @@
 # CI / CD 가이드
 
-GitHub Actions 워크플로 2종을 운영한다.
+GitHub Actions 워크플로를 운영한다.
 
 | 워크플로 | 파일 | 트리거 | 동작 |
 |---|---|---|---|
 | CI | `.github/workflows/ci.yml` | `develop`/`main` PR·푸시 | lint → 유닛 테스트 → `assembleDebug` |
 | CD | `.github/workflows/cd.yml` | `workflow_dispatch`(브랜치 수동 선택) | 서명된 release APK → Firebase App Distribution |
+| QA 배포 | `.github/workflows/firebase-distribution.yml` | `develop` 푸시·`workflow_dispatch` | debug APK(개발 서버) → Firebase App Distribution `qa` 그룹 — [firebase-distribution.md](./firebase-distribution.md) |
 
 ## CI
 

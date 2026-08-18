@@ -16,3 +16,6 @@ secrets.properties
 *.aab
 google-services.json
 
+
+# Firebase App Distribution 서비스 계정 키 — 절대 커밋 금지
+firebase-service-account.json
