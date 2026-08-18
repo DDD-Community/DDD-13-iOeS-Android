@@ -55,7 +55,40 @@ PV-59가 무드 필터를 태우는 엔드포인트는 **`GET /v1/spots`(리스�
 
 ---
 
-## 3. 정정 완료 — 야경 코드
+## 3. `theme` 계약 확정 (2026-08-18)
+
+BE PR #162 및 Swagger 확인 + 실측으로 확정됐다. **요청은 풀네임, 응답은 엔드포인트마다 다르다.**
+
+| 방향 | 엔드포인트 | 형식 | 값 |
+|---|---|---|---|
+| **요청** | `GET /v1/spots`<br>`GET /v1/spots/viewport` | 풀네임 (반복 파라미터) | `SUNSET` `YUNSEUL` `SUNLIGHT` `NIGHT_VIEW` |
+| **응답** | `GET /v1/spots` (리스트) | **2글자 코드** | `SS` `YS` `SL` `NV` |
+| **응답** | `GET /v1/spots/{id}`<br>`GET /v1/spots/{id}/preview` | 풀네임 | `YUNSEUL` 등 |
+
+| 무드 | 요청값 | 리스트 응답 |
+|---|---|---|
+| 노을 | `SUNSET` | `SS` |
+| 윤슬 | `YUNSEUL` | `YS` |
+| 햇살 | `SUNLIGHT` | `SL` |
+| 야경 | `NIGHT_VIEW` | `NV` |
+
+> ⚠️ **2글자 코드는 요청에 쓸 수 없다.** `?theme=SS` 는 400 `C002` 다.
+> 서버 내부에서 `SpotTheme.getCode()` 가 만드는 DB 코드일 뿐이다.
+> BE PR #162 본문과 Swagger 설명의 `?theme=SS&theme=YS` 예시는 실제 동작과 다르다.
+
+### 구현 대응
+
+| 방향 | 구현 | 비고 |
+|---|---|---|
+| 요청 | `SpotTheme.name` → `?theme=` 반복 | **enum 상수명이 곧 API 계약** |
+| 응답 | `parseTheme()` 가 8개 문자열 모두 수용 | 두 형식이 섞여 오므로 필수 |
+
+`SpotThemeParsingTest` 가 이 계약을 테스트로 고정한다 — 요청값 목록, 두 형식 파싱,
+4종 왕복. 계약이 바뀌면 테스트가 먼저 깨진다.
+
+---
+
+## 3-B. 정정 이력 — 야경 코드
 
 문서: *"테마 필터 (SUNSET=노을, YUNSEUL=윤슬, SUNLIGHT=햇살, **NIGHT_VIEW=야경**)"*
 

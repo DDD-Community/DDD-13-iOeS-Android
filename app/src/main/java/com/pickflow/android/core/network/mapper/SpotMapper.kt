@@ -45,12 +45,18 @@ fun SpotListResponseDto.toSpotPage(): SpotPage = SpotPage(
 /**
  * 서버 `theme` 문자열 → 도메인 [SpotTheme].
  *
- * 요청 파라미터는 풀네임 enum(`SUNSET`/`YUNSEUL`/`SUNLIGHT`/`NIGHT_VIEW`)인데
- * **응답 본문은 2글자 코드("SS"/"YS")로 내려온다**(API 문서 `GET /v1/spots` 응답 예시).
- * 어느 쪽으로 오든 같은 값으로 접히도록 둘 다 받는다.
+ * **요청은 풀네임, 응답은 엔드포인트마다 형식이 다르다** (2026-08-18 실측 + BE PR #162):
  *
- * 2글자 코드는 개발 서버 실응답으로 확인했다(2026-08-18):
- * `SUNSET`→`SS`, `YUNSEUL`→`YS`, `SUNLIGHT`→`SL`, `NIGHT_VIEW`→`NV`.
+ * | 방향 | 엔드포인트 | 형식 | 예 |
+ * |---|---|---|---|
+ * | 요청 | `/v1/spots`, `/v1/spots/viewport` | 풀네임 | `?theme=SUNSET&theme=YUNSEUL` |
+ * | 응답 | `/v1/spots` (리스트) | 2글자 코드 | `"SS"` |
+ * | 응답 | `/v1/spots/{id}`, `.../preview` | 풀네임 | `"YUNSEUL"` |
+ *
+ * 대응: 노을 `SS` · 윤슬 `YS` · 햇살 `SL` · 야경 `NV`.
+ * 서버 내부에서 `SpotTheme.getCode()` 가 만드는 값이라 요청에는 쓸 수 없다(400 C002).
+ *
+ * `"NIGHT"` 은 야경 코드가 `NIGHT_VIEW` 로 확정되기 전의 값이라 관용적으로 함께 받는다.
  */
 internal fun parseTheme(value: String): SpotTheme = when (value.uppercase()) {
     "YS", "YUNSEUL" -> SpotTheme.YUNSEUL
