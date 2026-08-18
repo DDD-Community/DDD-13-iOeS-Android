@@ -1,5 +1,6 @@
 package com.pickflow.android.feature.accountmanagement.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,8 +28,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 
@@ -163,16 +165,15 @@ private fun ProfileImageSection() {
                 modifier = Modifier.size(48.dp),
             )
         }
-        Box(
+        // 카메라 배지. 벡터 자체가 흰 원 배경 + 테두리를 포함하므로 별도 Box 로 감싸지 않는다.
+        // 멀티컬러라 tint 를 걸면 뭉개지므로 Icon 이 아니라 Image 로 그린다.
+        Image(
+            painter = painterResource(R.drawable.ic_my_camera),
+            contentDescription = null,
             modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(PickflowColors.gray80),
-            contentAlignment = Alignment.Center,
-        ) {
-            // iOS `camera.fill` 자리 — 이모지 placeholder.
-            Text(text = "📷", fontSize = 13.sp)
-        }
+                .size(36.dp)
+                .testTag("account-profile-camera"),
+        )
     }
 }
 
