@@ -7,6 +7,7 @@ import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.LocationService
+import com.pickflow.android.core.services.protocols.MoodFilterStore
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotSort
@@ -16,6 +17,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -24,14 +26,26 @@ class SpotListViewModel @Inject constructor(
     private val bookmarkService: BookmarkService,
     private val authService: AuthService,
     private val locationService: LocationService,
+    /** 지도와 공유하는 무드 선택. 어느 쪽에서 바꿔도 양쪽이 같이 움직인다. */
+    private val moodFilterStore: MoodFilterStore,
 ) : ViewModel() {
+
+    init {
+        // 지도에서 무드를 바꿨을 때 리스트도 따라와야 한다.
+        // drop(1) — 최초 값은 화면의 refresh() 가 이미 처리하므로 중복 요청을 막는다.
+        viewModelScope.launch {
+            moodFilterStore.selected.drop(1).collect { refresh() }
+        }
+    }
 
     private val _spots = MutableStateFlow<LoadState<List<Spot>>>(LoadState.Idle)
     val spots: StateFlow<LoadState<List<Spot>>> = _spots.asStateFlow()
 
-    /** 다중선택 무드 필터. 초기값·전체 해제는 빈 Set = 필터 없음(전체 스팟). */
-    private val _themes = MutableStateFlow<Set<SpotTheme>>(emptySet())
-    val themes: StateFlow<Set<SpotTheme>> = _themes.asStateFlow()
+    /**
+     * 다중선택 무드 필터. 빈 Set = 필터 없음(전체 스팟).
+     * 실제 상태는 [MoodFilterStore]가 들고 있어 지도와 공유된다.
+     */
+    val themes: StateFlow<Set<SpotTheme>> = moodFilterStore.selected
 
     // 기본 정렬은 북마크 순(RECOMMENDED). 가까운 순(DISTANCE)은 위치 권한이 있을 때만 선택 가능.
     private val _sort = MutableStateFlow(SpotSort.RECOMMENDED)
@@ -76,10 +90,7 @@ class SpotListViewModel @Inject constructor(
      *
      * [refresh]가 loadGeneration 을 올리므로 직전 필터의 늦은 응답은 폐기된다.
      */
-    fun toggleTheme(theme: SpotTheme) {
-        _themes.value = _themes.value.toMutableSet().apply { if (!add(theme)) remove(theme) }
-        refresh()
-    }
+    fun toggleTheme(theme: SpotTheme) = moodFilterStore.toggle(theme)
 
     fun selectSort(sort: SpotSort) {
         _sort.value = sort
@@ -134,7 +145,7 @@ class SpotListViewModel @Inject constructor(
             }
             val result = runCatching {
                 spotListService.fetch(
-                    themes = _themes.value,
+                    themes = moodFilterStore.selected.value,
                     page = nextPage,
                     coordinates = currentCoordinates,
                     sort = _sort.value,

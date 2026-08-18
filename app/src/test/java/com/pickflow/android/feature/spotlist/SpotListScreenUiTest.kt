@@ -10,6 +10,7 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import com.pickflow.android.common.designsystem.PickflowTheme
+import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.LocationService
@@ -47,7 +48,7 @@ class SpotListScreenUiTest {
             page = 0,
             hasNext = false,
         )
-        val vm = SpotListViewModel(listService, bookmarkService, authService(), mockk(relaxed = true))
+        val vm = SpotListViewModel(listService, bookmarkService, authService(), mockk(relaxed = true), InMemoryMoodFilterStore())
 
         composeRule.setContent {
             PickflowTheme {
@@ -63,7 +64,7 @@ class SpotListScreenUiTest {
         val listService = mockk<SpotListService>()
         val bookmarkService = mockk<BookmarkService>(relaxed = true)
         coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(items = emptyList(), page = 0, hasNext = false)
-        val vm = SpotListViewModel(listService, bookmarkService, authService(), mockk(relaxed = true))
+        val vm = SpotListViewModel(listService, bookmarkService, authService(), mockk(relaxed = true), InMemoryMoodFilterStore())
 
         composeRule.setContent {
             PickflowTheme {
@@ -85,6 +86,7 @@ class SpotListScreenUiTest {
             mockk<BookmarkService>(relaxed = true),
             authService(),
             mockk(relaxed = true),
+            InMemoryMoodFilterStore(),
         )
     }
 

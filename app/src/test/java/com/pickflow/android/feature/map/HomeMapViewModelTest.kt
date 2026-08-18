@@ -1,6 +1,7 @@
 package com.pickflow.android.feature.map
 
 import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
@@ -60,6 +61,7 @@ class HomeMapViewModelTest {
         mockk<AuthService>(relaxed = true),
         mockk<BookmarkService>(relaxed = true),
         mockk<ExternalAppLauncher>(relaxed = true),
+        InMemoryMoodFilterStore(),
     )
 
     @Test

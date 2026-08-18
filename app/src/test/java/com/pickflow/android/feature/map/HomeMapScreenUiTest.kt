@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.pickflow.android.common.designsystem.PickflowTheme
+import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
@@ -47,6 +48,7 @@ class HomeMapScreenUiTest {
             mockk<AuthService>(relaxed = true),
             mockk<BookmarkService>(relaxed = true),
             mockk<ExternalAppLauncher>(relaxed = true),
+        InMemoryMoodFilterStore(),
         )
     }
 
