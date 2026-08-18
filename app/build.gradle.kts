@@ -61,10 +61,11 @@ android {
         targetSdk = 35
         // 버전 규칙(docs/ci-cd.md §버전 규칙): versionName(마케팅)과 versionCode(빌드 넘버) 분리.
         // versionName 은 release-aab 워크플로가 태그 vX.Y.Z 에서 주입.
-        // versionCode 는 단조증가 정수 — 이 fallback 이 단일 출처이며 릴리스마다 +1 해 커밋한다.
-        // (과거 인코딩 스킴 X*1000000+Y*10000+Z*100+N 은 폐지. 이미 소모된 1000102 위에서 순차 증가.)
-        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1000103
-        versionName = System.getenv("VERSION_NAME") ?: "1.0.1"
+        // versionCode 는 단조증가 정수 — 이 fallback 이 단일 출처이며 릴리스마다 커밋해 갱신한다.
+        // 1.0.2 부터 XYZNN(versionName 3자리 + 빌드 차수 2자리) 형태로 읽되, 단조증가가 우선 제약이다.
+        // (1.0.1 배포본이 1000103 을 소모했으므로 그보다 큰 값이어야 한다.)
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1000201
+        versionName = System.getenv("VERSION_NAME") ?: "1.0.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         manifestPlaceholders["naverMapClientId"] = naverMapClientId
