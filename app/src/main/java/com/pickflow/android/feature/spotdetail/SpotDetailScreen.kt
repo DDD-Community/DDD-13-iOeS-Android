@@ -91,6 +91,7 @@ fun SpotDetailScreen(
 ) {
     val spotState by viewModel.spot.collectAsStateWithLifecycle()
     val bookmarked by viewModel.bookmarked.collectAsStateWithLifecycle()
+    val liked by viewModel.liked.collectAsStateWithLifecycle()
     val toastMessage by viewModel.toast.collectAsStateWithLifecycle()
     val isLoginRequired by viewModel.isLoginRequired.collectAsStateWithLifecycle()
     val reportDraft by viewModel.reportDraft.collectAsStateWithLifecycle()
@@ -143,8 +144,10 @@ fun SpotDetailScreen(
                 is LoadState.Loaded -> LoadedBody(
                     spot = state.value,
                     isBookmarked = bookmarked,
+                    isLiked = liked,
                     onRoute = { actionsViewModel.openInMap(state.value) },
                     onBookmark = viewModel::toggleBookmark,
+                    onLike = viewModel::toggleLike,
                     onOpenSpot = { isComingSoonSheetOpen = true },
                     onReport = { isReportSheetOpen = true },
                     onImageClick = { fullscreenImageUrl = state.value.imageUrl },
@@ -288,13 +291,15 @@ private fun ErrorBody(message: String) {
 private fun LoadedBody(
     spot: SpotDetail,
     isBookmarked: Boolean,
+    isLiked: Boolean,
     onRoute: () -> Unit,
     onBookmark: () -> Unit,
+    onLike: () -> Unit,
     onOpenSpot: () -> Unit,
     onReport: () -> Unit,
     onImageClick: () -> Unit,
 ) {
-    val data = spot.toDetailData(isBookmarked)
+    val data = spot.toDetailData(isBookmarked, isLiked)
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -308,9 +313,12 @@ private fun LoadedBody(
         SpotActionButtons(
             isMine = data.isMine,
             isBookmarked = isBookmarked,
+            isLikeable = data.isLikeable,
+            isLiked = isLiked,
             onRoute = onRoute,
             onBookmark = onBookmark,
             onOpenSpot = onOpenSpot,
+            onLike = onLike,
         )
         SpotRealTimeInfoSection(spot = data)
         ReportButton(onClick = onReport)

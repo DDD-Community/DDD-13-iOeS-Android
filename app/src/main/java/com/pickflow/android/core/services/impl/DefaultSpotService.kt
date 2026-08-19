@@ -4,6 +4,7 @@ import com.pickflow.android.core.network.api.SpotApi
 import com.pickflow.android.core.network.mapper.toSpotDetail
 import com.pickflow.android.core.network.mapper.toSpotPreview
 import com.pickflow.android.core.network.unwrap
+import com.pickflow.android.core.network.unwrapVoid
 import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotDetail
@@ -34,6 +35,10 @@ class DefaultSpotService @Inject constructor(
         ).unwrap().toSpotPreview()
     }
 
+    override suspend fun like(id: String) = spotApi.addLike(id.toLongIdOrThrow()).unwrapVoid()
+
+    override suspend fun unlike(id: String) = spotApi.removeLike(id.toLongIdOrThrow()).unwrapVoid()
+
     /**
      * TODO(Phase D-4): POST /v1/users/me/my-spots(MySpotService.create)로 이전. 그때 까지는
      * stub 동작 유지하여 기존 SpotRegistrationViewModel 흐름을 깨지 않는다.
@@ -48,5 +53,8 @@ class DefaultSpotService @Inject constructor(
         address = draft.address,
     )
 }
+
+private fun String.toLongIdOrThrow(): Long = toLongOrNull()
+    ?: throw IllegalArgumentException("spotId는 정수여야 합니다: $this")
 
 private fun SpotTheme.takeOrSunset(): SpotTheme = this

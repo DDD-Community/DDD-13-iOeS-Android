@@ -43,6 +43,10 @@ class SpotDetailViewModel @Inject constructor(
     private val _bookmarked = MutableStateFlow(false)
     val bookmarked: StateFlow<Boolean> = _bookmarked.asStateFlow()
 
+    /** 응답의 isLiked 로 시드하고, 사용자의 낙관적 토글이 그 위에 얹힌다. */
+    private val _liked = MutableStateFlow(false)
+    val liked: StateFlow<Boolean> = _liked.asStateFlow()
+
     private val _reportSubmitted = MutableStateFlow(false)
     val reportSubmitted: StateFlow<Boolean> = _reportSubmitted.asStateFlow()
 
@@ -84,6 +88,32 @@ class SpotDetailViewModel @Inject constructor(
             )
             // 서버 응답이 단일 출처. 로드 실패 시엔 알 수 없으므로 false.
             _bookmarked.value = result.getOrNull()?.isBookmarked ?: false
+            _liked.value = result.getOrNull()?.isLiked ?: false
+        }
+    }
+
+    /**
+     * 스팟 추천(좋아요) 토글. 북마크와 동일하게 낙관적 반영 + 실패 시 롤백.
+     * 추천 등록에만 토스트를 띄운다(해제는 조용히).
+     */
+    fun toggleLike() {
+        val current = (_spot.value as? LoadState.Loaded<SpotDetail>)?.value ?: return
+        viewModelScope.launch {
+            if (!authService.isLoggedIn()) {
+                _isLoginRequired.value = true
+                return@launch
+            }
+            val previousValue = _liked.value
+            _liked.value = !previousValue
+            runCatching {
+                val spotId = current.id.toString()
+                if (previousValue) spotService.unlike(spotId) else spotService.like(spotId)
+            }.onSuccess {
+                if (!previousValue) _toast.value = "이 스팟을 추천했어요."
+            }.onFailure {
+                _liked.value = previousValue
+                _toast.value = "추천에 실패했어요."
+            }
         }
     }
 

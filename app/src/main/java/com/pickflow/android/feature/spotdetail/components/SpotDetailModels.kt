@@ -25,6 +25,9 @@ data class SpotDetailData(
     val bookmarkCount: Int = 34,
     val isMine: Boolean = false,
     val isBookmarked: Boolean = false,
+    val isLiked: Boolean = false,
+    /** 추천 버튼 노출 여부. 서버 `isLikeable` 그대로. */
+    val isLikeable: Boolean = false,
     val address: String = "서울 동작구",
     /** 펼침 시 표시할 도로명 주소(없으면 null). */
     val addressRoad: String? = null,
@@ -51,7 +54,7 @@ data class SpotDetailData(
  * iOS `SpotDetailView`가 `SpotDetail` 도메인 + `pickflowDisplayTime` 헬퍼로
  * 즉석에서 만드는 값을 동일 자리에서 한 번에 만든다.
  */
-fun SpotDetail.toDetailData(isBookmarked: Boolean): SpotDetailData =
+fun SpotDetail.toDetailData(isBookmarked: Boolean, isLiked: Boolean = this.isLiked): SpotDetailData =
     SpotDetailData(
         name = name,
         theme = theme.toDetailTheme(),
@@ -59,6 +62,8 @@ fun SpotDetail.toDetailData(isBookmarked: Boolean): SpotDetailData =
         bookmarkCount = bookmarkCount.toInt(),
         isMine = isMySpot,
         isBookmarked = isBookmarked,
+        isLiked = isLiked,
+        isLikeable = isLikeable,
         address = address,
         distanceKm = null,
         hasImage = imageUrl?.isNotBlank() == true,
