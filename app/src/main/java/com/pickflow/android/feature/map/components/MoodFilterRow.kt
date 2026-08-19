@@ -71,9 +71,11 @@ fun MoodFilterRow(
 @Composable
 private fun RowScope.MoodCapsule(mood: MoodFilter, selected: Boolean, onClick: () -> Unit) {
     // 캡슐 자체는 코너로 clip 되므로, 신규 dot 은 clip 밖(형제)에 그려 모서리에 걸치게 둔다.
-    // 폭은 weight 로 가용 공간을 4등분하되 84dp 를 상한으로 둔다. 390dp 이상 기기에선 Figma 그대로
+    // 폭은 weight 로 가용 공간을 4등분하되 84dp 를 상한으로 둔다. 넓은 기기에선 Figma 그대로
     // 84dp 고, 360dp 처럼 좁은 기기에선 네 칩이 함께 76dp 로 줄어 마지막 칩이 잘리지 않는다.
-    Box(modifier = Modifier.weight(1f).widthIn(max = CAPSULE_MAX_WIDTH)) {
+    // fill = false 가 핵심 — 기본값(true)은 4등분한 폭을 고정 제약으로 내려보내서
+    // widthIn(max) 이 무시된다(411dp 기기에서 89dp 로 커지는 버그).
+    Box(modifier = Modifier.weight(1f, fill = false).widthIn(max = CAPSULE_MAX_WIDTH)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
