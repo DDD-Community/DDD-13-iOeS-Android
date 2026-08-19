@@ -1,7 +1,7 @@
 # Firebase App Distribution (debug QA 배포)
 
 `develop` 에 푸시하면 **개발 서버(`PICKFLOW_API_BASE_URL_DEV`)를 보는 debug APK** 가
-Firebase App Distribution 의 `qa` 테스터 그룹으로 자동 배포된다.
+Firebase App Distribution 의 `pickflow-qa` 테스터 그룹으로 자동 배포된다.
 
 | 배포 | 워크플로 | 빌드 | 서버 |
 |---|---|---|---|
@@ -54,7 +54,7 @@ Settings → Secrets and variables → Actions.
 `assembleDebug` 를 함께 적어야 한다.
 
 - **appId** — `app/google-services.json` 에서 생성된 `google_app_id` 리소스를 플러그인이 읽는다. 따로 적을 필요 없다.
-- **테스터 그룹** — `qa` (`app/build.gradle.kts` 의 `groups`)
+- **테스터 그룹** — `pickflow-qa` (`app/build.gradle.kts` 의 `groups`)
 - **릴리스 노트** — 최근 커밋 메시지(`git log -1 --pretty=%s`)
 
 그때그때 덮어쓰려면:
@@ -110,10 +110,10 @@ FIREBASE_SERVICE_ACCOUNT_FILE=firebase-service-account.json
 
 Firebase 콘솔 → **App Distribution** → **테스터 및 그룹** 탭.
 
-1. **그룹 추가** 로 `qa` 그룹을 만든다 (그룹 이름이 곧 별칭 — 워크플로가 쓰는 값).
+1. **그룹 추가** 로 `pickflow-qa` 그룹을 만든다 (그룹 이름이 곧 별칭 — 워크플로가 쓰는 값).
 2. 그룹에 테스터 이메일을 추가한다. 초대 메일이 발송되고, 테스터는 기기에서
    초대를 수락한 뒤 App Tester 앱 또는 링크로 설치한다.
-3. 그룹 이름을 바꾸면 `app/build.gradle.kts` 의 `groups = "qa"` 도 함께 바꾼다.
+3. 그룹 이름을 바꾸면 `app/build.gradle.kts` 의 `groups = "pickflow-qa"` 도 함께 바꾼다.
 
 빌드마다 다른 그룹으로 보내려면 워크플로를 **Actions → Firebase App Distribution (debug)
 → Run workflow** 로 수동 실행하면서 그룹을 입력한다.
