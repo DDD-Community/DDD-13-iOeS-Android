@@ -407,6 +407,9 @@ internal fun ThemeChipGroup(selected: SpotTheme?, onToggle: (SpotTheme) -> Unit)
                     // 고정 제약으로 내려보내 상한을 무력화한다(MoodFilterRow 와 동일 이슈).
                     .weight(1f, fill = false)
                     .widthIn(max = THEME_CHIP_MAX_WIDTH)
+                    // fillMaxWidth 가 있어야 칩이 배분받은 폭을 꽉 채운다. 없으면 콘텐츠 폭에
+                    // 붙어버려 라벨 글자폭 차이만큼 칩마다 폭이 달라지고 좌우 여백이 사라진다.
+                    .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
                     .background(PickflowColors.gray90)
                     .then(
