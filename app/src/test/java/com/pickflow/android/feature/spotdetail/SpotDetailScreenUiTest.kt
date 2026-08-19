@@ -117,7 +117,11 @@ class SpotDetailScreenUiTest {
         composeRule.onNodeWithTag("spotdetail-error").assertIsDisplayed()
     }
 
-    private fun spot(isLikeable: Boolean, isLiked: Boolean = false) = SpotDetail(
+    private fun spot(
+        isLikeable: Boolean,
+        isLiked: Boolean = false,
+        likeCount: Long = 0L,
+    ) = SpotDetail(
         id = 1L,
         name = "상세 스팟",
         comment = "",
@@ -142,6 +146,7 @@ class SpotDetailScreenUiTest {
         isMySpot = false,
         isLikeable = isLikeable,
         isLiked = isLiked,
+        likeCount = likeCount,
     )
 
     private fun viewModel(spotService: SpotService, authService: AuthService) = SpotDetailViewModel(
@@ -214,5 +219,16 @@ class SpotDetailScreenUiTest {
 
         composeRule.onNodeWithTag("detail-like").performClick()
         composeRule.onNodeWithTag("spotdetail-login-overlay").assertIsDisplayed()
+    }
+
+    @Test
+    fun header_shows_theme_and_like_count_from_response() {
+        val spotService = mockk<SpotService>()
+        coEvery { spotService.spot("1") } returns spot(isLikeable = true, likeCount = 7)
+
+        render(viewModel(spotService, mockk(relaxed = true)))
+
+        composeRule.onNodeWithText("노을 · 추천 7").assertIsDisplayed()
+        composeRule.onNodeWithText("노을 · 북마크 0").assertDoesNotExist()
     }
 }

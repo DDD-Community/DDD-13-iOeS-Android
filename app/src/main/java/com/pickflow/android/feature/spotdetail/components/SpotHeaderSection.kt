@@ -19,7 +19,7 @@ import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 
 /**
- * iOS `SpotHeaderSection` 1:1 이식 — 이름/MY 배지 + 테마·북마크 + 코멘트 박스.
+ * iOS `SpotHeaderSection` 1:1 이식 — 이름/MY 배지 + 테마·추천 수 + 코멘트 박스.
  */
 @Composable
 fun SpotHeaderSection(spot: SpotDetailData, modifier: Modifier = Modifier) {
@@ -52,7 +52,7 @@ fun SpotHeaderSection(spot: SpotDetailData, modifier: Modifier = Modifier) {
 
         Text(
             text = if (spot.isMine) spot.theme.displayName
-            else "${spot.theme.displayName} · 북마크 ${spot.bookmarkCount}",
+            else "${spot.theme.displayName} · 추천 ${spot.likeCount}",
             style = PickflowTypography.bodySmall,
             color = PickflowColors.gray30,
         )
