@@ -50,6 +50,17 @@ class HomeMapMoodFilterSnapshotTest {
     @Test
     fun moodfilter_all_selected_dark() = moodRow(MoodFilter.entries.toSet())
 
+    /**
+     * 좁은 기기(360dp) 회귀 방지 — 84dp 고정일 때 4×84+간격24+패딩32=392dp 라
+     * 마지막 '야경' 칩이 잘리고 라벨이 두 줄로 쪼개졌다(hotfix). 네 칩이 같은 폭으로
+     * 줄어들고 라벨이 한 줄로 남는지 확인한다.
+     */
+    @Test
+    fun moodfilter_narrow_360dp_dark() {
+        paparazzi.unsafeUpdateConfig(device(360, 56))
+        moodRow(setOf(MoodFilter.Night))
+    }
+
     /** PV59-ARC1 — 저장 탭 카드 셀의 무드 배지 4종. */
     @Test
     fun spotlist_cell_moods_all_four_dark() {
