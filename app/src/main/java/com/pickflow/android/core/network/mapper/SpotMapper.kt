@@ -82,6 +82,9 @@ fun SpotDetailResponseDto.toSpotDetail(): SpotDetail = SpotDetail(
     bookmarkCount = bookmarkCount,
     isBookmarked = isBookmarked,
     isMySpot = isMySpot,
+    likeCount = likeCount,
+    isLiked = isLiked,
+    isLikeable = isLikeable,
 )
 
 internal fun parseSky(value: String): WeatherSky = when (value.uppercase()) {

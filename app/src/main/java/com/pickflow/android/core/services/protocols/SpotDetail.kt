@@ -30,6 +30,10 @@ data class SpotDetail(
     val bookmarkCount: Long,
     val isBookmarked: Boolean,
     val isMySpot: Boolean,
+    val likeCount: Long = 0L,
+    val isLiked: Boolean = false,
+    /** 추천 버튼 노출 여부. 서버가 내려주는 값을 그대로 따른다. */
+    val isLikeable: Boolean = false,
 )
 
 data class SpotWeather(

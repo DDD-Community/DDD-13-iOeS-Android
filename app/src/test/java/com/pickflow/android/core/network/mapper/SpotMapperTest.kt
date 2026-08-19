@@ -1,5 +1,6 @@
 package com.pickflow.android.core.network.mapper
 
+import com.pickflow.android.core.network.dto.spot.SpotDetailResponseDto
 import com.pickflow.android.core.network.dto.spot.SpotItemDto
 import com.pickflow.android.core.network.dto.spot.SpotSummaryDto
 import com.pickflow.android.core.services.protocols.SpotTheme
@@ -70,5 +71,50 @@ class SpotMapperTest {
         assertTrue(spot.isBookmarked)
         assertEquals(34L, spot.likeCount)
         assertFalse(spot.isLiked)
+    }
+
+    @Test
+    fun `SpotDetailResponseDto decodes status and like fields from the server payload`() {
+        // GET /v1/spots/28 실제 응답에서 기존 DTO 에 없던 필드만 추린 것.
+        val payload = """
+            {
+              "spotId": 28,
+              "name": "경복궁",
+              "theme": "YUNSEUL",
+              "bookmarkCount": 4,
+              "isBookmarked": false,
+              "isMySpot": false,
+              "status": "PUBLISHED",
+              "isCurated": true,
+              "likeCount": 7,
+              "isLiked": true,
+              "isLikeable": true,
+              "rejection": null
+            }
+        """.trimIndent()
+
+        val dto = json.decodeFromString<SpotDetailResponseDto>(payload)
+
+        assertEquals("PUBLISHED", dto.status)
+        assertTrue(dto.isCurated)
+        assertEquals(7L, dto.likeCount)
+        assertTrue(dto.isLiked)
+        assertTrue(dto.isLikeable)
+    }
+
+    @Test
+    fun `toSpotDetail carries like fields`() {
+        val detail = SpotDetailResponseDto(
+            spotId = 28,
+            name = "경복궁",
+            theme = "YUNSEUL",
+            likeCount = 7,
+            isLiked = true,
+            isLikeable = true,
+        ).toSpotDetail()
+
+        assertEquals(7L, detail.likeCount)
+        assertTrue(detail.isLiked)
+        assertTrue(detail.isLikeable)
     }
 }
