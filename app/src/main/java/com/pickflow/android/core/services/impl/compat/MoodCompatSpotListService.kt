@@ -24,10 +24,6 @@ class MoodCompatSpotListService @Inject constructor(
         coordinates: Coordinates?,
         sort: SpotSort,
     ): SpotPage {
-        if (MoodBackendCompat.BACKEND_SUPPORTS_MOOD_V2) {
-            return delegate.fetch(themes, page, coordinates, sort)
-        }
-
         val serverPage = if (MoodBackendCompat.shouldSkipNetwork(themes)) {
             null
         } else {

@@ -68,18 +68,10 @@ PV-85(`3e4ed9d`)로 **debug=개발 서버, release=운영 서버**로 갈렸다.
 
 ## 3. 되돌리는 법
 
-### 3-1. 가장 빠른 확인 — 플래그만 뒤집기
+### 3-1. 제거 (유일한 경로)
 
-```kotlin
-// core/services/impl/compat/MoodBackendCompat.kt
-const val BACKEND_SUPPORTS_MOOD_V2 = true
-```
-
-데코레이터가 즉시 pass-through 로 바뀌어 원래 설계대로 서버에 그대로 위임한다.
-`MoodBackendCompatTest.flag is still off...` 테스트가 **의도적으로 실패**하며
-"이제 지울 차례"라고 알려준다.
-
-### 3-2. 완전 제거 (권장)
+**부분 비활성화 스위치는 두지 않는다.** 반쯤 켜진 상태가 생기면 지금 어떤 동작인지
+헷갈리기 때문이다. 되돌리는 방법은 이 계층을 통째로 지우는 것 하나뿐이다.
 
 이 폴백은 **독립 커밋**으로 분리돼 있다. 커밋 제목으로 찾아 되돌린다.
 
@@ -107,7 +99,7 @@ git revert $(git log --format=%H --grep="백엔드 미구현 임시 폴백" -1)
 
 `compat/` 디렉터리가 통째로 사라지면 끝이다. 프로덕션 로직은 이 계층 밖으로 새지 않았다.
 
-### 3-3. 함께 확인할 것 — 서버 enum 코드
+### 3-2. 함께 확인할 것 — 서버 enum 코드
 
 **2026-08-14 API 문서로 확정됨**: 햇살 = `SUNLIGHT`, 야경 = **`NIGHT_VIEW`**.
 초기 가정이던 `NIGHT` 는 정정 완료(`docs/PV-59/api-spec-mapping.md` §3).
@@ -137,7 +129,7 @@ git revert $(git log --format=%H --grep="백엔드 미구현 임시 폴백" -1)
    # SS 와 YS 가 **둘 다** 나와야 진짜 다중 필터다. SS만 나오면 아직 미구현이다.
    ```
 
-2. 위가 전부 통과하면 §3-2 로 제거한다.
+2. 위가 전부 통과하면 §3-1 로 제거한다.
 3. `./gradlew :app:testDebugUnitTest` 그린 확인.
 4. 에뮬레이터에서 무드 2개 선택 후 OkHttp 로그에 `theme=A&theme=B` 가 나가고
    응답이 200인지, 결과에 두 무드가 섞여 있는지 확인한다.

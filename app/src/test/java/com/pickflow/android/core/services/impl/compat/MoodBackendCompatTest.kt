@@ -154,14 +154,6 @@ class MoodBackendCompatTest {
         )
     }
 
-    @Test
-    fun `flag is still off - flip it and delete this layer when the backend ships multi filter`() {
-        assertFalse(
-            MoodBackendCompat.BACKEND_SUPPORTS_MOOD_V2,
-            "다중 필터까지 지원되면 이 호환 계층을 삭제할 차례다 — docs/PV-59/backend-compat-rollback.md",
-        )
-    }
-
     private fun box() = ViewportBox(
         topLeft = Coordinates(37.60, 126.90),
         topRight = Coordinates(37.60, 127.10),

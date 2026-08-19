@@ -35,16 +35,10 @@ import com.pickflow.android.core.services.protocols.ViewportBox
  *
  * ## 되돌리는 법
  *
- * [BACKEND_SUPPORTS_MOOD_V2]를 `true`로 바꾸면 데코레이터가 즉시 통과(pass-through)로 바뀐다.
- * 완전 제거 절차는 `docs/PV-59/backend-compat-rollback.md` 참고.
+ * **부분 비활성화 스위치는 두지 않는다.** 백엔드가 준비되면 이 계층을 통째로 지우는 것이
+ * 유일한 경로다 — 절차는 `docs/PV-59/backend-compat-rollback.md` 참고.
  */
 object MoodBackendCompat {
-
-    /**
-     * 백엔드가 신규 무드 2종 + 다중 `theme` 파라미터를 지원하면 `true`로 바꾼다.
-     * `true`가 되는 순간 이 파일의 모든 우회 로직이 비활성화되고 원래 설계대로 동작한다.
-     */
-    const val BACKEND_SUPPORTS_MOOD_V2 = false
 
     /**
      * 서버가 `theme` 쿼리로 받아주는 값. 나머지를 보내면 400 이 온다.

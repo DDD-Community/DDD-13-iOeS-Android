@@ -22,10 +22,6 @@ class MoodCompatSpotMapService @Inject constructor(
         box: ViewportBox,
         themes: Set<SpotTheme>,
     ): List<SpotMapMarker> {
-        if (MoodBackendCompat.BACKEND_SUPPORTS_MOOD_V2) {
-            return delegate.fetchInViewport(box, themes)
-        }
-
         val serverMarkers = if (MoodBackendCompat.shouldSkipNetwork(themes)) {
             emptyList()
         } else {
