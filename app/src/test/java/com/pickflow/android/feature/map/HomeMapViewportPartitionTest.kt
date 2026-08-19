@@ -1,6 +1,7 @@
 package com.pickflow.android.feature.map
 
 import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.Coordinates
@@ -14,6 +15,7 @@ import com.pickflow.android.core.services.protocols.SpotService
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.core.services.protocols.ViewportBox
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -58,6 +60,7 @@ class HomeMapViewportPartitionTest {
         mockk<AuthService>(relaxed = true),
         mockk<BookmarkService>(relaxed = true),
         mockk<ExternalAppLauncher>(relaxed = true),
+        InMemoryMoodFilterStore(),
     )
 
     private fun box() = ViewportBox(
@@ -129,13 +132,13 @@ class HomeMapViewportPartitionTest {
 
     @Test
     fun `selectMood toggles theme and reissues viewport`() = runTest(testDispatcher) {
-        coEvery { mapService.fetchInViewport(any(), SpotTheme.SUNSET) } returns emptyList()
-        coEvery { mapService.fetchInViewport(any(), null) } returns emptyList()
+        coEvery { mapService.fetchInViewport(any(), any()) } returns emptyList()
         val viewModel = vm()
         viewModel.onViewportChanged(box(), 12)
         advanceUntilIdle()
         viewModel.selectMood(MoodFilter.Sunset)
         advanceUntilIdle()
-        assertEquals(MoodFilter.Sunset, viewModel.selectedMood.value)
+        assertEquals(setOf(MoodFilter.Sunset), viewModel.selectedMoods.value)
+        coVerify { mapService.fetchInViewport(any(), setOf(SpotTheme.SUNSET)) }
     }
 }

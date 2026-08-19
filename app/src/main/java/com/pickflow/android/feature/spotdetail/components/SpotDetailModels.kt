@@ -13,8 +13,10 @@ import com.pickflow.android.core.services.protocols.WeatherSky
  * 프로덕션 모델과 별개로, 스냅샷이 필요로 하는 필드만 평탄화해 담는다.
  */
 enum class SpotDetailTheme(val displayName: String) {
-    Sunset("노을"),
+    Sunlight("햇살"),
     Reflection("윤슬"),
+    Sunset("노을"),
+    Night("야경"),
 }
 
 /** iOS `SpotDetail.fixture()` 1:1 대응. */
@@ -72,8 +74,10 @@ fun SpotDetail.toDetailData(isBookmarked: Boolean): SpotDetailData =
     )
 
 private fun SpotTheme.toDetailTheme(): SpotDetailTheme = when (this) {
-    SpotTheme.SUNSET -> SpotDetailTheme.Sunset
+    SpotTheme.SUNLIGHT -> SpotDetailTheme.Sunlight
     SpotTheme.YUNSEUL -> SpotDetailTheme.Reflection
+    SpotTheme.SUNSET -> SpotDetailTheme.Sunset
+    SpotTheme.NIGHT_VIEW -> SpotDetailTheme.Night
 }
 
 /**

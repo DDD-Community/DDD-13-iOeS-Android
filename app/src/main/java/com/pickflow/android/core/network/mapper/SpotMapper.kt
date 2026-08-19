@@ -42,10 +42,27 @@ fun SpotListResponseDto.toSpotPage(): SpotPage = SpotPage(
     hasNext = hasNext,
 )
 
-// 서버는 endpoint 에 따라 2글자 코드("YS"/"SS") 또는 풀네임("YUNSEUL"/"SUNSET")으로 응답한다.
+/**
+ * 서버 `theme` 문자열 → 도메인 [SpotTheme].
+ *
+ * **요청은 풀네임, 응답은 엔드포인트마다 형식이 다르다** (2026-08-18 실측 + BE PR #162):
+ *
+ * | 방향 | 엔드포인트 | 형식 | 예 |
+ * |---|---|---|---|
+ * | 요청 | `/v1/spots`, `/v1/spots/viewport` | 풀네임 | `?theme=SUNSET&theme=YUNSEUL` |
+ * | 응답 | `/v1/spots` (리스트) | 2글자 코드 | `"SS"` |
+ * | 응답 | `/v1/spots/{id}`, `.../preview` | 풀네임 | `"YUNSEUL"` |
+ *
+ * 대응: 노을 `SS` · 윤슬 `YS` · 햇살 `SL` · 야경 `NV`.
+ * 서버 내부에서 `SpotTheme.getCode()` 가 만드는 값이라 요청에는 쓸 수 없다(400 C002).
+ *
+ * `"NIGHT"` 은 야경 코드가 `NIGHT_VIEW` 로 확정되기 전의 값이라 관용적으로 함께 받는다.
+ */
 internal fun parseTheme(value: String): SpotTheme = when (value.uppercase()) {
     "YS", "YUNSEUL" -> SpotTheme.YUNSEUL
     "SS", "SUNSET" -> SpotTheme.SUNSET
+    "SL", "SUNLIGHT" -> SpotTheme.SUNLIGHT
+    "NV", "NIGHT_VIEW", "NIGHT" -> SpotTheme.NIGHT_VIEW
     else -> SpotTheme.SUNSET
 }
 
