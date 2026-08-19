@@ -10,7 +10,7 @@ on:
       tester_groups:
         description: "배포할 Firebase 테스터 그룹(쉼표 구분)"
         required: true
-        default: "qa"
+        default: "pickflow-qa"
 
 concurrency:
   group: firebase-distribution-${{ github.ref }}
@@ -73,7 +73,7 @@ jobs:
           echo "FIREBASE_SERVICE_ACCOUNT_FILE=$RUNNER_TEMP/firebase-service-account.json" >> "$GITHUB_ENV"
 
       # appId·서비스 계정 경로는 app/build.gradle.kts 가 환경변수에서 읽는다.
-      # 릴리스 노트/테스터 그룹은 build.gradle.kts 기본값(최근 커밋 메시지 / qa)을 쓰되,
+      # 릴리스 노트/테스터 그룹은 build.gradle.kts 기본값(최근 커밋 메시지 / pickflow-qa)을 쓰되,
       # workflow_dispatch 로 그룹을 지정하면 --groups 로 덮어쓴다.
       - name: Assemble & distribute debug APK
         env:

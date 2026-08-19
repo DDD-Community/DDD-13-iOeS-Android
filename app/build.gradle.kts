@@ -84,8 +84,8 @@ android {
         // versionCode 는 단조증가 정수 — 이 fallback 이 단일 출처이며 릴리스마다 커밋해 갱신한다.
         // 1.0.2 부터 XYZNN(versionName 3자리 + 빌드 차수 2자리) 형태로 읽되, 단조증가가 우선 제약이다.
         // (1.0.1 배포본이 1000103 을 소모했으므로 그보다 큰 값이어야 한다.)
-        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1000201
-        versionName = System.getenv("VERSION_NAME") ?: "1.0.2"
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1010001
+        versionName = System.getenv("VERSION_NAME") ?: "1.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         manifestPlaceholders["naverMapClientId"] = naverMapClientId
@@ -120,7 +120,7 @@ android {
                     appId = firebaseAppId
                 }
                 artifactType = "APK"
-                groups = "qa"
+                groups = "pickflow-qa"
                 releaseNotes = latestCommitMessage
                 if (firebaseCredentialsFile.isNotBlank()) {
                     serviceCredentialsFile = firebaseCredentialsFile
