@@ -3,8 +3,10 @@ package com.pickflow.android.feature.spotregistration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
 import com.android.resources.Density
@@ -39,6 +41,23 @@ class SpotRegistrationThemeChipSnapshotTest {
     @Test
     fun registration_theme_chips_night_selected_dark() = chips(SpotTheme.NIGHT_VIEW)
 
+    /**
+     * 좁은 기기(360dp) 회귀 방지 — 칩이 콘텐츠 폭(80dp) 고정이라
+     * 4×80 + 간격 3×12 = 356dp 가 필요해 가용폭 328dp 를 넘겼고 '야경' 이 밀렸다.
+     */
+    @Test
+    fun registration_theme_chips_narrow_360dp_dark() {
+        paparazzi.unsafeUpdateConfig(device(360, 64))
+        chips(SpotTheme.NIGHT_VIEW)
+    }
+
+    /** 최소 폭(320dp) — 가로 패딩이 더 줄어도 아이콘·라벨이 온전한지 확인한다. */
+    @Test
+    fun registration_theme_chips_narrow_320dp_dark() {
+        paparazzi.unsafeUpdateConfig(device(320, 64))
+        chips(null)
+    }
+
     private fun chips(selected: SpotTheme?) {
         paparazzi.snapshot {
             PickflowTheme {
@@ -46,7 +65,10 @@ class SpotRegistrationThemeChipSnapshotTest {
                     modifier = Modifier.fillMaxSize().background(PickflowColors.gray95),
                     contentAlignment = Alignment.Center,
                 ) {
-                    ThemeChipGroup(selected = selected, onToggle = {})
+                    // 실제 등록 폼과 동일한 좌우 16dp 여백 안에서 렌더한다(SpotRegistrationScreen).
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        ThemeChipGroup(selected = selected, onToggle = {})
+                    }
                 }
             }
         }

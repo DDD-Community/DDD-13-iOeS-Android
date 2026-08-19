@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
@@ -383,6 +384,8 @@ private fun LabeledSection(title: String, content: @Composable () -> Unit) {
  *
  * 사양(Figma `1:44480` on 상태):
  * - 칩: 패딩 12×8, 코너 8, 배경 `gray90`(#1E2124), 아이콘–라벨 간격 6
+ *   — 가로 패딩은 고정이 아니라 남는 공간이다. 4개를 `weight` 로 균등 분배하고 내용을
+ *   가운데 정렬해, 390dp 에서 Figma 와 같은 12dp 가 나오고 좁은 기기에선 함께 줄어든다.
  * - 아이콘 20dp, 라벨 `bodyMediumBold`(15sp), 라벨색 `gray0` 고정
  * - 선택 시에만 `sunsetOrange` 1dp 보더 (미선택은 보더 없음)
  * - 칩 간격 12
@@ -392,11 +395,18 @@ private fun LabeledSection(title: String, content: @Composable () -> Unit) {
  */
 @Composable
 internal fun ThemeChipGroup(selected: SpotTheme?, onToggle: (SpotTheme) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         SpotTheme.entries.forEach { t ->
             val isSelected = selected == t
             Row(
                 modifier = Modifier
+                    // fill = false 여야 widthIn(max) 이 먹는다 — 기본값(true)은 4등분한 폭을
+                    // 고정 제약으로 내려보내 상한을 무력화한다(MoodFilterRow 와 동일 이슈).
+                    .weight(1f, fill = false)
+                    .widthIn(max = THEME_CHIP_MAX_WIDTH)
                     .clip(RoundedCornerShape(8.dp))
                     .background(PickflowColors.gray90)
                     .then(
@@ -407,9 +417,9 @@ internal fun ThemeChipGroup(selected: SpotTheme?, onToggle: (SpotTheme) -> Unit)
                         },
                     )
                     .clickable { onToggle(t) }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
             ) {
                 Image(
                     painter = androidx.compose.ui.res.painterResource(t.iconRes()),
@@ -419,6 +429,10 @@ internal fun ThemeChipGroup(selected: SpotTheme?, onToggle: (SpotTheme) -> Unit)
                 Text(
                     text = t.label(),
                     style = PickflowTypography.bodyMediumBold,
+                    // 폭이 모자라도 '야경' 이 두 줄로 쪼개지지 않게 한 줄 고정.
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip,
+                    softWrap = false,
                     color = PickflowColors.gray0,
                 )
             }
@@ -514,3 +528,6 @@ private fun SpotTheme.iconRes(): Int = when (this) {
     SpotTheme.SUNSET -> R.drawable.ic_sunset
     SpotTheme.NIGHT_VIEW -> R.drawable.ic_night
 }
+
+/** 사진 카테고리 칩 폭 상한 — Figma 콘텐츠 폭(패딩 12 + 아이콘 20 + 간격 6 + 라벨 + 패딩 12). */
+private val THEME_CHIP_MAX_WIDTH = 80.dp
