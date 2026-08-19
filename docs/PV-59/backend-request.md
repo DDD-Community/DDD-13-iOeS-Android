@@ -236,7 +236,13 @@ viewport를 쓰도록 변경) **급한 요청은 아닙니다.** 참고만 부�
 | 빈 값 | `null`/빈 리스트 = 필터 없음 | 빈 Set → 파라미터 미부착 ✅ |
 | 대상 | `/v1/spots` + `/v1/spots/viewport` | 양쪽 다 대응 ✅ |
 
-### ⚠️ 다만 예시가 틀렸습니다 — 전달 필요
+### ⚠️ 다만 Swagger 예시가 틀렸습니다 — **백엔드 확인 완료(2026-08-19)**
+
+> 백엔드에 확인한 결과 **다중 전달도 요청값은 풀네임**이라고 회신받았다.
+> 즉 `?theme=SUNSET&theme=YUNSEUL` 이 맞고, Swagger 의 `?theme=SS&theme=YS` 예시가
+> 잘못된 것이다. **안드로이드는 이미 풀네임으로 보내고 있어 변경 사항이 없다.**
+> 남은 것은 Swagger 문구 수정뿐이며, 다른 클라이언트(iOS)가 오해하지 않도록 필요하다.
+
 
 PR 본문과 **Swagger `@Parameter` 설명**에 `?theme=SS&theme=YS` 로 적혀 있는데,
 컨트롤러가 `@RequestParam List<SpotTheme> theme` 이라 Spring 이 **enum 상수명**으로 바인딩합니다.

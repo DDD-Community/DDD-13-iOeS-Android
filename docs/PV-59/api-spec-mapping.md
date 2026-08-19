@@ -72,6 +72,7 @@ BE PR #162 및 Swagger 확인 + 실측으로 확정됐다. **요청은 풀네임
 | 햇살 | `SUNLIGHT` | `SL` |
 | 야경 | `NIGHT_VIEW` | `NV` |
 
+> ✅ **단일이든 다중이든 요청값은 항상 풀네임이다** (2026-08-19 백엔드 확인).
 > ⚠️ **2글자 코드는 요청에 쓸 수 없다.** `?theme=SS` 는 400 `C002` 다.
 > 서버 내부에서 `SpotTheme.getCode()` 가 만드는 DB 코드일 뿐이다.
 > BE PR #162 본문과 Swagger 설명의 `?theme=SS&theme=YS` 예시는 실제 동작과 다르다.
