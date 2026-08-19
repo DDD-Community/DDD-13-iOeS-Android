@@ -375,19 +375,36 @@ private fun LabeledSection(title: String, content: @Composable () -> Unit) {
     }
 }
 
+/**
+ * 사진 카테고리 칩 — Figma `Btn-tag` 컴포넌트 세트(`1:46095`) 1:1.
+ *
+ * **단독 선택**이다(탐색 탭 무드 필터의 다중선택과 다르다). 그 외 시각 사양은
+ * 무드 캡슐과 같은 규칙을 따른다 — 선택 여부는 **보더 유무로만** 구분하고 라벨색은 고정이다.
+ *
+ * 사양(Figma `1:44480` on 상태):
+ * - 칩: 패딩 12×8, 코너 8, 배경 `gray90`(#1E2124), 아이콘–라벨 간격 6
+ * - 아이콘 20dp, 라벨 `bodyMediumBold`(15sp), 라벨색 `gray0` 고정
+ * - 선택 시에만 `sunsetOrange` 1dp 보더 (미선택은 보더 없음)
+ * - 칩 간격 12
+ *
+ * stateless — Paparazzi 스냅샷이 직접 렌더한다(`SpotRegistrationThemeChipSnapshotTest`).
+ * 등록 폼은 로그인이 필요해 비회원 상태의 에뮬레이터로는 진입할 수 없기 때문이다.
+ */
 @Composable
-private fun ThemeChipGroup(selected: SpotTheme?, onToggle: (SpotTheme) -> Unit) {
+internal fun ThemeChipGroup(selected: SpotTheme?, onToggle: (SpotTheme) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         SpotTheme.entries.forEach { t ->
             val isSelected = selected == t
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(PickflowColors.spotInputBackground)
-                    .border(
-                        width = if (isSelected) 1.5.dp else 1.dp,
-                        color = if (isSelected) PickflowColors.spotOrange else PickflowColors.spotChipBorder,
-                        shape = RoundedCornerShape(8.dp),
+                    .background(PickflowColors.gray90)
+                    .then(
+                        if (isSelected) {
+                            Modifier.border(1.dp, PickflowColors.sunsetOrange, RoundedCornerShape(8.dp))
+                        } else {
+                            Modifier
+                        },
                     )
                     .clickable { onToggle(t) }
                     .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -402,7 +419,7 @@ private fun ThemeChipGroup(selected: SpotTheme?, onToggle: (SpotTheme) -> Unit) 
                 Text(
                     text = t.label(),
                     style = PickflowTypography.bodyMediumBold,
-                    color = if (isSelected) PickflowColors.gray0 else PickflowColors.spotSecondaryText,
+                    color = PickflowColors.gray0,
                 )
             }
         }
@@ -492,6 +509,8 @@ private fun CountedInput(
 }
 
 private fun SpotTheme.iconRes(): Int = when (this) {
-    SpotTheme.SUNSET -> R.drawable.ic_sunset
+    SpotTheme.SUNLIGHT -> R.drawable.ic_sunny
     SpotTheme.YUNSEUL -> R.drawable.ic_reflection
+    SpotTheme.SUNSET -> R.drawable.ic_sunset
+    SpotTheme.NIGHT_VIEW -> R.drawable.ic_night
 }

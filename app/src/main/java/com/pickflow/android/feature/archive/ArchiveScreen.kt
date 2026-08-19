@@ -567,6 +567,8 @@ private fun ToastOverlay(message: String) {
 }
 
 private fun SpotTheme.toMood(): SpotListMood = when (this) {
-    SpotTheme.SUNSET -> SpotListMood.Sunset
+    SpotTheme.SUNLIGHT -> SpotListMood.Sunlight
     SpotTheme.YUNSEUL -> SpotListMood.Reflection
+    SpotTheme.SUNSET -> SpotListMood.Sunset
+    SpotTheme.NIGHT_VIEW -> SpotListMood.Night
 }

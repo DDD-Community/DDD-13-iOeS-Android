@@ -14,7 +14,7 @@ class DefaultSpotMapService @Inject constructor(
 ) : SpotMapService {
     override suspend fun fetchInViewport(
         box: ViewportBox,
-        theme: SpotTheme?,
+        themes: Set<SpotTheme>,
     ): List<SpotMapMarker> = spotApi.getSpotsInViewport(
         // 서버 검증: 위/경도 소수점 6자리 한도.
         topLeftLat = box.topLeft.latitude.toSixDecimal(),
@@ -25,6 +25,6 @@ class DefaultSpotMapService @Inject constructor(
         bottomLeftLng = box.bottomLeft.longitude.toSixDecimal(),
         bottomRightLat = box.bottomRight.latitude.toSixDecimal(),
         bottomRightLng = box.bottomRight.longitude.toSixDecimal(),
-        theme = theme?.name,
+        theme = themes.toQueryValues(),
     ).unwrap().spots.map { it.toMapMarker() }
 }

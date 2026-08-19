@@ -1,6 +1,7 @@
 package com.pickflow.android.feature.map
 
 import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
@@ -12,6 +13,7 @@ import com.pickflow.android.core.services.protocols.SpotPage
 import com.pickflow.android.core.services.protocols.SpotService
 import com.pickflow.android.core.services.protocols.SpotTheme
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -59,12 +61,13 @@ class HomeMapViewModelTest {
         mockk<AuthService>(relaxed = true),
         mockk<BookmarkService>(relaxed = true),
         mockk<ExternalAppLauncher>(relaxed = true),
+        InMemoryMoodFilterStore(),
     )
 
     @Test
     fun `load emits Loaded with raw spots`() = runTest(testDispatcher) {
         val spot = Spot("s1", "n", SpotTheme.SUNSET, 0.0, 0.0)
-        coEvery { spotListService.fetch(theme = null, page = 0) } returns
+        coEvery { spotListService.fetch(themes = emptySet(), page = 0) } returns
             SpotPage(items = listOf(spot), page = 0, hasNext = false)
 
         val viewModel = vm()
@@ -75,7 +78,7 @@ class HomeMapViewModelTest {
 
     @Test
     fun `load emits Empty when no spots`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(theme = null, page = 0) } returns
+        coEvery { spotListService.fetch(themes = emptySet(), page = 0) } returns
             SpotPage(items = emptyList(), page = 0, hasNext = false)
 
         val viewModel = vm()
@@ -85,7 +88,7 @@ class HomeMapViewModelTest {
 
     @Test
     fun `setZoom without prior viewport reloads via load`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(theme = null, page = 0) } returns
+        coEvery { spotListService.fetch(themes = emptySet(), page = 0) } returns
             SpotPage(items = emptyList(), page = 0, hasNext = false)
 
         val viewModel = vm()
@@ -94,18 +97,50 @@ class HomeMapViewModelTest {
     }
 
     @Test
-    fun `selectMood toggles theme on and off`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(theme = null, page = 0) } returns
-            SpotPage(items = emptyList(), page = 0, hasNext = false)
-        coEvery { spotListService.fetch(theme = SpotTheme.SUNSET, page = 0) } returns
+    fun `selectMood accumulates multiple moods and unselects only the retapped one`() = runTest(testDispatcher) {
+        coEvery { spotListService.fetch(themes = any(), page = 0) } returns
             SpotPage(items = emptyList(), page = 0, hasNext = false)
 
         val viewModel = vm()
-        viewModel.selectMood(MoodFilter.Sunset); advanceUntilIdle()
-        assertEquals(MoodFilter.Sunset, viewModel.selectedMood.value)
+        assertEquals(emptySet<MoodFilter>(), viewModel.selectedMoods.value)
 
-        viewModel.selectMood(MoodFilter.Sunset); advanceUntilIdle()
-        assertEquals(null, viewModel.selectedMood.value)
+        viewModel.selectMood(MoodFilter.Sunlight); advanceUntilIdle()
+        assertEquals(setOf(MoodFilter.Sunlight), viewModel.selectedMoods.value)
+
+        viewModel.selectMood(MoodFilter.Night); advanceUntilIdle()
+        assertEquals(setOf(MoodFilter.Sunlight, MoodFilter.Night), viewModel.selectedMoods.value)
+
+        // 재탭한 하나만 빠지고 나머지는 유지된다.
+        viewModel.selectMood(MoodFilter.Sunlight); advanceUntilIdle()
+        assertEquals(setOf(MoodFilter.Night), viewModel.selectedMoods.value)
+
+        viewModel.selectMood(MoodFilter.Night); advanceUntilIdle()
+        assertEquals(emptySet<MoodFilter>(), viewModel.selectedMoods.value)
+    }
+
+    @Test
+    fun `selectMood maps moods to domain themes when fetching`() = runTest(testDispatcher) {
+        coEvery { spotListService.fetch(themes = any(), page = 0) } returns
+            SpotPage(items = emptyList(), page = 0, hasNext = false)
+
+        val viewModel = vm()
+        viewModel.selectMood(MoodFilter.Sunlight); advanceUntilIdle()
+        viewModel.selectMood(MoodFilter.Reflection); advanceUntilIdle()
+
+        coVerify {
+            spotListService.fetch(themes = setOf(SpotTheme.SUNLIGHT, SpotTheme.YUNSEUL), page = 0)
+        }
+    }
+
+    @Test
+    fun `no mood selected fetches without theme filter`() = runTest(testDispatcher) {
+        coEvery { spotListService.fetch(themes = emptySet(), page = 0) } returns
+            SpotPage(items = emptyList(), page = 0, hasNext = false)
+
+        val viewModel = vm()
+        viewModel.load(); advanceUntilIdle()
+
+        coVerify { spotListService.fetch(themes = emptySet(), page = 0) }
     }
 
     @Test
