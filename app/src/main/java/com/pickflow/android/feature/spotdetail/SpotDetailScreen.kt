@@ -146,7 +146,7 @@ fun SpotDetailScreen(
                     onRoute = { actionsViewModel.openInMap(state.value) },
                     onBookmark = viewModel::toggleBookmark,
                     onOpenSpot = { isComingSoonSheetOpen = true },
-                    onReport = { isReportSheetOpen = true },
+                    onReport = { viewModel.requestReport { isReportSheetOpen = true } },
                     onImageClick = { fullscreenImageUrl = state.value.imageUrl },
                 )
             }
@@ -313,7 +313,8 @@ private fun LoadedBody(
             onOpenSpot = onOpenSpot,
         )
         SpotRealTimeInfoSection(spot = data)
-        ReportButton(onClick = onReport)
+        // 내가 등록한 스팟은 스스로 신고할 일이 없으므로 진입점 자체를 숨긴다.
+        if (!data.isMine) ReportButton(onClick = onReport)
     }
 }
 

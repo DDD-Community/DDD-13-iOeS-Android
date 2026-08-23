@@ -4,6 +4,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.core.services.protocols.AnalyticsLogger
 import com.pickflow.android.core.services.protocols.AuthService
@@ -33,6 +35,77 @@ class SpotDetailScreenUiTest {
 
     private fun actionsViewModel() =
         SpotDetailActionsViewModel(mockk<ExternalAppLauncher>(relaxed = true))
+
+    private fun fixture(isMySpot: Boolean) = SpotDetail(
+        id = 1L,
+        name = "상세 스팟",
+        comment = "",
+        theme = SpotTheme.SUNSET,
+        latitude = 37.0,
+        longitude = 127.0,
+        address = "서울",
+        addressRoad = null,
+        addressJibun = null,
+        imageUrl = null,
+        recordedDate = "2026-05-25",
+        recordedTime = "18:00",
+        weather = null,
+        congestion = null,
+        sunsetTime = null,
+        astronomyDate = null,
+        weatherUpdatedAt = null,
+        congestionUpdatedAt = null,
+        parkingInfo = null,
+        bookmarkCount = 0L,
+        isBookmarked = false,
+        isMySpot = isMySpot,
+    )
+
+    /** 신고 진입점 검증용 화면 셋업. [loggedIn] 은 `AuthService.isLoggedIn()` 응답. */
+    private fun setUpDetail(isMySpot: Boolean, loggedIn: Boolean) {
+        val spotService = mockk<SpotService>()
+        val authService = mockk<AuthService>()
+        coEvery { spotService.spot("s1") } returns fixture(isMySpot)
+        coEvery { authService.isLoggedIn() } returns loggedIn
+        val vm = SpotDetailViewModel(
+            spotService,
+            mockk<BookmarkService>(relaxed = true),
+            mockk<ShareIntentService>(relaxed = true),
+            mockk<SpotReportService>(relaxed = true),
+            authService,
+            mockk<AnalyticsLogger>(relaxed = true),
+        )
+        composeRule.setContent {
+            PickflowTheme {
+                SpotDetailScreen(
+                    spotId = "s1",
+                    onBack = {},
+                    viewModel = vm,
+                    actionsViewModel = actionsViewModel(),
+                )
+            }
+        }
+    }
+
+    @Test
+    fun my_spot_hides_the_report_entry() {
+        setUpDetail(isMySpot = true, loggedIn = true)
+        composeRule.onNodeWithTag("detail-report").assertDoesNotExist()
+    }
+
+    @Test
+    fun other_spot_keeps_the_report_entry() {
+        setUpDetail(isMySpot = false, loggedIn = true)
+        composeRule.onNodeWithTag("detail-report").assertExists()
+    }
+
+    @Test
+    fun guest_tapping_report_gets_the_login_prompt_instead_of_the_sheet() {
+        setUpDetail(isMySpot = false, loggedIn = false)
+        composeRule.onNodeWithTag("detail-report").performScrollTo().performClick()
+        composeRule.onNodeWithTag("spotdetail-login-overlay").assertIsDisplayed()
+        composeRule.onNodeWithTag("report-text").assertDoesNotExist()
+    }
 
     @Test
     fun loaded_state_shows_spot_name_and_actions() {

@@ -14,6 +14,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -203,4 +204,35 @@ class SpotListViewModelTest {
         vm.dismissLoginPrompt()
         assertFalse(vm.showLoginPrompt.value)
     }
+
+    @Test
+    fun `toggleBookmark ignores the second tap on the same spot while in flight`() =
+        runTest(testDispatcher) {
+            coEvery { bookmarkService.add("a") } coAnswers { delay(100); 1L }
+
+            val vm = viewModel()
+            vm.toggleBookmark("a")
+            vm.toggleBookmark("a") // 연타
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { bookmarkService.add("a") }
+            coVerify(exactly = 0) { bookmarkService.remove(any()) }
+            assertEquals(setOf("a"), vm.bookmarkedIds.value)
+            assertEquals(null, vm.toast.value)
+        }
+
+    @Test
+    fun `toggleBookmark on a different spot is not blocked by an in-flight one`() =
+        runTest(testDispatcher) {
+            coEvery { bookmarkService.add(any()) } coAnswers { delay(100); 1L }
+
+            val vm = viewModel()
+            vm.toggleBookmark("a")
+            vm.toggleBookmark("b")
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { bookmarkService.add("a") }
+            coVerify(exactly = 1) { bookmarkService.add("b") }
+            assertEquals(setOf("a", "b"), vm.bookmarkedIds.value)
+        }
 }

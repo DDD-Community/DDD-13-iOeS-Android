@@ -18,6 +18,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -142,6 +143,69 @@ class SpotDetailViewModelTest {
         assertFalse(vm.bookmarked.value)
         coVerify(exactly = 0) { bookmarkService.add(any()) }
     }
+
+    @Test
+    fun `toggleBookmark ignores the second tap while the first is still in flight`() =
+        runTest(testDispatcher) {
+            coEvery { spotService.spot("1") } returns fixture(isBookmarked = false)
+            coEvery { authService.isLoggedIn() } returns true
+            coEvery { bookmarkService.add("1") } coAnswers { delay(100); 1L }
+
+            val vm = vm()
+            vm.load("1"); advanceUntilIdle()
+            vm.toggleBookmark()
+            vm.toggleBookmark() // 연타
+            advanceUntilIdle()
+
+            // add/remove 가 교차 실행되지 않아 실패 토스트도 뜨지 않는다.
+            coVerify(exactly = 1) { bookmarkService.add("1") }
+            coVerify(exactly = 0) { bookmarkService.remove(any()) }
+            assertTrue(vm.bookmarked.value)
+            assertEquals(null, vm.toast.value)
+        }
+
+    @Test
+    fun `toggleBookmark accepts a new tap once the previous request finished`() =
+        runTest(testDispatcher) {
+            coEvery { spotService.spot("1") } returns fixture(isBookmarked = false)
+            coEvery { authService.isLoggedIn() } returns true
+            coEvery { bookmarkService.add("1") } returns 1L
+            coEvery { bookmarkService.remove("1") } returns 0L
+
+            val vm = vm()
+            vm.load("1"); advanceUntilIdle()
+            vm.toggleBookmark(); advanceUntilIdle()
+            vm.toggleBookmark(); advanceUntilIdle()
+
+            coVerify(exactly = 1) { bookmarkService.add("1") }
+            coVerify(exactly = 1) { bookmarkService.remove("1") }
+            assertFalse(vm.bookmarked.value)
+        }
+
+    @Test
+    fun `requestReport opens the sheet when logged in`() = runTest(testDispatcher) {
+        coEvery { authService.isLoggedIn() } returns true
+
+        var allowed = false
+        val vm = vm()
+        vm.requestReport { allowed = true }; advanceUntilIdle()
+
+        assertTrue(allowed)
+        assertFalse(vm.isLoginRequired.value)
+    }
+
+    @Test
+    fun `requestReport shows login prompt instead of the sheet when logged out`() =
+        runTest(testDispatcher) {
+            coEvery { authService.isLoggedIn() } returns false
+
+            var allowed = false
+            val vm = vm()
+            vm.requestReport { allowed = true }; advanceUntilIdle()
+
+            assertFalse(allowed)
+            assertTrue(vm.isLoginRequired.value)
+        }
 
     @Test
     fun `reportInvalidInfo sets reportSubmitted true on success`() = runTest(testDispatcher) {

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -74,6 +75,9 @@ fun NoticeListContent(
             .fillMaxSize()
             .background(PickflowColors.gray95)
             .statusBarsPadding()
+            // targetSdk 35(edge-to-edge 강제)에서 하단 콘텐츠가 내비게이션 바에 가려지는 문제.
+            // 스팟 상세(24e8390)와 동일 원인 — 같은 방식으로 루트에서 inset 을 먹인다.
+            .navigationBarsPadding()
             .testTag("notice-list-screen"),
     ) {
         NoticeTopBar(title = "공지사항", onBack = onBack)
@@ -100,10 +104,13 @@ private fun NoticeList(
     onReachEnd: () -> Unit,
 ) {
     val listState = rememberLazyListState()
+    // SpotListScreen 과 동일한 버그 — 키 없는 remember 가 첫 `items` 를 붙잡아 페이지가 늘어도
+    // 임계값이 갱신되지 않는다. totalItemsCount 로 읽어 캡처를 없앤다.
     val reachedEnd by remember {
         derivedStateOf {
-            val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            items.isNotEmpty() && last >= items.size - 3
+            val info = listState.layoutInfo
+            val last = info.visibleItemsInfo.lastOrNull()?.index ?: -1
+            info.totalItemsCount > 0 && last >= info.totalItemsCount - 3
         }
     }
     LaunchedEffect(reachedEnd) { if (reachedEnd) onReachEnd() }

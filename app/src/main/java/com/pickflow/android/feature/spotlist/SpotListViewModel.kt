@@ -85,29 +85,38 @@ class SpotListViewModel @Inject constructor(
         loadPage()
     }
 
+    // 북마크 요청 in-flight 가드(스팟별). 같은 카드를 연타하면 add/remove 가 동시에 날아가
+    // 서로를 덮어쓰고 늦은 응답이 실패로 떨어져 "북마크 변경에 실패했어요." 가 뜬다.
+    private val bookmarksInFlight = mutableSetOf<String>()
+
     fun toggleBookmark(spotId: String) {
+        if (!bookmarksInFlight.add(spotId)) return
         viewModelScope.launch {
-            if (!authService.isLoggedIn()) {
-                _showLoginPrompt.value = true
-                return@launch
-            }
-            // iOS `SpotListViewModel.bookmarkTapped` 1:1 — 낙관적 토글 + 실패 시 롤백.
-            val wasBookmarked = spotId in _bookmarkedIds.value
-            _bookmarkedIds.value = if (wasBookmarked) {
-                _bookmarkedIds.value - spotId
-            } else {
-                _bookmarkedIds.value + spotId
-            }
-            runCatching {
-                if (wasBookmarked) bookmarkService.remove(spotId)
-                else bookmarkService.add(spotId)
-            }.onFailure {
-                _bookmarkedIds.value = if (wasBookmarked) {
-                    _bookmarkedIds.value + spotId
-                } else {
-                    _bookmarkedIds.value - spotId
+            try {
+                if (!authService.isLoggedIn()) {
+                    _showLoginPrompt.value = true
+                    return@launch
                 }
-                _toast.value = "북마크 변경에 실패했어요."
+                // iOS `SpotListViewModel.bookmarkTapped` 1:1 — 낙관적 토글 + 실패 시 롤백.
+                val wasBookmarked = spotId in _bookmarkedIds.value
+                _bookmarkedIds.value = if (wasBookmarked) {
+                    _bookmarkedIds.value - spotId
+                } else {
+                    _bookmarkedIds.value + spotId
+                }
+                runCatching {
+                    if (wasBookmarked) bookmarkService.remove(spotId)
+                    else bookmarkService.add(spotId)
+                }.onFailure {
+                    _bookmarkedIds.value = if (wasBookmarked) {
+                        _bookmarkedIds.value + spotId
+                    } else {
+                        _bookmarkedIds.value - spotId
+                    }
+                    _toast.value = "북마크 변경에 실패했어요."
+                }
+            } finally {
+                bookmarksInFlight.remove(spotId)
             }
         }
     }
