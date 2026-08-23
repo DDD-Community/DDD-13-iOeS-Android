@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,15 +19,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 
 /**
  * iOS `SpotActionButtons` 1:1 이식 — 길 안내 + (북마크 | 내 스팟 오픈) 버튼.
  *
- * iOS `icNearMe` 커스텀 아이콘은 Material `Send`, 북마크 아이콘은
- * `Favorite`/`FavoriteBorder`로 치환한다.
+ * iOS `icNearMe` 커스텀 아이콘은 Material `Send`, 북마크 아이콘은 Figma 에셋인
+ * `ic_bookmark_filled`/`ic_bookmark_border` 드로어블을 쓴다.
  */
 @Composable
 fun SpotActionButtons(
@@ -77,7 +77,9 @@ fun SpotActionButtons(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = if (isBookmarked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                    painter = painterResource(
+                        id = if (isBookmarked) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark_border,
+                    ),
                     contentDescription = "북마크",
                     tint = PickflowColors.gray95,
                     modifier = Modifier.size(24.dp),

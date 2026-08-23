@@ -36,8 +36,15 @@ class SpotListViewModelTest {
     private lateinit var authService: AuthService
     private lateinit var locationService: LocationService
 
-    private fun spot(id: String, theme: SpotTheme = SpotTheme.SUNSET) =
-        Spot(id = id, name = id, theme = theme, latitude = 0.0, longitude = 0.0)
+    private fun spot(id: String, theme: SpotTheme = SpotTheme.SUNSET, bookmarked: Boolean = false) =
+        Spot(
+            id = id,
+            name = id,
+            theme = theme,
+            latitude = 0.0,
+            longitude = 0.0,
+            isBookmarked = bookmarked,
+        )
 
     @BeforeEach
     fun setUp() {
@@ -233,6 +240,56 @@ class SpotListViewModelTest {
 
             coVerify(exactly = 1) { bookmarkService.add("a") }
             coVerify(exactly = 1) { bookmarkService.add("b") }
+            assertEquals(setOf("a", "b"), vm.bookmarkedIds.value)
+        }
+
+    @Test
+    fun `refresh seeds bookmarkedIds from the response`() = runTest(testDispatcher) {
+        coEvery {
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returns SpotPage(
+            items = listOf(spot("a", bookmarked = true), spot("b")),
+            page = 0,
+            hasNext = false,
+        )
+
+        val vm = viewModel()
+        vm.refresh(); advanceUntilIdle()
+
+        assertEquals(setOf("a"), vm.bookmarkedIds.value)
+    }
+
+    @Test
+    fun `refresh drops bookmarks the server no longer reports`() = runTest(testDispatcher) {
+        coEvery {
+            listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+        } returnsMany listOf(
+            SpotPage(items = listOf(spot("a", bookmarked = true)), page = 0, hasNext = false),
+            SpotPage(items = listOf(spot("a", bookmarked = false)), page = 0, hasNext = false),
+        )
+
+        val vm = viewModel()
+        vm.refresh(); advanceUntilIdle()
+        vm.refresh(); advanceUntilIdle()
+
+        assertEquals(emptySet<String>(), vm.bookmarkedIds.value)
+    }
+
+    @Test
+    fun `loadNextPage seeds the new page without clobbering an existing toggle`() =
+        runTest(testDispatcher) {
+            coEvery {
+                listService.fetch(theme = null, page = 0, coordinates = null, sort = SpotSort.RECOMMENDED)
+            } returns SpotPage(items = listOf(spot("a")), page = 0, hasNext = true)
+            coEvery {
+                listService.fetch(theme = null, page = 1, coordinates = null, sort = SpotSort.RECOMMENDED)
+            } returns SpotPage(items = listOf(spot("b", bookmarked = true)), page = 1, hasNext = false)
+
+            val vm = viewModel()
+            vm.refresh(); advanceUntilIdle()
+            vm.toggleBookmark("a"); advanceUntilIdle() // 사용자가 직접 켠 상태
+            vm.loadNextPage(); advanceUntilIdle()
+
             assertEquals(setOf("a", "b"), vm.bookmarkedIds.value)
         }
 }

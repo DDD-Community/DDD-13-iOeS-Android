@@ -191,7 +191,10 @@ class HomeMapViewModel @Inject constructor(
             _selectedPreview.value = runCatching {
                 spotService.preview(spotId.toString(), lastKnownCoordinates)
             }.fold(
-                onSuccess = { LoadState.Loaded(it) },
+                onSuccess = {
+                    _selectedBookmarked.value = it.isBookmarked
+                    LoadState.Loaded(it)
+                },
                 onFailure = { LoadState.Failed(it) },
             )
         }

@@ -67,6 +67,7 @@ class SpotListViewModel @Inject constructor(
         isLoadingPage = false
         accumulated.clear()
         accumulatedIds.clear()
+        _bookmarkedIds.value = emptySet()
         loadPage()
     }
 
@@ -149,6 +150,8 @@ class SpotListViewModel @Inject constructor(
                 // 이미 누적된 id 는 걸러 append → LazyGrid 중복 key 크래시 방지.
                 val newItems = page.items.filter { accumulatedIds.add(it.id) }
                 accumulated.addAll(newItems)
+                // 서버가 내려준 북마크 상태를 시드. 새 항목만 반영해 진행 중인 낙관적 토글을 덮지 않는다.
+                _bookmarkedIds.value += newItems.filter { it.isBookmarked }.map { it.id }
                 hasMore = page.hasNext
                 nextPage = page.page + 1
                 emitState()
