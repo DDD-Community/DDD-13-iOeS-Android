@@ -11,6 +11,10 @@ on:
         description: "배포할 Firebase 테스터 그룹(쉼표 구분)"
         required: true
         default: "pickflow-qa"
+      release_notes_file:
+        description: "릴리스 노트 파일 경로(저장소 기준 상대경로). 비우면 최근 커밋 메시지를 쓴다."
+        required: false
+        default: ""
 
 concurrency:
   group: firebase-distribution-${{ github.ref }}
@@ -81,7 +85,8 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_FILE: ${{ env.FIREBASE_SERVICE_ACCOUNT_FILE }}
         run: |
           ./gradlew --no-daemon assembleDebug appDistributionUploadDebug \
-            ${{ inputs.tester_groups && format('--groups={0}', inputs.tester_groups) || '' }}
+            ${{ inputs.tester_groups && format('--groups={0}', inputs.tester_groups) || '' }} \
+            ${{ inputs.release_notes_file && format('--releaseNotesFile={0}/{1}', github.workspace, inputs.release_notes_file) || '' }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
