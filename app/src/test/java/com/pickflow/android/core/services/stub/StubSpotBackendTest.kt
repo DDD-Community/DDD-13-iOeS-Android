@@ -47,18 +47,18 @@ class StubSpotBackendTest {
 
         assertEquals(MySpotStatus.PENDING, services.mySpot.requestOpen(draftId).status)
         assertFalse(services.map.fetchInViewport(viewport).any { it.spotId == draftId })
-        assertFalse(services.list.fetch(null, 0).items.any { it.id == draftId.toString() })
+        assertFalse(services.list.fetch(emptySet(), 0).items.any { it.id == draftId.toString() })
 
         services.backend.completeReview(draftId, ReviewDecision.APPROVED)
 
         assertTrue(services.map.fetchInViewport(viewport).any { it.spotId == draftId })
-        assertTrue(services.list.fetch(null, 0).items.any { it.id == draftId.toString() })
+        assertTrue(services.list.fetch(emptySet(), 0).items.any { it.id == draftId.toString() })
         val unpublished = services.mySpot.unpublish(draftId)
         assertEquals(MySpotStatus.DRAFT, unpublished.status)
         assertEquals(MySpotStatus.PUBLISHED, unpublished.previousStatus)
         assertFalse(unpublished.wasOpenRequest)
         assertTrue(services.map.fetchInViewport(viewport).any { it.spotId == draftId })
-        assertFalse(services.list.fetch(null, 0).items.any { it.id == draftId.toString() })
+        assertFalse(services.list.fetch(emptySet(), 0).items.any { it.id == draftId.toString() })
     }
 
     @Test

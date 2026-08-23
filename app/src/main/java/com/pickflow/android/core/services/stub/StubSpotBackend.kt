@@ -228,7 +228,8 @@ class StubSpotBackend @Inject constructor() {
         }
     }
 
-    internal suspend fun markers(box: ViewportBox, theme: SpotTheme?): List<SpotMapMarker> {
+    /** @param themes 빈 Set 은 필터 없음(전체). */
+    internal suspend fun markers(box: ViewportBox, themes: Set<SpotTheme>): List<SpotMapMarker> {
         before(StubOperation.MAP)
         return stateMutex.withLock {
             val latitudes = listOf(
@@ -245,7 +246,7 @@ class StubSpotBackend @Inject constructor() {
             )
             records.values
                 .filter { !it.isDeleted }
-                .filter { it.theme == theme || theme == null }
+                .filter { themes.isEmpty() || it.theme in themes }
                 .filter { it.latitude in latitudes.min()..latitudes.max() }
                 .filter { it.longitude in longitudes.min()..longitudes.max() }
                 .filter {
@@ -268,7 +269,7 @@ class StubSpotBackend @Inject constructor() {
     }
 
     internal suspend fun publicSpots(
-        theme: SpotTheme?,
+        themes: Set<SpotTheme>,
         page: Int,
         coordinates: Coordinates?,
         sort: SpotSort,
@@ -277,7 +278,8 @@ class StubSpotBackend @Inject constructor() {
         return stateMutex.withLock {
             var items = if (page == 0) {
                 records.values.filter {
-                    !it.isDeleted && it.status == MySpotStatus.PUBLISHED && (theme == null || it.theme == theme)
+                    !it.isDeleted && it.status == MySpotStatus.PUBLISHED &&
+                        (themes.isEmpty() || it.theme in themes)
                 }
             } else {
                 emptyList()

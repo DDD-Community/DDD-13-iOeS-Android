@@ -13,9 +13,9 @@ class StubSpotListService @Inject constructor(
     private val backend: StubSpotBackend,
 ) : SpotListService {
     override suspend fun fetch(
-        theme: SpotTheme?,
+        themes: Set<SpotTheme>,
         page: Int,
         coordinates: Coordinates?,
         sort: SpotSort,
-    ): SpotPage = backend.publicSpots(theme, page, coordinates, sort)
+    ): SpotPage = backend.publicSpots(themes, page, coordinates, sort)
 }

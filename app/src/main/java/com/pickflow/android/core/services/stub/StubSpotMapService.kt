@@ -11,6 +11,8 @@ import javax.inject.Singleton
 class StubSpotMapService @Inject constructor(
     private val backend: StubSpotBackend,
 ) : SpotMapService {
-    override suspend fun fetchInViewport(box: ViewportBox, theme: SpotTheme?): List<SpotMapMarker> =
-        backend.markers(box, theme)
+    override suspend fun fetchInViewport(
+        box: ViewportBox,
+        themes: Set<SpotTheme>,
+    ): List<SpotMapMarker> = backend.markers(box, themes)
 }
