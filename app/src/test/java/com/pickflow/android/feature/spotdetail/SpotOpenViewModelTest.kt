@@ -158,19 +158,15 @@ class SpotOpenViewModelTest {
 
     @Test
     fun `each state action delegates to matching service transition`() = runTest(testDispatcher) {
-        coEvery { service.detail(41L) } returns detail(MySpotStatus.REJECTED)
-        coEvery { service.withdrawRejection(41L) } returns result(MySpotStatus.DRAFT)
+        coEvery { service.detail(41L) } returns detail(MySpotStatus.PENDING)
         coEvery { service.unpublish(41L) } returns unpublished(MySpotStatus.PENDING)
         val viewModel = SpotOpenViewModel(service)
         viewModel.load(41L)
         advanceUntilIdle()
 
-        viewModel.withdrawRejection()
-        advanceUntilIdle()
         viewModel.unpublish()
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { service.withdrawRejection(41L) }
         coVerify(exactly = 1) { service.unpublish(41L) }
         assertEquals(MySpotStatus.DRAFT, viewModel.loadedDetail().status)
     }

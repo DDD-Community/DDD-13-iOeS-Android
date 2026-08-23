@@ -9,7 +9,6 @@ enum class StubOperation {
     CREATE,
     REQUEST_OPEN,
     UNPUBLISH,
-    WITHDRAW_REJECTION,
     UPDATE,
     DELETE,
     RECOMMEND,

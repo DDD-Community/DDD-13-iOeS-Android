@@ -51,7 +51,6 @@ import com.pickflow.android.feature.spotdetail.components.SpotPhotoSection
 enum class SpotOpenSheet {
     REQUEST_OPEN,
     WITHDRAW_REQUEST,
-    WITHDRAW_REJECTION,
     CANCEL_OPEN,
     DELETE,
     LOGIN,
@@ -73,7 +72,6 @@ fun SpotOpenDetailContent(
     showPublishedModal: Boolean = false,
     onRequestOpen: () -> Unit = {},
     onWithdrawRequest: () -> Unit = {},
-    onWithdrawRejection: () -> Unit = {},
     onRevise: (Long) -> Unit = {},
     onCancelOpen: () -> Unit = {},
     onDelete: () -> Unit = {},
@@ -85,6 +83,9 @@ fun SpotOpenDetailContent(
     modifier: Modifier = Modifier,
 ) {
     var activeSheet by remember(initialSheet) { mutableStateOf(initialSheet) }
+    // 반려 배너 닫기는 서버 상태를 바꾸지 않는다(REJECTED 는 이미 나만보기다).
+    // 세션 한정 로컬 상태이므로 화면을 다시 열면 배너가 복귀한다. docs/PV-41/10-open-questions.md A1
+    var isRejectionDismissed by remember(spotIdOf(state)) { mutableStateOf(false) }
 
     Box(
         modifier = modifier
@@ -98,6 +99,8 @@ fun SpotOpenDetailContent(
             is LoadState.Loaded -> SpotOpenLoaded(
                 detail = state.value,
                 onBack = onBack,
+                isRejectionDismissed = isRejectionDismissed,
+                onDismissRejection = { isRejectionDismissed = true },
                 isTransitionInFlight = isTransitionInFlight,
                 isRecommendationInFlight = isRecommendationInFlight,
                 isLoggedIn = isLoggedIn,
@@ -117,7 +120,6 @@ fun SpotOpenDetailContent(
                     when (sheet) {
                         SpotOpenSheet.REQUEST_OPEN -> onRequestOpen()
                         SpotOpenSheet.WITHDRAW_REQUEST -> onWithdrawRequest()
-                        SpotOpenSheet.WITHDRAW_REJECTION -> onWithdrawRejection()
                         SpotOpenSheet.CANCEL_OPEN -> onCancelOpen()
                         SpotOpenSheet.DELETE -> onDelete()
                         SpotOpenSheet.LOGIN -> onRequireLogin()
@@ -133,6 +135,9 @@ fun SpotOpenDetailContent(
         }
     }
 }
+
+private fun spotIdOf(state: LoadState<MySpotDetail>): Long? =
+    (state as? LoadState.Loaded)?.value?.id
 
 @Composable
 private fun SpotOpenLoading() {
@@ -173,6 +178,8 @@ private fun SpotOpenError() {
 private fun SpotOpenLoaded(
     detail: MySpotDetail,
     onBack: () -> Unit,
+    isRejectionDismissed: Boolean,
+    onDismissRejection: () -> Unit,
     isTransitionInFlight: Boolean,
     isRecommendationInFlight: Boolean,
     isLoggedIn: Boolean,
@@ -191,7 +198,7 @@ private fun SpotOpenLoaded(
                 .padding(top = 8.dp, bottom = 40.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            SpotOpenHeader(detail)
+            SpotOpenHeader(detail, isRejectionDismissed = isRejectionDismissed)
             SpotPhotoSection(spot = detail.toSpotDetailData())
 
             when (detail.status) {
@@ -213,7 +220,7 @@ private fun SpotOpenLoaded(
                 MySpotStatus.REJECTED -> RejectedActions(
                     detail = detail,
                     enabled = !isTransitionInFlight,
-                    onWithdraw = { onOpenSheet(SpotOpenSheet.WITHDRAW_REJECTION) },
+                    onWithdraw = onDismissRejection,
                     onRevise = { onRevise(detail.id) },
                 )
 
@@ -234,7 +241,7 @@ private fun SpotOpenLoaded(
 }
 
 @Composable
-private fun SpotOpenHeader(detail: MySpotDetail) {
+private fun SpotOpenHeader(detail: MySpotDetail, isRejectionDismissed: Boolean = false) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -307,7 +314,7 @@ private fun SpotOpenHeader(detail: MySpotDetail) {
             color = PickflowColors.gray30,
         )
 
-        if (detail.status == MySpotStatus.REJECTED) {
+        if (detail.status == MySpotStatus.REJECTED && !isRejectionDismissed) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -621,15 +628,6 @@ private val SpotOpenSheet.content: SpotOpenSheetContent
             secondary = "계속 기다릴게요",
             sheetTag = "spot-withdraw-request-sheet",
             confirmTag = "spot-withdraw-request-confirm",
-        )
-        SpotOpenSheet.WITHDRAW_REJECTION -> SpotOpenSheetContent(
-            title = "스팟 오픈을 철회할까요?",
-            body = "철회하면 나만 볼 수 있는 상태로 돌아가요.\n" +
-                "언제든 다시 신청할 수 있어요.",
-            primary = "오픈 철회하기",
-            secondary = "계속 수정할게요",
-            sheetTag = "spot-withdraw-rejection-sheet",
-            confirmTag = "spot-withdraw-rejection-confirm",
         )
         SpotOpenSheet.CANCEL_OPEN -> SpotOpenSheetContent(
             title = "스팟 오픈을 취소할까요?",

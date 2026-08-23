@@ -146,8 +146,6 @@ interface MySpotService {
      */
     suspend fun unpublish(spotId: Long): MySpotUnpublishResult = unsupported("unpublish")
 
-    suspend fun withdrawRejection(spotId: Long): MySpotTransitionResult = unsupported("withdrawRejection")
-
     /**
      * 나만의 스팟 수정. 전달한 값으로 전체를 덮어쓰며 **상태는 바뀌지 않는다**.
      * `replacementImage` 가 null 이면 기존 이미지를 유지한다.

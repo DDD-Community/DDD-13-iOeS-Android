@@ -30,9 +30,6 @@ class StubMySpotService @Inject constructor(
 
     override suspend fun unpublish(spotId: Long): MySpotUnpublishResult = backend.unpublish(spotId)
 
-    override suspend fun withdrawRejection(spotId: Long): MySpotTransitionResult =
-        backend.withdrawRejection(spotId)
-
     override suspend fun update(
         spotId: Long,
         draft: SpotDraft,

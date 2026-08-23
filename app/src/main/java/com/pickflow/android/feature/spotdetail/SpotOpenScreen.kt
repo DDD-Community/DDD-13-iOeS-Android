@@ -113,7 +113,6 @@ fun SpotOpenScreen(
             onBack = onBack,
             onRequestOpen = openViewModel::requestOpen,
             onWithdrawRequest = openViewModel::unpublish,
-            onWithdrawRejection = openViewModel::withdrawRejection,
             onRevise = onRevise,
             onCancelOpen = openViewModel::unpublish,
             onDelete = openViewModel::delete,

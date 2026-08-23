@@ -40,12 +40,12 @@ Stub-first로 먼저 확정한 클라이언트 Service 계약을 실제 서버 �
 
 ## B. 조정 필요 — `Default*Service` 착수 전 반영
 
-> **B1·B3·B4 는 반영 완료**(아래 표의 상태 열 참고). 나머지는 미반영이다.
+> **B1·B2·B3·B4 는 반영 완료**(아래 표의 상태 열 참고). 나머지는 미반영이다.
 
 | # | 항목 | 현재 클라이언트 | 서버 명세 | 조치 | 상태 |
 | --- | --- | --- | --- | --- | --- |
 | B1 | 공개 해제 | `withdrawRequest()` + `cancelOpen()` **2개 메서드** | `DELETE /v1/users/me/my-spots/{spotId}/publications` **단일 엔드포인트**. PENDING·RE_REVIEW_PENDING이면 철회, PUBLISHED면 비공개 전환. 응답 `previousStatus`로 구분 | 두 메서드를 하나로 통합하고 `previousStatus`로 화면 문구를 분기 | ✅ **반영 완료** |
-| B2 | 반려 상태 해제 | `withdrawRejection()` | 대응 엔드포인트 **없음**. REJECTED에서 해제 시도는 `400 SP009`(해제 대상 없음) | 메서드 제거 또는 "반려 상태에서는 수정/재신청만 가능"으로 재정의 | 미반영 |
+| B2 | 반려 상태 해제 | `withdrawRejection()` | 대응 엔드포인트 **없음**. REJECTED에서 해제 시도는 `400 SP009`(해제 대상 없음) | **버튼은 유지, 서버 호출 없이 반려 배너만 로컬에서 닫도록 재정의**([10-open-questions.md](10-open-questions.md) A1, 2026-08-22 확정) | ✅ **반영 완료** |
 | B3 | 보완 후 재신청 | `reviseAndResubmit()` **1-step** | `PUT /v1/users/me/my-spots/{spotId}` (수정, **상태 불변**) → `POST .../open-requests` (재신청) **2-step** | 내부 2-call로 구현하고, 수정 성공 + 재신청 실패 시 복구 경로(재시도 안내) 정의 | ✅ **반영 완료** |
 | B4 | 반려 사유 | `rejectionReason: String?` | 구조화 객체 `rejection { reason, reasonLabel, guideMessage, detail, rejectedAt }`. `reason` enum = `DUPLICATE / LOW_QUALITY / LOCATION_MISMATCH / FILTER_MISMATCH / ETC` (ETC는 `detail` 필수) | `RejectionReason` enum + 데이터 클래스로 승격. 문구는 서버 `reasonLabel`·`guideMessage` 사용 | ✅ **반영 완료** |
 | B5 | 추천 가능 여부 | 필드 없음 | `isLikeable` — 유저 스팟은 **PUBLISHED만** 좋아요 허용(그 외 `400 SL003`), 큐레이션 스팟은 상태 무관 허용 | `SpotDetail`·프리뷰에 `isLikeable` 추가하고 버튼 활성화 근거로 사용 | 미반영 |
@@ -92,11 +92,11 @@ Stub-first로 먼저 확정한 클라이언트 Service 계약을 실제 서버 �
 | 영역 | 상태 |
 | --- | --- |
 | 상태 모델 / 오픈 신청 / 삭제 / 좋아요 / 저장된 스팟 | `SPEC_READY` |
-| 공개 해제(B1) / 수정·재신청 2-step(B3) / 반려 사유 구조화(B4) | `IMPLEMENTED` (스텁 기준) |
-| 오류 코드 분기 / `isLikeable` / 상태 가드 (B5·B8~B12) | `SPEC_READY` |
+| 공개 해제(B1) / 반려 배너 로컬 닫기(B2) / 수정·재신청 2-step(B3) / 반려 사유 구조화(B4) | `IMPLEMENTED` (스텁 기준) |
+| 오류 코드 분기 / `isLikeable` / 상태 가드 (B5~B12) | `SPEC_READY` |
 | 검수 결과 알림 | `TBD` (C 참조) |
 
-## 반영 내역 (B1·B3·B4)
+## 반영 내역 (B1·B2·B3·B4)
 
 | 변경 | 파일 |
 | --- | --- |
@@ -104,6 +104,7 @@ Stub-first로 먼저 확정한 클라이언트 Service 계약을 실제 서버 �
 | `reviseAndResubmit()` → `update()`(상태 불변) + `requestOpen()` 2-step. `requestOpen`이 `REJECTED → RE_REVIEW_PENDING` 도 처리 | 위와 동일 + `feature/spotregistration/SpotRegistrationViewModel.kt` |
 | 재신청 실패 복구: `isRevisionSaved` StateFlow — 수정 저장 후 재신청만 실패하면 재시도 시 수정을 다시 보내지 않는다 | `SpotRegistrationViewModel.kt` |
 | `rejectionReason: String?` → `rejection: SpotRejection?` + `RejectionReason` enum 5종 | `protocols/MySpot.kt`, `protocols/SpotDetail.kt`, `stub/*`, `SpotOpenDetailContent.kt` |
+| `withdrawRejection()` 제거 → 반려 배너를 세션 한정 로컬 상태로 닫는다. 확인 모달도 제거 | `protocols/MySpot.kt`, `stub/*`, `SpotOpenViewModel.kt`, `SpotOpenDetailContent.kt` |
 
 화면 문구 `오픈 신청을 철회했어요` / `스팟을 비공개로 전환했어요` 는 `previousStatus` 분기를 위해 추가한 임시 카피다. **기획 확인이 필요하다.**
 

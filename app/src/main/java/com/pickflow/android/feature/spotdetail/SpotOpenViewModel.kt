@@ -61,10 +61,6 @@ class SpotOpenViewModel @Inject constructor(
         ) { spotId -> mySpotService.unpublish(spotId) }
     }
 
-    fun withdrawRejection() {
-        transition { spotId -> mySpotService.withdrawRejection(spotId) }
-    }
-
     fun delete() {
         val spotId = currentDetail()?.id ?: return
         if (_isTransitionInFlight.value) return

@@ -74,11 +74,6 @@ class StubSpotBackendTest {
         assertEquals(MySpotStatus.DRAFT, fromReReview.status)
         assertEquals(MySpotStatus.RE_REVIEW_PENDING, fromReReview.previousStatus)
         assertTrue(fromReReview.wasOpenRequest)
-        assertEquals(
-            MySpotStatus.DRAFT,
-            services.mySpot.withdrawRejection(StubSpotFixtures.REJECTED_SPOT_ID).status,
-        )
-        assertNull(services.mySpot.detail(StubSpotFixtures.REJECTED_SPOT_ID).rejection)
     }
 
     @Test

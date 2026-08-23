@@ -167,14 +167,6 @@ class StubSpotBackend @Inject constructor() {
         }
     }
 
-    internal suspend fun withdrawRejection(spotId: Long): MySpotTransitionResult = transition(
-        operation = StubOperation.WITHDRAW_REJECTION,
-        spotId = spotId,
-        allowed = setOf(MySpotStatus.REJECTED),
-        destination = MySpotStatus.DRAFT,
-        clearRejection = true,
-    )
-
     /** 수정만 수행한다. 상태는 그대로 두고, 이미지 미첨부 시 기존 이미지를 유지한다. */
     internal suspend fun update(
         spotId: Long,
@@ -418,14 +410,12 @@ class StubSpotBackend @Inject constructor() {
         spotId: Long,
         allowed: Set<MySpotStatus>,
         destination: MySpotStatus,
-        clearRejection: Boolean = false,
     ): MySpotTransitionResult {
         before(operation, spotId)
         return stateMutex.withLock {
             val record = ownedRecord(spotId)
             requireStatus(record, allowed)
             record.status = destination
-            if (clearRejection) record.rejection = null
             record.updatedAt = now()
             record.toTransitionResult()
         }

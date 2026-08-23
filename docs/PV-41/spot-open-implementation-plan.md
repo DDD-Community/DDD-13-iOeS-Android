@@ -31,6 +31,7 @@
 | [07-review-notification.md](07-review-notification.md) | 검수 결과 스낵바, 탭 인디케이터, 승인 모달 |
 | [08-test-and-rollout.md](08-test-and-rollout.md) | 구현 순서, TDD, QA 완료 기준 |
 | [09-api-mapping.md](09-api-mapping.md) | **서버 API ↔ 클라이언트 구현 매핑, 조정 필요 항목, 잔여 미확정 계약** |
+| [10-open-questions.md](10-open-questions.md) | **기획 대조 미해결 항목 — 확인 대기 질문, 기획 외 구현, 미구현분** |
 
 ## 범위
 

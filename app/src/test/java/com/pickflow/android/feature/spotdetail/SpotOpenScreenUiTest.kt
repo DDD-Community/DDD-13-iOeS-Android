@@ -150,21 +150,22 @@ class SpotOpenScreenUiTest {
         composeRule.onNodeWithTag("spot-action-revise").assertIsDisplayed()
     }
 
+    /**
+     * 반려 배너 닫기는 서버 상태를 바꾸지 않는다. 확인 모달 없이 배너만 사라지고,
+     * 상태 배지와 재신청 버튼은 그대로 남는다. docs/PV-41/10-open-questions.md A1
+     */
     @Test
-    fun rejected_withdraw_confirms_once() {
-        var withdrawCalls = 0
-        render(
-            state = loaded(MySpotStatus.REJECTED),
-            onWithdrawRejection = { withdrawCalls += 1 },
-        )
+    fun rejected_withdraw_dismisses_banner_without_confirm_sheet() {
+        render(state = loaded(MySpotStatus.REJECTED))
 
+        composeRule.onNodeWithTag("spot-rejection-banner").assertIsDisplayed()
         composeRule.onNodeWithTag("spot-action-withdraw-rejection").performClick()
-        composeRule.onNodeWithTag("spot-withdraw-rejection-sheet").assertIsDisplayed()
-        composeRule.onNodeWithTag("spot-withdraw-rejection-confirm").performClick()
         composeRule.waitForIdle()
 
-        assertEquals(1, withdrawCalls)
         composeRule.onNodeWithTag("spot-withdraw-rejection-sheet").assertDoesNotExist()
+        composeRule.onNodeWithTag("spot-rejection-banner").assertDoesNotExist()
+        composeRule.onNodeWithTag("spot-status-rejected").assertIsDisplayed()
+        composeRule.onNodeWithTag("spot-action-revise").assertIsDisplayed()
     }
 
     @Test
@@ -328,7 +329,6 @@ class SpotOpenScreenUiTest {
         showPublishedModal: Boolean = false,
         onRequestOpen: () -> Unit = {},
         onWithdrawRequest: () -> Unit = {},
-        onWithdrawRejection: () -> Unit = {},
         onRevise: (Long) -> Unit = {},
         onCancelOpen: () -> Unit = {},
         onDelete: () -> Unit = {},
@@ -347,7 +347,6 @@ class SpotOpenScreenUiTest {
                     showPublishedModal = showPublishedModal,
                     onRequestOpen = onRequestOpen,
                     onWithdrawRequest = onWithdrawRequest,
-                    onWithdrawRejection = onWithdrawRejection,
                     onRevise = onRevise,
                     onCancelOpen = onCancelOpen,
                     onDelete = onDelete,
