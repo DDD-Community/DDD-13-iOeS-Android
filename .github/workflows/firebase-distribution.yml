@@ -1,0 +1,91 @@
+name: Firebase App Distribution (debug)
+
+# develop 푸시 시 개발 서버를 보는 debug APK 를 QA 테스터 그룹에 자동 배포한다.
+# (운영 서버 release APK 수동 배포는 cd.yml, Play 심사용 AAB 는 release-aab.yml)
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      tester_groups:
+        description: "배포할 Firebase 테스터 그룹(쉼표 구분)"
+        required: true
+        default: "pickflow-qa"
+
+concurrency:
+  group: firebase-distribution-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  distribute:
+    name: Assemble Debug · Distribute
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # 릴리스 노트로 쓸 최근 커밋 메시지를 읽기 위해 히스토리 1개면 충분.
+          fetch-depth: 1
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      # 비공개 키 주입. 시크릿이 비어 있으면 secrets.defaults.properties 의 빈 기본값으로 빌드된다.
+      - name: Write secrets.properties
+        env:
+          SECRETS_PROPERTIES: ${{ secrets.SECRETS_PROPERTIES }}
+        run: |
+          if [ -n "$SECRETS_PROPERTIES" ]; then
+            printf '%s\n' "$SECRETS_PROPERTIES" > secrets.properties
+          fi
+
+      # GA(Firebase Analytics) 설정 주입 — google-services.json 은 미추적 시크릿(.gitignore).
+      # 시크릿이 비어 있으면 파일을 만들지 않아 google-services 플러그인이 스킵된다(GA 만 비활성).
+      - name: Write google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+          fi
+
+      # App Distribution 업로드용 서비스 계정 키를 파일로 복원.
+      - name: Write Firebase service account
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT 시크릿이 없습니다. docs/firebase-distribution.md 참고."
+            exit 1
+          fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
+          echo "FIREBASE_SERVICE_ACCOUNT_FILE=$RUNNER_TEMP/firebase-service-account.json" >> "$GITHUB_ENV"
+
+      # appId·서비스 계정 경로는 app/build.gradle.kts 가 환경변수에서 읽는다.
+      # 릴리스 노트/테스터 그룹은 build.gradle.kts 기본값(최근 커밋 메시지 / pickflow-qa)을 쓰되,
+      # workflow_dispatch 로 그룹을 지정하면 --groups 로 덮어쓴다.
+      - name: Assemble & distribute debug APK
+        env:
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_SERVICE_ACCOUNT_FILE: ${{ env.FIREBASE_SERVICE_ACCOUNT_FILE }}
+        run: |
+          ./gradlew --no-daemon assembleDebug appDistributionUploadDebug \
+            ${{ inputs.tester_groups && format('--groups={0}', inputs.tester_groups) || '' }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pickflow-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14

@@ -1,3 +1,4 @@
+import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 import java.util.Properties
 
 plugins {
@@ -8,6 +9,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     alias(libs.plugins.paparazzi)
+    alias(libs.plugins.firebase.appdistribution)
 }
 
 // GA(Firebase Analytics) 설정 — google-services.json 은 미추적 시크릿(.gitignore).
@@ -33,6 +35,8 @@ val kakaoNativeAppKey: String = secrets.getProperty("KAKAO_NATIVE_APP_KEY", "")
 // CI 가 빈 값을 써 넣어도 기본 API 주소가 유지되도록 blank → 기본값 처리.
 val pickflowApiBaseUrl: String = secrets.getProperty("PICKFLOW_API_BASE_URL", "")
     .ifBlank { "https://pickflow-api.us/api/" }
+val pickflowApiBaseUrlDev: String = secrets.getProperty("PICKFLOW_API_BASE_URL_DEV", "")
+    .ifBlank { "https://dev-api.pickflow-api.us/api/" }
 val termsUrl: String = secrets.getProperty("TERMS_URL", "")
 val privacyUrl: String = secrets.getProperty("PRIVACY_URL", "")
 // CI 가 빈 값을 써 넣어도 long 리터럴이 깨지지 않도록 blank → 기본값 처리.
@@ -44,6 +48,21 @@ val appleRedirectUri: String = secrets.getProperty("APPLE_REDIRECT_URI", "")
 
 // release 서명: CD(GitHub Actions)에서 환경변수로 keystore를 주입할 때만 활성화.
 // 로컬에서는 값이 없으므로 release 빌드도 debug 키로 서명되어 그대로 동작한다.
+// Firebase App Distribution(debug 빌드 QA 배포) 설정 — docs/firebase-distribution.md.
+// appId/서비스 계정 키는 환경변수 우선, 없으면 secrets.properties. 둘 다 없으면 빈 값으로 두고
+// 업로드 태스크(appDistributionUploadDebug)를 실행할 때만 실패한다 — 일반 빌드는 영향 없음.
+val firebaseAppId: String = System.getenv("FIREBASE_APP_ID")
+    ?: secrets.getProperty("FIREBASE_APP_ID", "")
+val firebaseCredentialsFile: String = System.getenv("FIREBASE_SERVICE_ACCOUNT_FILE")
+    ?: secrets.getProperty("FIREBASE_SERVICE_ACCOUNT_FILE", "")
+// 릴리스 노트 = 최근 커밋 메시지. git 이 없거나 저장소가 아니면 빈 값.
+val latestCommitMessage: String = runCatching {
+    providers.exec {
+        commandLine("git", "log", "-1", "--pretty=%s")
+        isIgnoreExitValue = true
+    }.standardOutput.asText.get().trim()
+}.getOrDefault("")
+
 val releaseStoreFile: String? = System.getenv("KEYSTORE_FILE")
 val releaseStorePassword: String? = System.getenv("KEYSTORE_PASSWORD")
 val releaseKeyAlias: String? = System.getenv("KEY_ALIAS")
@@ -93,7 +112,23 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "PICKFLOW_API_BASE_URL", "\"$pickflowApiBaseUrlDev\"")
+            firebaseAppDistribution {
+                // 빈 문자열을 넣으면 google-services.json 폴백이 막히므로 있을 때만 지정.
+                if (firebaseAppId.isNotBlank()) {
+                    appId = firebaseAppId
+                }
+                artifactType = "APK"
+                groups = "pickflow-qa"
+                releaseNotes = latestCommitMessage
+                if (firebaseCredentialsFile.isNotBlank()) {
+                    serviceCredentialsFile = firebaseCredentialsFile
+                }
+            }
+        }
         release {
+            buildConfigField("String", "PICKFLOW_API_BASE_URL", "\"$pickflowApiBaseUrl\"")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

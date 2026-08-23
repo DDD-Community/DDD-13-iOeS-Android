@@ -22,6 +22,7 @@ playServicesLocation = "21.3.0"
 androidxBrowser = "1.8.0"
 androidxSecurityCrypto = "1.1.0-alpha06"
 googleServices = "4.4.4"
+firebaseAppDistribution = "5.1.1"
 # 34.x 는 Kotlin 2.2 메타데이터라 프로젝트 Kotlin 2.0.21 과 비호환 — 33.x 유지.
 firebaseBom = "33.16.0"
 
@@ -115,3 +116,4 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 paparazzi = { id = "app.cash.paparazzi", version.ref = "paparazzi" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+firebase-appdistribution = { id = "com.google.firebase.appdistribution", version.ref = "firebaseAppDistribution" }
