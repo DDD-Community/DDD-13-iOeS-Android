@@ -9,6 +9,7 @@ data class Spot(
     val imageUrl: String? = null,
     val address: String = "",
     val distanceKm: Double? = null,
+    val isBookmarked: Boolean = false,
 )
 
 /**

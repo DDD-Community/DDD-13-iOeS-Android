@@ -310,10 +310,15 @@ private fun SpotMasonryGrid(
     onReachEnd: () -> Unit,
 ) {
     val gridState = rememberLazyStaggeredGridState()
+    // 키 없는 remember 는 첫 컴포지션의 `spots` 를 그대로 붙잡는다. 그래서 목록이 늘어나도
+    // spots.size 는 1페이지 크기에 멈춰 있고, 한 번 true 가 된 reachedEnd 가 계속 true 라
+    // LaunchedEffect 가 다시 뜨지 않아 2페이지 이후로 로드가 끊겼다(= 무한 스크롤 없음).
+    // layoutInfo.totalItemsCount 는 스냅샷 상태라 캡처 없이 매번 최신값을 읽는다.
     val reachedEnd by remember {
         derivedStateOf {
-            val last = gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            spots.isNotEmpty() && last >= spots.size - 3
+            val info = gridState.layoutInfo
+            val last = info.visibleItemsInfo.lastOrNull()?.index ?: -1
+            info.totalItemsCount > 0 && last >= info.totalItemsCount - 3
         }
     }
     LaunchedEffect(reachedEnd) { if (reachedEnd) onReachEnd() }

@@ -34,6 +34,7 @@ fun SpotItemDto.toSpot(): Spot = Spot(
     imageUrl = thumbnailUrl?.takeIf { it.isNotBlank() },
     address = "",
     distanceKm = distanceKm,
+    isBookmarked = isBookmarked,
 )
 
 fun SpotListResponseDto.toSpotPage(): SpotPage = SpotPage(
@@ -129,4 +130,5 @@ fun SpotPreviewResponseDto.toSpotPreview(): SpotPreview = SpotPreview(
     addressSimple = addressSimple,
     addressRoad = addressRoad?.takeIf { it.isNotBlank() },
     addressJibun = addressJibun?.takeIf { it.isNotBlank() },
+    isBookmarked = isBookmarked,
 )

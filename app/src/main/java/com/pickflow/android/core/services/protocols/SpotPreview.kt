@@ -20,4 +20,5 @@ data class SpotPreview(
     val addressSimple: String,
     val addressRoad: String?,
     val addressJibun: String?,
+    val isBookmarked: Boolean = false,
 )
