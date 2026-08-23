@@ -60,6 +60,9 @@ import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotSort
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.feature.map.MoodFilter
+import com.pickflow.android.feature.map.components.MoodFilterRow
+import com.pickflow.android.feature.map.toMood
+import com.pickflow.android.feature.map.toTheme
 
 @Composable
 fun SpotListScreen(
@@ -68,7 +71,7 @@ fun SpotListScreen(
     viewModel: SpotListViewModel = hiltViewModel(),
 ) {
     val spots by viewModel.spots.collectAsStateWithLifecycle()
-    val theme by viewModel.theme.collectAsStateWithLifecycle()
+    val themes by viewModel.themes.collectAsStateWithLifecycle()
     val sort by viewModel.sort.collectAsStateWithLifecycle()
     val bookmarkedIds by viewModel.bookmarkedIds.collectAsStateWithLifecycle()
     val showLoginPrompt by viewModel.showLoginPrompt.collectAsStateWithLifecycle()
@@ -106,13 +109,10 @@ fun SpotListScreen(
             onSelectSort = onSelectSort,
         )
         MoodFilterRow(
-            selected = theme.toMood(),
-            onSelect = { mood ->
-                val current = theme.toMood()
-                viewModel.selectTheme(if (current == mood) null else mood.toTheme())
-            },
+            selected = themes.mapTo(mutableSetOf()) { it.toMood() },
+            onSelect = { mood -> viewModel.toggleTheme(mood.toTheme()) },
+            testTag = "spotlist-mood",
         )
-        Spacer(Modifier.height(8.dp))
         LoadStateContent(
             state = spots,
             emptyMessage = "아직 저장한 스팟이 없어요.",
@@ -301,49 +301,6 @@ private fun SortRow(option: SpotSort, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
-/** iOS `HomeMapView.MoodFilterRow` 와 동일한 무드 캡슐 — 아이콘 + 라벨. */
-@Composable
-private fun MoodFilterRow(selected: MoodFilter?, onSelect: (MoodFilter) -> Unit) {
-    Row(
-        modifier = Modifier
-            .padding(horizontal = 20.dp, vertical = 4.dp)
-            .testTag("spotlist-mood"),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        MoodFilter.entries.forEach { mood ->
-            MoodCapsule(mood = mood, selected = selected == mood) { onSelect(mood) }
-        }
-    }
-}
-
-@Composable
-private fun MoodCapsule(mood: MoodFilter, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .then(
-                if (selected) {
-                    Modifier.border(1.dp, PickflowColors.sunsetOrange, RoundedCornerShape(8.dp))
-                } else Modifier,
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Image(
-            painter = painterResource(mood.iconRes),
-            contentDescription = mood.displayName,
-            modifier = Modifier.size(20.dp),
-        )
-        Text(
-            text = mood.displayName,
-            style = PickflowTypography.bodyLargeBold,
-            color = if (selected) PickflowColors.gray0 else PickflowColors.gray10,
-        )
-    }
-}
-
 @Composable
 private fun SpotMasonryGrid(
     spots: List<Spot>,
@@ -527,26 +484,10 @@ private fun MetaRow(
     }
 }
 
-private fun SpotTheme.iconRes(): Int = when (this) {
-    SpotTheme.SUNSET -> R.drawable.ic_sunset
-    SpotTheme.YUNSEUL -> R.drawable.ic_reflection
-}
+// 아이콘·라벨은 MoodFilter 를 단일 출처로 삼는다. 무드가 추가돼도 여기는 손댈 곳이 없다.
+private fun SpotTheme.iconRes(): Int = toMood().iconRes
 
-fun SpotTheme.label(): String = when (this) {
-    SpotTheme.SUNSET -> "노을"
-    SpotTheme.YUNSEUL -> "윤슬"
-}
-
-private fun SpotTheme?.toMood(): MoodFilter? = when (this) {
-    SpotTheme.SUNSET -> MoodFilter.Sunset
-    SpotTheme.YUNSEUL -> MoodFilter.Reflection
-    null -> null
-}
-
-private fun MoodFilter.toTheme(): SpotTheme = when (this) {
-    MoodFilter.Sunset -> SpotTheme.SUNSET
-    MoodFilter.Reflection -> SpotTheme.YUNSEUL
-}
+fun SpotTheme.label(): String = toMood().displayName
 
 fun SpotSort.displayName(): String = when (this) {
     SpotSort.DISTANCE -> "가까운 순"

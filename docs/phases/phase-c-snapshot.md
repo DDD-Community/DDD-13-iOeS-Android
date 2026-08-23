@@ -71,10 +71,11 @@ iOS에 대응 스냅샷이 없는, Android 쪽에서 독립적으로 추가한 �
 | Archive | 17 | 보관함 목록·이름 변경 다이얼로그 |
 | MapMarker | 9 | 지도 마커 선택/미선택 상태 |
 | Notice | 5 | 공지 목록·상세 |
+| MoodFilter(PV-59) | 4 | 무드 필터 4종 선택 상태 + 카드 배지 |
 | PaparazziSetup(smoke) | 1 | 하네스 동작 확인용 |
-| **소계** | **32** | |
+| **소계** | **36** | |
 
-**저장소 전체 스냅샷: 197장** (`app/src/test/snapshots/images/`). 그룹을 추가·삭제하면 이 표를 함께 갱신한다.
+**저장소 전체 스냅샷: 201장** (`app/src/test/snapshots/images/`). 그룹을 추가·삭제하면 이 표를 함께 갱신한다.
 
 ### LoginView (12/12 완료)
 

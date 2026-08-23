@@ -9,11 +9,17 @@ import com.pickflow.android.R
  * iOS `SpotTheme`(노을/윤슬) 대응이라 이름 충돌을 피해 별도 타입으로 둔다.
  */
 enum class SpotListMood(val displayName: String, val iconRes: Int) {
-    /** iOS `.sunset` — 탐색 탭 노을 필터와 동일한 아이콘 사용. */
-    Sunset("노을", R.drawable.ic_sunset),
+    /** iOS `.sunlight` — 탐색 탭 햇살 필터와 동일한 아이콘 사용. */
+    Sunlight("햇살", R.drawable.ic_sunny),
 
     /** iOS `.reflection` — 탐색 탭 윤슬 필터와 동일한 아이콘 사용. */
     Reflection("윤슬", R.drawable.ic_reflection),
+
+    /** iOS `.sunset` — 탐색 탭 노을 필터와 동일한 아이콘 사용. */
+    Sunset("노을", R.drawable.ic_sunset),
+
+    /** iOS `.night` — 탐색 탭 야경 필터와 동일한 아이콘 사용. */
+    Night("야경", R.drawable.ic_night),
 }
 
 /** iOS `SpotListItem` 1:1 대응. */

@@ -200,6 +200,8 @@ fun Spot.toSpotDetailData(): SpotDetailData = SpotDetailData(
 )
 
 private fun SpotTheme.toDetailTheme(): SpotDetailTheme = when (this) {
-    SpotTheme.SUNSET -> SpotDetailTheme.Sunset
+    SpotTheme.SUNLIGHT -> SpotDetailTheme.Sunlight
     SpotTheme.YUNSEUL -> SpotDetailTheme.Reflection
+    SpotTheme.SUNSET -> SpotDetailTheme.Sunset
+    SpotTheme.NIGHT_VIEW -> SpotDetailTheme.Night
 }

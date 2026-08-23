@@ -8,6 +8,7 @@ import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.LocationService
+import com.pickflow.android.core.services.protocols.MoodFilterStore
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotMapMarker
@@ -21,6 +22,10 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 /**
@@ -38,7 +43,19 @@ class HomeMapViewModel @Inject constructor(
     private val authService: AuthService,
     private val bookmarkService: BookmarkService,
     private val externalAppLauncher: ExternalAppLauncher,
+    /** 리스트와 공유하는 무드 선택. 어느 쪽에서 바꿔도 양쪽이 같이 움직인다. */
+    private val moodFilterStore: MoodFilterStore,
 ) : ViewModel() {
+
+    init {
+        // 리스트에서 무드를 바꿨을 때 지도도 따라와야 한다.
+        // drop(1) — 최초 값은 화면의 load() 가 이미 처리하므로 중복 요청을 막는다.
+        viewModelScope.launch {
+            moodFilterStore.selected.drop(1).collect {
+                lastViewport?.let { box -> onViewportChanged(box, _zoom.value) } ?: load()
+            }
+        }
+    }
 
     /** 큐레이션 스팟(클러스터링 대상). NaverMapView 가 SDK Clusterer 에 넣는다. */
     private val _curationSpots = MutableStateFlow<LoadState<List<Spot>>>(LoadState.Idle)
@@ -55,8 +72,13 @@ class HomeMapViewModel @Inject constructor(
     private val _zoom = MutableStateFlow(12)
     val zoom: StateFlow<Int> = _zoom.asStateFlow()
 
-    private val _selectedMood = MutableStateFlow<MoodFilter?>(null)
-    val selectedMood: StateFlow<MoodFilter?> = _selectedMood.asStateFlow()
+    /**
+     * 다중선택 무드 필터. 빈 Set = 필터 없음(전체 스팟).
+     * 실제 상태는 [MoodFilterStore]가 들고 있고 여기서는 UI 타입으로 비춰주기만 한다.
+     */
+    val selectedMoods: StateFlow<Set<MoodFilter>> = moodFilterStore.selected
+        .map { themes -> themes.mapTo(mutableSetOf()) { it.toMood() } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
     private val _mapListMode = MutableStateFlow(MapListMode.MAP)
     val mapListMode: StateFlow<MapListMode> = _mapListMode.asStateFlow()
@@ -97,7 +119,7 @@ class HomeMapViewModel @Inject constructor(
         viewModelScope.launch {
             _curationSpots.value = LoadState.Loading
             _curationSpots.value = runCatching {
-                val all = spotListService.fetch(theme = themeForMood(_selectedMood.value), page = 0).items
+                val all = spotListService.fetch(themes = moodFilterStore.selected.value, page = 0).items
                 loadedSpots = all
                 _mySpots.value = emptyList() // 초기 fetch 는 isMySpot 정보 없음 → 전부 큐레이션 취급
                 all
@@ -120,7 +142,7 @@ class HomeMapViewModel @Inject constructor(
         viewModelScope.launch {
             _curationSpots.value = LoadState.Loading
             _curationSpots.value = runCatching {
-                val markers = spotMapService.fetchInViewport(box, themeForMood(_selectedMood.value))
+                val markers = spotMapService.fetchInViewport(box, moodFilterStore.selected.value)
                 val (mineMarkers, curationMarkers) = markers.partition { it.isMySpot }
                 _mySpots.value = mineMarkers.map(SpotMapMarker::toMySpotMarker)
                 val curationSpots = curationMarkers.map(SpotMapMarker::toSpot)
@@ -142,10 +164,11 @@ class HomeMapViewModel @Inject constructor(
         lastViewport?.let { onViewportChanged(it, level) } ?: load()
     }
 
-    fun selectMood(mood: MoodFilter) {
-        _selectedMood.value = if (_selectedMood.value == mood) null else mood
-        lastViewport?.let { onViewportChanged(it, _zoom.value) } ?: load()
-    }
+    /**
+     * 무드 다중선택 토글 — 이미 선택돼 있으면 그 하나만 해제한다. 전부 해제하면 전체 조회.
+     * 재조회는 [moodFilterStore] 구독(init)이 담당하므로 여기서 직접 부르지 않는다.
+     */
+    fun selectMood(mood: MoodFilter) = moodFilterStore.toggle(mood.toTheme())
 
     fun selectMapListMode(mode: MapListMode) {
         _mapListMode.value = mode
@@ -271,11 +294,6 @@ class HomeMapViewModel @Inject constructor(
 
     fun spotById(id: String): Spot? = loadedSpots.firstOrNull { it.id == id }
 
-    private fun themeForMood(mood: MoodFilter?): SpotTheme? = when (mood) {
-        MoodFilter.Sunset -> SpotTheme.SUNSET
-        MoodFilter.Reflection -> SpotTheme.YUNSEUL
-        null -> null
-    }
 }
 
 private fun SpotMapMarker.toSpot(): Spot = Spot(

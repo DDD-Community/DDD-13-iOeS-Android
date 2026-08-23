@@ -33,6 +33,7 @@ val secrets = Properties().apply {
 val naverMapClientId: String = secrets.getProperty("NAVER_MAP_CLIENT_ID", "")
 val kakaoNativeAppKey: String = secrets.getProperty("KAKAO_NATIVE_APP_KEY", "")
 // CI 가 빈 값을 써 넣어도 기본 API 주소가 유지되도록 blank → 기본값 처리.
+// debug 빌드는 개발 서버, release 빌드는 운영 서버를 본다(buildTypes 에서 주입).
 val pickflowApiBaseUrl: String = secrets.getProperty("PICKFLOW_API_BASE_URL", "")
     .ifBlank { "https://pickflow-api.us/api/" }
 val pickflowApiBaseUrlDev: String = secrets.getProperty("PICKFLOW_API_BASE_URL_DEV", "")
@@ -46,8 +47,6 @@ val kakaoRestApiKey: String = secrets.getProperty("KAKAO_REST_API_KEY", "")
 val appleServiceId: String = secrets.getProperty("APPLE_SERVICE_ID", "")
 val appleRedirectUri: String = secrets.getProperty("APPLE_REDIRECT_URI", "")
 
-// release 서명: CD(GitHub Actions)에서 환경변수로 keystore를 주입할 때만 활성화.
-// 로컬에서는 값이 없으므로 release 빌드도 debug 키로 서명되어 그대로 동작한다.
 // Firebase App Distribution(debug 빌드 QA 배포) 설정 — docs/firebase-distribution.md.
 // appId/서비스 계정 키는 환경변수 우선, 없으면 secrets.properties. 둘 다 없으면 빈 값으로 두고
 // 업로드 태스크(appDistributionUploadDebug)를 실행할 때만 실패한다 — 일반 빌드는 영향 없음.
@@ -63,6 +62,8 @@ val latestCommitMessage: String = runCatching {
     }.standardOutput.asText.get().trim()
 }.getOrDefault("")
 
+// release 서명: CD(GitHub Actions)에서 환경변수로 keystore를 주입할 때만 활성화.
+// 로컬에서는 값이 없으므로 release 빌드도 debug 키로 서명되어 그대로 동작한다.
 val releaseStoreFile: String? = System.getenv("KEYSTORE_FILE")
 val releaseStorePassword: String? = System.getenv("KEYSTORE_PASSWORD")
 val releaseKeyAlias: String? = System.getenv("KEY_ALIAS")
@@ -83,15 +84,14 @@ android {
         // versionCode 는 단조증가 정수 — 이 fallback 이 단일 출처이며 릴리스마다 커밋해 갱신한다.
         // 1.0.2 부터 XYZNN(versionName 3자리 + 빌드 차수 2자리) 형태로 읽되, 단조증가가 우선 제약이다.
         // (1.0.1 배포본이 1000103 을 소모했으므로 그보다 큰 값이어야 한다.)
-        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1000301
-        versionName = System.getenv("VERSION_NAME") ?: "1.0.3"
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1010001
+        versionName = System.getenv("VERSION_NAME") ?: "1.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         manifestPlaceholders["naverMapClientId"] = naverMapClientId
         manifestPlaceholders["kakaoNativeAppKey"] = kakaoNativeAppKey
         buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
         buildConfigField("String", "NAVER_MAP_CLIENT_ID", "\"$naverMapClientId\"")
-        buildConfigField("String", "PICKFLOW_API_BASE_URL", "\"$pickflowApiBaseUrl\"")
         buildConfigField("String", "TERMS_URL", "\"$termsUrl\"")
         buildConfigField("String", "PRIVACY_URL", "\"$privacyUrl\"")
         buildConfigField("long", "NOTICE_BOARD_MASTER_ID", "${noticeBoardMasterId}L")
