@@ -18,6 +18,10 @@
 
 내부 검증용 무 옵션 빌드는 사용 가능, 사용자가 명시한 빌드 명령이 있다면 그것을 우선 사용한다.
 
+**새 워크트리/클론은 `./scripts/bootstrap-worktree.sh` 를 먼저 돌린다.** git 이 추적하지 않는
+`local.properties`, `secrets.properties`, `app/google-services.json` 을 `~/.pickflow` 의 원본에서
+채운다(이미 있으면 건드리지 않음). Orca 는 repo 설정의 setup hook 에 걸어두면 자동으로 돈다.
+
 ## 3. 코드 스타일
 
 - Kotlin 표준 4-space 인덴트.

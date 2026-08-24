@@ -64,6 +64,25 @@ Settings → Secrets and variables → Actions.
   --groups=qa,designer --releaseNotes="스팟 상세 하단 여백 수정"
 ```
 
+### 배포 완료 Discord 알림
+
+로컬 배포가 **성공하면** Discord 채널로 알림이 간다. 업로드 태스크의 `doLast` 에 붙어 있어
+업로드가 실패하면 보내지 않는다.
+
+```
+✅ Firebase-QA 배포 완료
+버전        1.0.4 (1000401)
+브랜치      feature/dev-mode
+배포자      kangddong        (git config user.name)
+테스트 노트  최근 커밋 메시지
+```
+
+- 웹훅 URL 은 `secrets.properties` 의 `DISCORD_WEBHOOK_URL`(미추적). **비어 있으면 조용히 건너뛴다.**
+- CI 는 이 값을 설정하지 않으므로 GitHub Actions 배포는 알림을 보내지 않는다. 로컬 전용이다.
+- 테스트 노트를 그때그때 바꾸려면 `-PdeployNote="..."` 를 붙인다.
+- 업로드 없이 알림만 확인하려면 `./gradlew :app:notifyDiscordQaDeploy`.
+- 알림 전송이 실패해도 경고만 남기고 빌드는 성공한다(배포는 이미 끝났으므로).
+
 ### 최초 1회 설치·인증
 
 플러그인은 `serviceCredentialsFile` → `GOOGLE_APPLICATION_CREDENTIALS` →
