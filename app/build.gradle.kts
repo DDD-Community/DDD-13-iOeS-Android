@@ -84,8 +84,8 @@ android {
         // versionCode 는 단조증가 정수 — 이 fallback 이 단일 출처이며 릴리스마다 커밋해 갱신한다.
         // 1.0.2 부터 XYZNN(versionName 3자리 + 빌드 차수 2자리) 형태로 읽되, 단조증가가 우선 제약이다.
         // (1.0.1 배포본이 1000103 을 소모했으므로 그보다 큰 값이어야 한다.)
-        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1010001
-        versionName = System.getenv("VERSION_NAME") ?: "1.1.0"
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1000401
+        versionName = System.getenv("VERSION_NAME") ?: "1.0.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         manifestPlaceholders["naverMapClientId"] = naverMapClientId
@@ -98,6 +98,9 @@ android {
         buildConfigField("String", "KAKAO_REST_API_KEY", "\"$kakaoRestApiKey\"")
         buildConfigField("String", "APPLE_SERVICE_ID", "\"$appleServiceId\"")
         buildConfigField("String", "APPLE_REDIRECT_URI", "\"$appleRedirectUri\"")
+        // Dev Mode 런타임 환경 전환용 — 두 주소를 항상 함께 심는다(선택값은 DevSettings 가 보관).
+        buildConfigField("String", "PICKFLOW_API_BASE_URL_DEV", "\"$pickflowApiBaseUrlDev\"")
+        buildConfigField("String", "PICKFLOW_API_BASE_URL_PROD", "\"$pickflowApiBaseUrl\"")
     }
 
     signingConfigs {
