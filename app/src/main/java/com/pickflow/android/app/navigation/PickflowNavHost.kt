@@ -12,7 +12,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.pickflow.android.feature.accountmanagement.AccountManagementScreen
 import com.pickflow.android.feature.archive.ArchiveTab
-import com.pickflow.android.feature.debug.DebugScreen
+import com.pickflow.android.feature.devmode.DevModeScreen
 import com.pickflow.android.feature.home.HomeScreen
 import com.pickflow.android.feature.login.LoginScreen
 import com.pickflow.android.feature.myprofile.termsandpolicy.TermsAndPolicyListScreen
@@ -87,7 +87,7 @@ fun PickflowNavHost(
                         popUpTo(PickflowRoute.HOME) { inclusive = true }
                     }
                 },
-                onOpenDebug = { navController.navigate(PickflowRoute.DEBUG) },
+                onOpenDevMode = { navController.navigate(PickflowRoute.DEV_MODE) },
                 onOpenAccount = { navController.navigate(PickflowRoute.ACCOUNT_MANAGEMENT) },
                 onOpenNotice = { navController.navigate(PickflowRoute.NOTICE_LIST) },
                 onOpenTermsAndPolicy = { navController.navigate(PickflowRoute.TERMS_AND_POLICY) },
@@ -205,8 +205,8 @@ fun PickflowNavHost(
             )
         }
 
-        composable(PickflowRoute.DEBUG) {
-            DebugScreen(onBack = navController::popBackStack)
+        composable(PickflowRoute.DEV_MODE) {
+            DevModeScreen(onBack = navController::popBackStack)
         }
     }
 }

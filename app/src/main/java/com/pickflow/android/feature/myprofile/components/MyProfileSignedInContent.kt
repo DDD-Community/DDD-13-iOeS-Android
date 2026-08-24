@@ -55,6 +55,8 @@ fun MyProfileSignedInContent(
     onOpenTermsAndPolicy: () -> Unit = {},
     onOpenSavedSpots: () -> Unit = {},
     onOpenMySpots: () -> Unit = {},
+    /** 운영이 아닌 서버를 볼 때 버전 뒤에 붙는 짧은 이름. 운영이면 null. */
+    environmentSuffix: String? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -192,7 +194,7 @@ fun MyProfileSignedInContent(
         MenuDivider()
 
         // 앱 버전 — 약관 화면 내부에서 마이 탭 최상위로 이동. 클릭 불가, 버전 후행 표시.
-        AppVersionRow()
+        AppVersionRow(environmentSuffix = environmentSuffix)
     }
 }
 
@@ -208,7 +210,7 @@ private fun MenuDivider() {
 }
 
 @Composable
-private fun AppVersionRow() {
+private fun AppVersionRow(environmentSuffix: String?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -218,15 +220,21 @@ private fun AppVersionRow() {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "앱 버전",
+            text = "\uc571 \ubc84\uc804",
             style = PickflowTypography.bodyLarge,
             color = PickflowColors.gray0,
             modifier = Modifier.weight(1f),
         )
         Text(
-            text = "v${BuildConfig.VERSION_NAME}",
+            text = environmentSuffix
+                ?.let { "v${BuildConfig.VERSION_NAME} \u00b7 $it" }
+                ?: "v${BuildConfig.VERSION_NAME}",
             style = PickflowTypography.bodyMedium,
-            color = PickflowColors.gray40,
+            color = if (environmentSuffix != null) {
+                PickflowColors.sunsetOrange
+            } else {
+                PickflowColors.gray40
+            },
         )
     }
 }

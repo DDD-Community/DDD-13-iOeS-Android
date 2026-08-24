@@ -23,6 +23,7 @@ fun MyProfileScreen(
     onOpenTermsAndPolicy: () -> Unit = {},
     onOpenSavedSpots: () -> Unit = {},
     onOpenMySpots: () -> Unit = {},
+    environmentSuffix: String? = null,
     viewModel: MyProfileViewModel = hiltViewModel(),
 ) {
     val loggedIn by viewModel.loggedIn.collectAsStateWithLifecycle()
@@ -54,6 +55,7 @@ fun MyProfileScreen(
                     onOpenTermsAndPolicy = onOpenTermsAndPolicy,
                     onOpenSavedSpots = onOpenSavedSpots,
                     onOpenMySpots = onOpenMySpots,
+                    environmentSuffix = environmentSuffix,
                 )
             }
         }

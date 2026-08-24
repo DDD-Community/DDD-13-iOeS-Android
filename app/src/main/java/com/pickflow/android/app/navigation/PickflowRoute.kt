@@ -11,7 +11,7 @@ object PickflowRoute {
     const val ACCOUNT_MANAGEMENT = "account_management"
     const val TERMS_AND_POLICY = "terms_and_policy"
     const val WITHDRAWAL = "withdrawal"
-    const val DEBUG = "debug"
+    const val DEV_MODE = "dev_mode"
 
     const val SPOT_DETAIL = "spot_detail/{spotId}?registered={registered}"
     fun spotDetail(spotId: String, registered: Boolean = false) =

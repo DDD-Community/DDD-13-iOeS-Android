@@ -98,6 +98,9 @@ android {
         buildConfigField("String", "KAKAO_REST_API_KEY", "\"$kakaoRestApiKey\"")
         buildConfigField("String", "APPLE_SERVICE_ID", "\"$appleServiceId\"")
         buildConfigField("String", "APPLE_REDIRECT_URI", "\"$appleRedirectUri\"")
+        // Dev Mode 런타임 환경 전환용 — 두 주소를 항상 함께 심는다(선택값은 DevSettings 가 보관).
+        buildConfigField("String", "PICKFLOW_API_BASE_URL_DEV", "\"$pickflowApiBaseUrlDev\"")
+        buildConfigField("String", "PICKFLOW_API_BASE_URL_PROD", "\"$pickflowApiBaseUrl\"")
     }
 
     signingConfigs {
