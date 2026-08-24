@@ -7,10 +7,12 @@ import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.LocationService
+import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotMapMarker
 import com.pickflow.android.core.services.protocols.SpotMapService
+import com.pickflow.android.core.services.protocols.SpotSource
 import com.pickflow.android.core.services.protocols.SpotService
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.core.services.protocols.ViewportBox
@@ -70,11 +72,20 @@ class HomeMapViewportPartitionTest {
         bottomRight = Coordinates(37.5, 127.1),
     )
 
-    private fun marker(id: Long, isMine: Boolean) = SpotMapMarker(
+    private fun marker(
+        id: Long,
+        isMine: Boolean,
+        source: SpotSource = if (isMine) SpotSource.User else SpotSource.Curated("Pickflow"),
+        status: MySpotStatus? = if (isMine) MySpotStatus.DRAFT else null,
+        isOwnedByCurrentUser: Boolean = isMine,
+    ) = SpotMapMarker(
         spotId = id,
         imageUrl = null,
         coordinates = Coordinates(37.55, 127.0),
         isMySpot = isMine,
+        source = source,
+        status = status,
+        isOwnedByCurrentUser = isOwnedByCurrentUser,
     )
 
     @Test
@@ -97,6 +108,70 @@ class HomeMapViewportPartitionTest {
         // mySpots 는 isMySpot=true 인 2,4.
         assertEquals(listOf(2L, 4L), viewModel.mySpots.value.map { it.spotId })
     }
+
+    @Test
+    fun `viewport exposes only owned draft as MY and published user spots to public cluster`() =
+        runTest(testDispatcher) {
+            coEvery { mapService.fetchInViewport(any(), any()) } returns listOf(
+                marker(1, isMine = false),
+                marker(
+                    2,
+                    isMine = true,
+                    source = SpotSource.User,
+                    status = MySpotStatus.DRAFT,
+                ),
+                marker(
+                    3,
+                    isMine = false,
+                    source = SpotSource.User,
+                    status = MySpotStatus.DRAFT,
+                    isOwnedByCurrentUser = false,
+                ),
+                marker(
+                    4,
+                    isMine = true,
+                    source = SpotSource.User,
+                    status = MySpotStatus.PENDING,
+                ),
+                marker(
+                    5,
+                    isMine = true,
+                    source = SpotSource.User,
+                    status = MySpotStatus.RE_REVIEW_PENDING,
+                ),
+                marker(
+                    6,
+                    isMine = true,
+                    source = SpotSource.User,
+                    status = MySpotStatus.REJECTED,
+                ),
+                marker(
+                    7,
+                    isMine = true,
+                    source = SpotSource.User,
+                    status = MySpotStatus.PUBLISHED,
+                ),
+                marker(
+                    8,
+                    isMine = false,
+                    source = SpotSource.User,
+                    status = MySpotStatus.PUBLISHED,
+                    isOwnedByCurrentUser = false,
+                ),
+            )
+
+            val viewModel = vm()
+            viewModel.onViewportChanged(box(), 12)
+            advanceUntilIdle()
+
+            val publicSpots = viewModel.curationSpots.value as LoadState.Loaded<List<Spot>>
+            assertEquals(listOf("1", "7", "8"), publicSpots.value.map { it.id })
+            assertEquals(listOf(2L), viewModel.mySpots.value.map { it.spotId })
+            assertEquals(null, viewModel.spotById("3"))
+            assertEquals(null, viewModel.spotById("4"))
+            assertEquals(null, viewModel.spotById("5"))
+            assertEquals(null, viewModel.spotById("6"))
+        }
 
     @Test
     fun `selectSpot updates selectedSpotId and selectedCluster`() = runTest(testDispatcher) {

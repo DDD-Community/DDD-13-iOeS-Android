@@ -18,7 +18,15 @@ data class SavedSpot(
     val distanceKm: Double?,
     val savedAt: String,
     val deleted: Boolean,
+    val availability: SavedSpotAvailability = if (deleted) {
+        SavedSpotAvailability.DELETED
+    } else {
+        SavedSpotAvailability.AVAILABLE
+    },
+    val isUserGenerated: Boolean = false,
 )
+
+enum class SavedSpotAvailability { AVAILABLE, AUTHOR_PRIVATE, DELETED }
 
 data class SavedSpotPage(
     val items: List<SavedSpot>,

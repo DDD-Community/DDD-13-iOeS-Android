@@ -8,6 +8,10 @@ object PickflowRoute {
     const val SPOT_SEARCH = "spot_search"
     const val SPOT_LOCATION_DETAIL = "spot_location_detail"
     const val SPOT_REGISTRATION = "spot_registration"
+    const val SPOT_REGISTRATION_ROUTE =
+        "spot_registration?reviseSpotId={reviseSpotId}"
+    fun spotRevision(spotId: Long) = "spot_registration?reviseSpotId=$spotId"
+    const val ARG_REVISE_SPOT_ID = "reviseSpotId"
     const val ACCOUNT_MANAGEMENT = "account_management"
     const val TERMS_AND_POLICY = "terms_and_policy"
     const val WITHDRAWAL = "withdrawal"

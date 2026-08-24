@@ -6,8 +6,14 @@ import com.pickflow.android.core.services.protocols.AddressSuggestion
 import com.pickflow.android.core.services.protocols.CreateMySpotResult
 import com.pickflow.android.core.services.protocols.ImagePayload
 import com.pickflow.android.core.services.protocols.LocationService
+import com.pickflow.android.core.services.protocols.MySpotDetail
 import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.MySpotStatus
+import com.pickflow.android.core.services.protocols.MySpotTransitionResult
+import com.pickflow.android.core.services.protocols.MySpotUpdateResult
+import com.pickflow.android.core.services.protocols.RejectionReason
+import com.pickflow.android.core.services.protocols.SpotRejection
+import com.pickflow.android.core.services.protocols.SpotSource
 import com.pickflow.android.core.services.protocols.SpotDraft
 import com.pickflow.android.core.services.protocols.SpotTheme
 import io.mockk.coEvery
@@ -62,6 +68,31 @@ class SpotRegistrationViewModelTest {
         filename = "spot.jpg",
     )
 
+    private fun rejectedDetail() = MySpotDetail(
+        id = 41L,
+        name = "기존 노을 스팟",
+        theme = SpotTheme.YUNSEUL,
+        imageUrl = "https://cdn.example.com/41.jpg",
+        latitude = 37.55,
+        longitude = 127.01,
+        address = "서울특별시 용산구 노을길 41",
+        capturedDate = "2026-05-20",
+        capturedTime = "19:40",
+        comment = "기존 코멘트",
+        status = MySpotStatus.REJECTED,
+        rejection = SpotRejection(
+            reason = RejectionReason.LOW_QUALITY,
+            reasonLabel = "사진 상태 불량",
+            guideMessage = "사진이 흐려요",
+            detail = null,
+            rejectedAt = "2026-08-06T10:00:00Z",
+        ),
+        recommendationCount = 3L,
+        isRecommended = false,
+        source = SpotSource.User,
+        updatedAt = "2026-08-06T10:00:00Z",
+    )
+
     /** 필수값(사진/이름/주소/테마/날짜/시간)을 모두 채운다. */
     private fun SpotRegistrationViewModel.fillRequired() {
         setImagePayload(image(), previewUri = null)
@@ -112,22 +143,23 @@ class SpotRegistrationViewModelTest {
     }
 
     @Test
-    fun `submit success emits Loaded with created result`() = runTest(testDispatcher) {
+    fun `create mode submit emits draft result`() = runTest(testDispatcher) {
         val captured = slot<SpotDraft>()
         coEvery { mySpotService.create(capture(captured), any()) } returns CreateMySpotResult(
             spotId = 42L,
-            status = MySpotStatus.PENDING,
+            status = MySpotStatus.DRAFT,
             imageUrl = "https://s3/42.jpg",
         )
 
         val vm = vm()
+        assertEquals(SpotRegistrationMode.CREATE, vm.mode.value)
         vm.fillRequired()
         vm.submit()
         advanceUntilIdle()
 
         val state = vm.submission.value as LoadState.Loaded
         assertEquals(42L, state.value.spotId)
-        assertEquals(MySpotStatus.PENDING, state.value.status)
+        assertEquals(MySpotStatus.DRAFT, state.value.status)
 
         // 드래프트는 서버 포맷(yyyy-MM-dd / HH:mm)으로 직렬화된다.
         assertEquals("Cafe", captured.captured.name)
@@ -135,5 +167,164 @@ class SpotRegistrationViewModelTest {
         assertEquals("2026-05-21", captured.captured.capturedDate)
         assertEquals("14:30", captured.captured.capturedTime)
         coVerify(exactly = 1) { mySpotService.create(any(), any()) }
+    }
+
+    @Test
+    fun `loadRevision switches mode and prefills every rejected detail field`() = runTest(testDispatcher) {
+        val detail = rejectedDetail()
+        coEvery { mySpotService.detail(41L) } returns detail
+        val vm = vm()
+
+        vm.loadRevision(41L)
+        advanceUntilIdle()
+
+        assertEquals(SpotRegistrationMode.REVISE, vm.mode.value)
+        assertEquals(LoadState.Loaded(detail), vm.revisionLoadState.value)
+        assertEquals(detail.name, vm.spotName.value)
+        assertEquals(detail.theme, vm.theme.value)
+        assertEquals(detail.address, vm.selectedAddress.value?.fullAddress)
+        assertEquals(detail.latitude, vm.selectedAddress.value?.latitude)
+        assertEquals(detail.longitude, vm.selectedAddress.value?.longitude)
+        assertEquals(LocalDate.of(2026, 5, 20), vm.capturedDate.value)
+        assertEquals(LocalTime.of(19, 40), vm.capturedTime.value)
+        assertEquals(detail.comment, vm.comment.value)
+        assertEquals(detail.imageUrl, vm.existingImageUrl.value)
+        assertEquals(null, vm.imagePayload.value)
+    }
+
+    @Test
+    fun `existing server image enables revise submission without local payload`() =
+        runTest(testDispatcher) {
+            coEvery { mySpotService.detail(41L) } returns rejectedDetail()
+            val vm = vm()
+
+            vm.isRegisterEnabled.test {
+                assertFalse(awaitItem())
+                vm.loadRevision(41L)
+                advanceUntilIdle()
+
+                var enabled = false
+                while (!enabled) enabled = awaitItem()
+                assertTrue(enabled)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `revise submit without replacement keeps existing server image`() = runTest(testDispatcher) {
+        coEvery { mySpotService.detail(41L) } returns rejectedDetail()
+        coEvery { mySpotService.update(41L, any(), null) } returns
+            MySpotUpdateResult(
+                spotId = 41L,
+                status = MySpotStatus.REJECTED,
+                imageUrl = "https://cdn.example.com/41.jpg",
+            )
+        coEvery { mySpotService.requestOpen(41L) } returns
+            MySpotTransitionResult(
+                spotId = 41L,
+                status = MySpotStatus.RE_REVIEW_PENDING,
+                updatedAt = "2026-08-06T10:01:00Z",
+            )
+        val vm = vm()
+        vm.loadRevision(41L)
+        advanceUntilIdle()
+
+        vm.setSpotName("보완한 노을 스팟")
+        vm.submit()
+        advanceUntilIdle()
+
+        val state = vm.submission.value as LoadState.Loaded
+        assertEquals(MySpotStatus.RE_REVIEW_PENDING, state.value.status)
+        assertEquals("https://cdn.example.com/41.jpg", vm.existingImageUrl.value)
+        coVerify(exactly = 1) { mySpotService.update(41L, any(), null) }
+        coVerify(exactly = 1) { mySpotService.requestOpen(41L) }
+        coVerify(exactly = 0) { mySpotService.create(any(), any()) }
+    }
+
+    @Test
+    fun `revise submit sends only newly selected replacement image`() = runTest(testDispatcher) {
+        val replacement = image().copy(filename = "replacement.jpg")
+        coEvery { mySpotService.detail(41L) } returns rejectedDetail()
+        coEvery { mySpotService.update(41L, any(), replacement) } returns
+            MySpotUpdateResult(
+                spotId = 41L,
+                status = MySpotStatus.REJECTED,
+                imageUrl = "https://cdn.example.com/41.jpg",
+            )
+        coEvery { mySpotService.requestOpen(41L) } returns
+            MySpotTransitionResult(
+                spotId = 41L,
+                status = MySpotStatus.RE_REVIEW_PENDING,
+                updatedAt = "2026-08-06T10:01:00Z",
+            )
+        val vm = vm()
+        vm.loadRevision(41L)
+        advanceUntilIdle()
+
+        vm.setImagePayload(replacement, previewUri = "content://replacement")
+        vm.submit()
+        advanceUntilIdle()
+
+        assertEquals("content://replacement", vm.selectedImageUri.value)
+        coVerify(exactly = 1) { mySpotService.update(41L, any(), replacement) }
+        coVerify(exactly = 1) { mySpotService.requestOpen(41L) }
+    }
+
+    @Test
+    fun `resubmit retry after saved revision does not send update twice`() = runTest(testDispatcher) {
+        coEvery { mySpotService.detail(41L) } returns rejectedDetail()
+        coEvery { mySpotService.update(41L, any(), null) } returns
+            MySpotUpdateResult(
+                spotId = 41L,
+                status = MySpotStatus.REJECTED,
+                imageUrl = "https://cdn.example.com/41.jpg",
+            )
+        coEvery { mySpotService.requestOpen(41L) } throws RuntimeException("network") andThen
+            MySpotTransitionResult(
+                spotId = 41L,
+                status = MySpotStatus.RE_REVIEW_PENDING,
+                updatedAt = "2026-08-06T10:01:00Z",
+            )
+        val vm = vm()
+        vm.loadRevision(41L)
+        advanceUntilIdle()
+        vm.setSpotName("보완한 노을 스팟")
+
+        vm.submit()
+        advanceUntilIdle()
+
+        // 수정은 저장됐고 재신청만 실패한 상태.
+        assertTrue(vm.submission.value is LoadState.Failed)
+        assertTrue(vm.isRevisionSaved.value)
+
+        vm.submit()
+        advanceUntilIdle()
+
+        val state = vm.submission.value as LoadState.Loaded
+        assertEquals(MySpotStatus.RE_REVIEW_PENDING, state.value.status)
+        assertFalse(vm.isRevisionSaved.value)
+        coVerify(exactly = 1) { mySpotService.update(41L, any(), null) }
+        coVerify(exactly = 2) { mySpotService.requestOpen(41L) }
+    }
+
+    @Test
+    fun `revise failure keeps prefilled form and replacement selection`() = runTest(testDispatcher) {
+        val replacement = image().copy(filename = "replacement.jpg")
+        coEvery { mySpotService.detail(41L) } returns rejectedDetail()
+        coEvery { mySpotService.update(41L, any(), replacement) } throws
+            RuntimeException("network")
+        val vm = vm()
+        vm.loadRevision(41L)
+        advanceUntilIdle()
+        vm.setSpotName("수정 중인 이름")
+        vm.setImagePayload(replacement, previewUri = "content://replacement")
+
+        vm.submit()
+        advanceUntilIdle()
+
+        assertTrue(vm.submission.value is LoadState.Failed)
+        assertEquals("수정 중인 이름", vm.spotName.value)
+        assertEquals(replacement, vm.imagePayload.value)
+        assertEquals("https://cdn.example.com/41.jpg", vm.existingImageUrl.value)
     }
 }

@@ -12,14 +12,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.pickflow.android.feature.accountmanagement.AccountManagementScreen
 import com.pickflow.android.feature.archive.ArchiveTab
-import com.pickflow.android.feature.debug.DebugScreen
+import com.pickflow.android.feature.debug.DebugRouteScreen
 import com.pickflow.android.feature.home.HomeScreen
 import com.pickflow.android.feature.login.LoginScreen
 import com.pickflow.android.feature.myprofile.termsandpolicy.TermsAndPolicyListScreen
 import com.pickflow.android.feature.notice.NoticeDetailScreen
 import com.pickflow.android.feature.notice.NoticeListScreen
 import com.pickflow.android.feature.onboarding.OnboardingScreen
-import com.pickflow.android.feature.spotdetail.SpotDetailScreen
+import com.pickflow.android.feature.spotdetail.SpotOpenScreen
 import com.pickflow.android.feature.spotregistration.SpotRegistrationScreen
 import com.pickflow.android.feature.spotregistration.SpotRegistrationViewModel
 import com.pickflow.android.feature.forceupdate.ForceUpdateScreen
@@ -154,9 +154,14 @@ fun PickflowNavHost(
         ) { entry ->
             val spotId = entry.arguments?.getString(PickflowRoute.ARG_SPOT_ID).orEmpty()
             val registered = entry.arguments?.getBoolean(PickflowRoute.ARG_REGISTERED) ?: false
-            SpotDetailScreen(
-                spotId = spotId,
+            SpotOpenScreen(
+                spotId = spotId.toLongOrNull() ?: 0L,
                 onBack = navController::popBackStack,
+                onRevise = { navController.navigate(PickflowRoute.spotRevision(it)) },
+                onDeleted = {
+                    HomeTabRequest.request(HomeTab.SAVED, ArchiveTab.MySpots)
+                    navController.popBackStack()
+                },
                 onRequireLogin = { navController.navigate(PickflowRoute.LOGIN) },
                 showRegisteredToast = registered,
             )
@@ -164,7 +169,7 @@ fun PickflowNavHost(
 
         composable(PickflowRoute.SPOT_SEARCH) {
             // 등록 화면과 동일 ViewModel 인스턴스를 공유(선택 주소 전달).
-            val regEntry = navController.getBackStackEntry(PickflowRoute.SPOT_REGISTRATION)
+            val regEntry = navController.getBackStackEntry(PickflowRoute.SPOT_REGISTRATION_ROUTE)
             val regViewModel: SpotRegistrationViewModel = hiltViewModel(regEntry)
             SpotSearchScreen(
                 onBack = navController::popBackStack,
@@ -176,7 +181,7 @@ fun PickflowNavHost(
         }
 
         composable(PickflowRoute.SPOT_LOCATION_DETAIL) {
-            val regEntry = navController.getBackStackEntry(PickflowRoute.SPOT_REGISTRATION)
+            val regEntry = navController.getBackStackEntry(PickflowRoute.SPOT_REGISTRATION_ROUTE)
             val regViewModel: SpotRegistrationViewModel = hiltViewModel(regEntry)
             val pending by regViewModel.pendingAddress.collectAsStateWithLifecycle()
             pending?.let { candidate ->
@@ -192,21 +197,43 @@ fun PickflowNavHost(
             }
         }
 
-        composable(PickflowRoute.SPOT_REGISTRATION) {
+        composable(
+            route = PickflowRoute.SPOT_REGISTRATION_ROUTE,
+            arguments = listOf(navArgument(PickflowRoute.ARG_REVISE_SPOT_ID) {
+                type = NavType.LongType
+                defaultValue = -1L
+            }),
+        ) { entry ->
+            val reviseSpotId = entry.arguments
+                ?.getLong(PickflowRoute.ARG_REVISE_SPOT_ID)
+                ?.takeIf { it >= 0L }
+            val regViewModel: SpotRegistrationViewModel = hiltViewModel(entry)
+            LaunchedEffect(reviseSpotId) {
+                reviseSpotId?.let(regViewModel::loadRevision)
+            }
             SpotRegistrationScreen(
                 onBack = navController::popBackStack,
                 onOpenSearch = { navController.navigate(PickflowRoute.SPOT_SEARCH) },
                 onRegistered = { spotId ->
-                    // 등록 완료 → 보관함(마이 스팟 탭) 위에 등록 스팟 상세 + 완료 토스트.
                     HomeTabRequest.request(HomeTab.SAVED, ArchiveTab.MySpots)
-                    navController.popBackStack()
-                    navController.navigate(PickflowRoute.spotDetail(spotId, registered = true))
+                    if (reviseSpotId == null) {
+                        navController.popBackStack()
+                        navController.navigate(PickflowRoute.spotDetail(spotId, registered = true))
+                    } else {
+                        navController.navigate(PickflowRoute.spotDetail(spotId)) {
+                            popUpTo(PickflowRoute.SPOT_DETAIL) { inclusive = true }
+                        }
+                    }
                 },
+                viewModel = regViewModel,
             )
         }
 
         composable(PickflowRoute.DEBUG) {
-            DebugScreen(onBack = navController::popBackStack)
+            DebugRouteScreen(
+                onBack = navController::popBackStack,
+                onOpenSpotDetail = { navController.navigate(PickflowRoute.spotDetail(it.toString())) },
+            )
         }
     }
 }

@@ -1,15 +1,22 @@
 package com.pickflow.android.feature.archive
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
 import com.android.resources.Density
 import com.android.resources.ScreenOrientation
+import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.MySpot
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.SavedSpot
+import com.pickflow.android.core.services.protocols.SavedSpotAvailability
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.feature.archive.components.ArchiveEmptyContent
 import com.pickflow.android.feature.archive.components.ArchiveMySpotPlaceholderContent
@@ -105,13 +112,41 @@ class ArchiveSnapshotTest {
             archiveName = "내 보관함",
             mySpotState = LoadState.Loaded(
                 listOf(
-                    myStub(1L, "응봉산 노을", MySpotStatus.PUBLISHED),
+                    myStub(1L, "나만 보는 노을", MySpotStatus.DRAFT),
                     myStub(2L, "검수 대기중 스팟", MySpotStatus.PENDING),
-                    myStub(3L, "반려된 스팟", MySpotStatus.REJECTED),
-                    myStub(4L, "공개된 스팟", MySpotStatus.PUBLISHED),
+                    myStub(3L, "재검수 대기중 스팟", MySpotStatus.RE_REVIEW_PENDING),
+                    myStub(4L, "반려된 스팟", MySpotStatus.REJECTED),
+                    myStub(5L, "공개된 스팟", MySpotStatus.PUBLISHED),
                 ),
             ),
         )
+    }
+
+    @Test fun archive_private_saved_spot_dark() = snapshot {
+        ArchiveScreenContent(
+            state = ArchiveLoadState.Loaded(
+                items = listOf(
+                    saved(41L, "비공개 노을 스팟").copy(
+                        availability = SavedSpotAvailability.AUTHOR_PRIVATE,
+                        isUserGenerated = true,
+                    ),
+                ),
+                hasNext = false,
+            ),
+            selectedTab = ArchiveTab.SavedSpots,
+            archiveName = "내 보관함",
+        )
+    }
+
+    @Test fun archive_private_delete_dialog_dark() = snapshot {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(PickflowColors.gray95),
+            contentAlignment = Alignment.Center,
+        ) {
+            ArchivePrivateDeleteDialogContent()
+        }
     }
 
     private fun myStub(id: Long, name: String, status: MySpotStatus) = MySpot(

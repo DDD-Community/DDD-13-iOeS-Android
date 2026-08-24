@@ -11,9 +11,11 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,11 +58,13 @@ import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.feature.map.components.MoodFilterRow
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeMapScreen(
     onOpenSpotDetail: (String) -> Unit,
     onOpenRegistration: () -> Unit,
     onRequireLogin: () -> Unit = {},
+    onOpenDebug: () -> Unit = {},
     viewModel: HomeMapViewModel = hiltViewModel(),
 ) {
     val curationSpots by viewModel.curationSpots.collectAsStateWithLifecycle()
@@ -165,7 +169,11 @@ fun HomeMapScreen(
                     contentDescription = "PICKFLOW",
                     modifier = Modifier
                         .padding(start = 20.dp)
-                        .height(24.dp),
+                        .height(24.dp)
+                        .combinedClickable(
+                            onClick = {},
+                            onLongClick = onOpenDebug,
+                        ),
                 )
                 Spacer(Modifier.height(8.dp))
                 MoodFilterRow(
@@ -370,4 +378,3 @@ private fun MapCircleButton(
         )
     }
 }
-

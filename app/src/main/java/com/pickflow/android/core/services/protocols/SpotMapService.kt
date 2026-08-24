@@ -22,4 +22,7 @@ data class SpotMapMarker(
     val imageUrl: String?,
     val coordinates: Coordinates,
     val isMySpot: Boolean,
+    val source: SpotSource = SpotSource.Curated(displayName = ""),
+    val status: MySpotStatus? = null,
+    val isOwnedByCurrentUser: Boolean = isMySpot,
 )

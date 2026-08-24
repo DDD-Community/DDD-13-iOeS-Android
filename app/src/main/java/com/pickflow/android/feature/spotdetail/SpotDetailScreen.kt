@@ -354,7 +354,7 @@ private fun ReportSubmittedToast(
  * 시트가 recomposition 되어도 입력/등록 버튼 활성 상태가 유지된다.
  */
 @Composable
-private fun ReportSheetBody(
+internal fun ReportSheetBody(
     text: String,
     onTextChange: (String) -> Unit,
     onClose: () -> Unit,
