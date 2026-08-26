@@ -51,8 +51,10 @@ object NetworkModule {
     fun provideOkHttpClient(
         logging: HttpLoggingInterceptor,
         auth: AuthInterceptor,
+        apiEnvironment: ApiEnvironmentInterceptor,
         tokenAuthenticator: TokenAuthenticator,
     ): OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(apiEnvironment)
         .addInterceptor(auth)
         .addInterceptor(logging)
         .authenticator(tokenAuthenticator)
@@ -112,7 +114,11 @@ object NetworkModule {
     @Provides
     @Singleton
     @Named("refresh")
-    fun provideRefreshOkHttp(logging: HttpLoggingInterceptor): OkHttpClient = OkHttpClient.Builder()
+    fun provideRefreshOkHttp(
+        logging: HttpLoggingInterceptor,
+        apiEnvironment: ApiEnvironmentInterceptor,
+    ): OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(apiEnvironment)
         .addInterceptor(logging)
         .build()
 

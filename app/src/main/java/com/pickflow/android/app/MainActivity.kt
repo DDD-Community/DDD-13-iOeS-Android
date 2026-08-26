@@ -13,6 +13,7 @@ import com.pickflow.android.app.navigation.DeepLinkState
 import com.pickflow.android.app.navigation.PickflowNavHost
 import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.common.util.SpotIdCoder
+import com.pickflow.android.feature.devmode.TouchIndicator
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -26,7 +27,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    PickflowNavHost()
+                    TouchIndicator {
+                        PickflowNavHost()
+                    }
                 }
             }
         }

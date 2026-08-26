@@ -12,6 +12,7 @@ import com.pickflow.android.core.services.impl.DefaultUserService
 import com.pickflow.android.core.services.impl.DataStoreOnboardingCompletionStore
 import com.pickflow.android.core.services.impl.EncryptedTokenStore
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
+import com.pickflow.android.core.services.impl.PrefsDevSettings
 import com.pickflow.android.core.services.impl.compat.MoodCompatSpotListService
 import com.pickflow.android.core.services.impl.FirebaseAnalyticsLogger
 import com.pickflow.android.core.services.impl.AndroidExternalAppLauncher
@@ -38,6 +39,7 @@ import com.pickflow.android.core.services.protocols.SpotReportService
 import com.pickflow.android.core.services.protocols.OnboardingCompletionStore
 import com.pickflow.android.core.services.protocols.ShareIntentService
 import com.pickflow.android.core.services.protocols.MoodFilterStore
+import com.pickflow.android.core.services.protocols.DevSettings
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotMapService
 import com.pickflow.android.core.services.protocols.SpotService
@@ -84,6 +86,10 @@ abstract class ServiceModule {
     @Binds
     @Singleton
     abstract fun bindMoodFilterStore(impl: InMemoryMoodFilterStore): MoodFilterStore
+
+    @Binds
+    @Singleton
+    abstract fun bindDevSettings(impl: PrefsDevSettings): DevSettings
 
     @Binds
     // PV-59 임시: 백엔드가 신규 무드/다중 theme 를 지원하면 DefaultSpotListService 로 되돌린다.

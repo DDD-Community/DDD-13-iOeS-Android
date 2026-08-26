@@ -214,7 +214,10 @@ class HomeMapViewModel @Inject constructor(
             _selectedPreview.value = runCatching {
                 spotService.preview(spotId.toString(), lastKnownCoordinates)
             }.fold(
-                onSuccess = { LoadState.Loaded(it) },
+                onSuccess = {
+                    _selectedBookmarked.value = it.isBookmarked
+                    LoadState.Loaded(it)
+                },
                 onFailure = { LoadState.Failed(it) },
             )
         }
@@ -226,22 +229,31 @@ class HomeMapViewModel @Inject constructor(
         _selectedPreview.value = LoadState.Idle
     }
 
+    // 북마크 요청 in-flight 가드 — 연타하면 add/remove 가 교차 실행돼 서버 상태가 뒤집힌다.
+    private var isBookmarkInFlight = false
+
     /** 바텀시트 "저장하기" — 비로그인 시 시트를 닫고 로그인 유도 팝업 노출. */
     fun bookmarkSelected() {
+        if (isBookmarkInFlight) return
+        isBookmarkInFlight = true
         viewModelScope.launch {
-            if (!authService.isLoggedIn()) {
-                // 시트를 닫고(모달 위에 팝업을 띄울 수 없으므로) 로그인 유도 팝업으로 전환.
-                _selectedCluster.value = null
-                _selectedPreview.value = LoadState.Idle
-                _sheetLoginPrompt.value = true
-                return@launch
+            try {
+                if (!authService.isLoggedIn()) {
+                    // 시트를 닫고(모달 위에 팝업을 띄울 수 없으므로) 로그인 유도 팝업으로 전환.
+                    _selectedCluster.value = null
+                    _selectedPreview.value = LoadState.Idle
+                    _sheetLoginPrompt.value = true
+                    return@launch
+                }
+                val id = _selectedSpotId.value?.toString() ?: return@launch
+                val wasBookmarked = _selectedBookmarked.value
+                _selectedBookmarked.value = !wasBookmarked // 낙관적 토글
+                runCatching {
+                    if (wasBookmarked) bookmarkService.remove(id) else bookmarkService.add(id)
+                }.onFailure { _selectedBookmarked.value = wasBookmarked }
+            } finally {
+                isBookmarkInFlight = false
             }
-            val id = _selectedSpotId.value?.toString() ?: return@launch
-            val wasBookmarked = _selectedBookmarked.value
-            _selectedBookmarked.value = !wasBookmarked // 낙관적 토글
-            runCatching {
-                if (wasBookmarked) bookmarkService.remove(id) else bookmarkService.add(id)
-            }.onFailure { _selectedBookmarked.value = wasBookmarked }
         }
     }
 

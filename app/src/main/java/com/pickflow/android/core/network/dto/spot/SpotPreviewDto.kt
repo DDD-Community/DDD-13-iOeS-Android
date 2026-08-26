@@ -14,4 +14,5 @@ data class SpotPreviewResponseDto(
     val addressSimple: String = "",
     val addressRoad: String? = null,
     val addressJibun: String? = null,
+    val isBookmarked: Boolean = false,
 )

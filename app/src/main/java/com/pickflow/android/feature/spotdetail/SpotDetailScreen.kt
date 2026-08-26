@@ -149,7 +149,7 @@ fun SpotDetailScreen(
                     onBookmark = viewModel::toggleBookmark,
                     onLike = viewModel::toggleLike,
                     onOpenSpot = { isComingSoonSheetOpen = true },
-                    onReport = { isReportSheetOpen = true },
+                    onReport = { viewModel.requestReport { isReportSheetOpen = true } },
                     onImageClick = { fullscreenImageUrl = state.value.imageUrl },
                 )
             }
@@ -321,7 +321,8 @@ private fun LoadedBody(
             onLike = onLike,
         )
         SpotRealTimeInfoSection(spot = data)
-        ReportButton(onClick = onReport)
+        // 내가 등록한 스팟은 스스로 신고할 일이 없으므로 진입점 자체를 숨긴다.
+        if (!data.isMine) ReportButton(onClick = onReport)
     }
 }
 

@@ -1,7 +1,7 @@
 # Firebase App Distribution (debug QA 배포)
 
 `develop` 에 푸시하면 **개발 서버(`PICKFLOW_API_BASE_URL_DEV`)를 보는 debug APK** 가
-Firebase App Distribution 의 `qa` 테스터 그룹으로 자동 배포된다.
+Firebase App Distribution 의 `pickflow-qa` 테스터 그룹으로 자동 배포된다.
 
 | 배포 | 워크플로 | 빌드 | 서버 |
 |---|---|---|---|
@@ -54,7 +54,7 @@ Settings → Secrets and variables → Actions.
 `assembleDebug` 를 함께 적어야 한다.
 
 - **appId** — `app/google-services.json` 에서 생성된 `google_app_id` 리소스를 플러그인이 읽는다. 따로 적을 필요 없다.
-- **테스터 그룹** — `qa` (`app/build.gradle.kts` 의 `groups`)
+- **테스터 그룹** — `pickflow-qa` (`app/build.gradle.kts` 의 `groups`)
 - **릴리스 노트** — 최근 커밋 메시지(`git log -1 --pretty=%s`)
 
 그때그때 덮어쓰려면:
@@ -63,6 +63,25 @@ Settings → Secrets and variables → Actions.
 ./gradlew assembleDebug appDistributionUploadDebug \
   --groups=qa,designer --releaseNotes="스팟 상세 하단 여백 수정"
 ```
+
+### 배포 완료 Discord 알림
+
+로컬 배포가 **성공하면** Discord 채널로 알림이 간다. 업로드 태스크의 `doLast` 에 붙어 있어
+업로드가 실패하면 보내지 않는다.
+
+```
+✅ Firebase-QA 배포 완료
+버전        1.0.4 (1000401)
+브랜치      feature/dev-mode
+배포자      kangddong        (git config user.name)
+테스트 노트  최근 커밋 메시지
+```
+
+- 웹훅 URL 은 `secrets.properties` 의 `DISCORD_WEBHOOK_URL`(미추적). **비어 있으면 조용히 건너뛴다.**
+- CI 는 이 값을 설정하지 않으므로 GitHub Actions 배포는 알림을 보내지 않는다. 로컬 전용이다.
+- 테스트 노트를 그때그때 바꾸려면 `-PdeployNote="..."` 를 붙인다.
+- 업로드 없이 알림만 확인하려면 `./gradlew :app:notifyDiscordQaDeploy`.
+- 알림 전송이 실패해도 경고만 남기고 빌드는 성공한다(배포는 이미 끝났으므로).
 
 ### 최초 1회 설치·인증
 
@@ -110,10 +129,10 @@ FIREBASE_SERVICE_ACCOUNT_FILE=firebase-service-account.json
 
 Firebase 콘솔 → **App Distribution** → **테스터 및 그룹** 탭.
 
-1. **그룹 추가** 로 `qa` 그룹을 만든다 (그룹 이름이 곧 별칭 — 워크플로가 쓰는 값).
+1. **그룹 추가** 로 `pickflow-qa` 그룹을 만든다 (그룹 이름이 곧 별칭 — 워크플로가 쓰는 값).
 2. 그룹에 테스터 이메일을 추가한다. 초대 메일이 발송되고, 테스터는 기기에서
    초대를 수락한 뒤 App Tester 앱 또는 링크로 설치한다.
-3. 그룹 이름을 바꾸면 `app/build.gradle.kts` 의 `groups = "qa"` 도 함께 바꾼다.
+3. 그룹 이름을 바꾸면 `app/build.gradle.kts` 의 `groups = "pickflow-qa"` 도 함께 바꾼다.
 
 빌드마다 다른 그룹으로 보내려면 워크플로를 **Actions → Firebase App Distribution (debug)
 → Run workflow** 로 수동 실행하면서 그룹을 입력한다.

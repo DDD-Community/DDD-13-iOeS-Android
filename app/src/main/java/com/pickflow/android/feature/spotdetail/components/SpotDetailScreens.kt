@@ -143,7 +143,8 @@ fun SpotDetailLoadedContent(
                 onOpenSpot = onOpenSpot,
             )
             SpotRealTimeInfoSection(spot = spot)
-            ReportButton(onClick = onReport)
+            // SpotDetailScreen.LoadedBody 와 동일 — 내 스팟은 신고 진입점을 숨긴다.
+            if (!spot.isMine) ReportButton(onClick = onReport)
         }
     }
 }

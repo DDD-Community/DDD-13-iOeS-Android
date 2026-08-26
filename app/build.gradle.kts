@@ -1,4 +1,6 @@
 import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
+import java.net.HttpURLConnection
+import java.net.URI
 import java.util.Properties
 
 plugins {
@@ -54,10 +56,35 @@ val firebaseAppId: String = System.getenv("FIREBASE_APP_ID")
     ?: secrets.getProperty("FIREBASE_APP_ID", "")
 val firebaseCredentialsFile: String = System.getenv("FIREBASE_SERVICE_ACCOUNT_FILE")
     ?: secrets.getProperty("FIREBASE_SERVICE_ACCOUNT_FILE", "")
+// 버전 규칙(docs/ci-cd.md §버전 규칙): versionName(마케팅)과 versionCode(빌드 넘버) 분리.
+// versionName 은 release-aab 워크플로가 태그 vX.Y.Z 에서 주입.
+// versionCode 는 단조증가 정수 — 이 fallback 이 단일 출처이며 릴리스마다 커밋해 갱신한다.
+// 1.0.2 부터 XYZNN(versionName 3자리 + 빌드 차수 2자리) 형태로 읽되, 단조증가가 우선 제약이다.
+val appVersionCode: Int = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1000401
+val appVersionName: String = System.getenv("VERSION_NAME") ?: "1.0.4"
+
+// 로컬 QA 배포 완료 알림(Discord). 비어 있으면 알림을 건너뛴다 — CI 는 설정하지 않는다.
+val discordWebhookUrl: String = System.getenv("DISCORD_WEBHOOK_URL")
+    ?: secrets.getProperty("DISCORD_WEBHOOK_URL", "")
+
 // 릴리스 노트 = 최근 커밋 메시지. git 이 없거나 저장소가 아니면 빈 값.
 val latestCommitMessage: String = runCatching {
     providers.exec {
         commandLine("git", "log", "-1", "--pretty=%s")
+        isIgnoreExitValue = true
+    }.standardOutput.asText.get().trim()
+}.getOrDefault("")
+
+// 배포 알림에 넣을 git 정보. 저장소가 아니면 빈 값.
+val gitBranchName: String = runCatching {
+    providers.exec {
+        commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
+        isIgnoreExitValue = true
+    }.standardOutput.asText.get().trim()
+}.getOrDefault("")
+val gitUserName: String = runCatching {
+    providers.exec {
+        commandLine("git", "config", "user.name")
         isIgnoreExitValue = true
     }.standardOutput.asText.get().trim()
 }.getOrDefault("")
@@ -79,13 +106,9 @@ android {
         applicationId = "com.pickflow.app"
         minSdk = 26
         targetSdk = 35
-        // 버전 규칙(docs/ci-cd.md §버전 규칙): versionName(마케팅)과 versionCode(빌드 넘버) 분리.
-        // versionName 은 release-aab 워크플로가 태그 vX.Y.Z 에서 주입.
-        // versionCode 는 단조증가 정수 — 이 fallback 이 단일 출처이며 릴리스마다 커밋해 갱신한다.
-        // 1.0.2 부터 XYZNN(versionName 3자리 + 빌드 차수 2자리) 형태로 읽되, 단조증가가 우선 제약이다.
-        // (1.0.1 배포본이 1000103 을 소모했으므로 그보다 큰 값이어야 한다.)
-        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1000201
-        versionName = System.getenv("VERSION_NAME") ?: "1.0.2"
+        // 버전 값과 규칙은 파일 상단 appVersionCode / appVersionName 참고.
+        versionCode = appVersionCode
+        versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         manifestPlaceholders["naverMapClientId"] = naverMapClientId
@@ -98,6 +121,9 @@ android {
         buildConfigField("String", "KAKAO_REST_API_KEY", "\"$kakaoRestApiKey\"")
         buildConfigField("String", "APPLE_SERVICE_ID", "\"$appleServiceId\"")
         buildConfigField("String", "APPLE_REDIRECT_URI", "\"$appleRedirectUri\"")
+        // Dev Mode 런타임 환경 전환용 — 두 주소를 항상 함께 심는다(선택값은 DevSettings 가 보관).
+        buildConfigField("String", "PICKFLOW_API_BASE_URL_DEV", "\"$pickflowApiBaseUrlDev\"")
+        buildConfigField("String", "PICKFLOW_API_BASE_URL_PROD", "\"$pickflowApiBaseUrl\"")
     }
 
     signingConfigs {
@@ -120,7 +146,7 @@ android {
                     appId = firebaseAppId
                 }
                 artifactType = "APK"
-                groups = "qa"
+                groups = "pickflow-qa"
                 releaseNotes = latestCommitMessage
                 if (firebaseCredentialsFile.isNotBlank()) {
                     serviceCredentialsFile = firebaseCredentialsFile
@@ -230,4 +256,70 @@ dependencies {
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
+}
+
+// --- 로컬 Firebase QA 배포 완료 → Discord 알림 (docs/firebase-distribution.md §5) ---
+//
+// doLast 는 태스크가 성공했을 때만 돈다 — 업로드가 실패하면 "배포 완료" 를 보내지 않는다.
+// (finalizedBy 는 선행 태스크 실패와 무관하게 실행되므로 쓰지 않는다.)
+// 테스트 노트는 -PdeployNote="..." 로 덮어쓸 수 있고, 없으면 최근 커밋 메시지를 쓴다.
+fun postQaDeployNoticeToDiscord() {
+    if (discordWebhookUrl.isBlank()) {
+        logger.lifecycle("DISCORD_WEBHOOK_URL 이 없어 Discord 알림을 건너뜁니다.")
+        return
+    }
+    val note = (findProperty("deployNote") as String?)
+        ?.takeIf { it.isNotBlank() }
+        ?: latestCommitMessage.ifBlank { "(없음)" }
+    // 배포한 워크스페이스와 알림을 쏘는 워크스페이스가 다를 때 -PdeployBranch 로 바로잡는다.
+    val branch = (findProperty("deployBranch") as String?)
+        ?.takeIf { it.isNotBlank() }
+        ?: gitBranchName.ifBlank { "(알 수 없음)" }
+    val payload = groovy.json.JsonOutput.toJson(
+        mapOf(
+            "embeds" to listOf(
+                mapOf(
+                    "title" to "✅ Firebase-QA 배포 완료",
+                    "color" to 0x57F287,
+                    "fields" to listOf(
+                        mapOf("name" to "버전", "value" to "$appVersionName ($appVersionCode)"),
+                        mapOf("name" to "브랜치", "value" to branch),
+                        mapOf("name" to "배포자", "value" to gitUserName.ifBlank { "(알 수 없음)" }),
+                        mapOf("name" to "테스트 노트", "value" to note),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    // 알림 실패가 배포를 되돌리지는 않으므로 경고만 남기고 빌드는 성공시킨다.
+    runCatching {
+        val connection = URI(discordWebhookUrl).toURL().openConnection() as HttpURLConnection
+        connection.requestMethod = "POST"
+        connection.doOutput = true
+        connection.connectTimeout = 10_000
+        connection.readTimeout = 10_000
+        connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+        connection.outputStream.use { it.write(payload.toByteArray(Charsets.UTF_8)) }
+        connection.responseCode
+    }.onSuccess { code ->
+        if (code in 200..299) {
+            logger.lifecycle("Discord 배포 알림 전송 완료.")
+        } else {
+            logger.warn("Discord 배포 알림 실패: HTTP $code")
+        }
+    }.onFailure { error ->
+        logger.warn("Discord 배포 알림 실패: ${error.message}")
+    }
+}
+
+// 업로드 없이 알림만 확인하고 싶을 때: ./gradlew :app:notifyDiscordQaDeploy
+tasks.register("notifyDiscordQaDeploy") {
+    group = "publishing"
+    description = "Firebase QA 배포 완료를 Discord 로 알린다(업로드 태스크가 자동으로 호출한다)."
+    doLast { postQaDeployNoticeToDiscord() }
+}
+
+tasks.matching { it.name == "appDistributionUploadDebug" }.configureEach {
+    doLast { postQaDeployNoticeToDiscord() }
 }

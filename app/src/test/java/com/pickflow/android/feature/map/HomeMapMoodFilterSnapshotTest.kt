@@ -50,6 +50,36 @@ class HomeMapMoodFilterSnapshotTest {
     @Test
     fun moodfilter_all_selected_dark() = moodRow(MoodFilter.entries.toSet())
 
+    /**
+     * 좁은 기기(360dp) 회귀 방지 — 84dp 고정일 때 4×84+간격24+패딩32=392dp 라
+     * 마지막 '야경' 칩이 잘리고 라벨이 두 줄로 쪼개졌다(hotfix). 네 칩이 같은 폭으로
+     * 줄어들고 라벨이 한 줄로 남는지 확인한다.
+     */
+    @Test
+    fun moodfilter_narrow_360dp_dark() {
+        paparazzi.unsafeUpdateConfig(device(360, 56))
+        moodRow(setOf(MoodFilter.Night))
+    }
+
+    /**
+     * 넓은 기기(411dp) 상한 확인 — weight 기본값(fill = true)은 4등분한 폭을 고정 제약으로
+     * 내려보내 `widthIn(max)` 을 무시시킨다. 그때 캡슐이 84dp 를 넘어 89dp 로 커졌다.
+     * Figma 상한인 84dp 를 지키는지 본다.
+     */
+    @Test
+    fun moodfilter_wide_411dp_dark() {
+        paparazzi.unsafeUpdateConfig(device(411, 56))
+        moodRow(setOf(MoodFilter.Sunlight))
+    }
+
+    /** 최소 폭(320dp) — 칩 66dp 로 줄어도 아이콘·라벨이 온전히 남는지 확인한다. */
+    @Test
+    fun moodfilter_narrow_320dp_dark() {
+        paparazzi.unsafeUpdateConfig(device(320, 56))
+        moodRow(emptySet())
+    }
+
+
     /** PV59-ARC1 — 저장 탭 카드 셀의 무드 배지 4종. */
     @Test
     fun spotlist_cell_moods_all_four_dark() {

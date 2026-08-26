@@ -37,6 +37,17 @@ class SpotDetailViewModel @Inject constructor(
 
     fun dismissLoginRequired() { _isLoginRequired.value = false }
 
+    /**
+     * "잘못된 정보가 있나요?" 진입 가드 — 비로그인이면 신고 시트 대신 로그인 유도 팝업.
+     * `HomeMapViewModel.requestRegistration` 과 같은 패턴.
+     */
+    fun requestReport(onAllowed: () -> Unit) {
+        viewModelScope.launch {
+            if (authService.isLoggedIn()) onAllowed()
+            else _isLoginRequired.value = true
+        }
+    }
+
     private val _spot = MutableStateFlow<LoadState<SpotDetail>>(LoadState.Idle)
     val spot: StateFlow<LoadState<SpotDetail>> = _spot.asStateFlow()
 
@@ -117,27 +128,37 @@ class SpotDetailViewModel @Inject constructor(
         }
     }
 
+    // 북마크 요청 in-flight 가드. 연타하면 add/remove 가 동시에 날아가 서버에서 서로를 덮어쓰고
+    // 늦게 온 응답이 실패로 떨어져 "북마크 변경에 실패했어요." 가 뜬다. 응답 전 재요청을 막는다.
+    private var isBookmarkInFlight = false
+
     fun toggleBookmark() {
         val current = (_spot.value as? LoadState.Loaded<SpotDetail>)?.value ?: return
+        if (isBookmarkInFlight) return
+        isBookmarkInFlight = true
         viewModelScope.launch {
-            if (!authService.isLoggedIn()) {
-                // iOS `toggleBookmark()` 1:1 — 비로그인 시 LoginPrompt 노출 후 무시.
-                _isLoginRequired.value = true
-                return@launch
-            }
-            // iOS `SpotDetailViewModel.toggleBookmark` 1:1 — 낙관적 토글 + 실패 시 롤백.
-            val previousValue = _bookmarked.value
-            _bookmarked.value = !previousValue
-            runCatching {
-                val spotIdLong = current.id
-                if (previousValue) {
-                    bookmarkService.remove(spotIdLong.toString())
-                } else {
-                    bookmarkService.add(spotIdLong.toString())
+            try {
+                if (!authService.isLoggedIn()) {
+                    // iOS `toggleBookmark()` 1:1 — 비로그인 시 LoginPrompt 노출 후 무시.
+                    _isLoginRequired.value = true
+                    return@launch
                 }
-            }.onFailure {
-                _bookmarked.value = previousValue
-                _toast.value = "북마크 변경에 실패했어요."
+                // iOS `SpotDetailViewModel.toggleBookmark` 1:1 — 낙관적 토글 + 실패 시 롤백.
+                val previousValue = _bookmarked.value
+                _bookmarked.value = !previousValue
+                runCatching {
+                    val spotIdLong = current.id
+                    if (previousValue) {
+                        bookmarkService.remove(spotIdLong.toString())
+                    } else {
+                        bookmarkService.add(spotIdLong.toString())
+                    }
+                }.onFailure {
+                    _bookmarked.value = previousValue
+                    _toast.value = "북마크 변경에 실패했어요."
+                }
+            } finally {
+                isBookmarkInFlight = false
             }
         }
     }
