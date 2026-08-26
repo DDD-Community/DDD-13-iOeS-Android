@@ -16,5 +16,8 @@ data class SpotItemDto(
     val theme: String = "SUNSET",
     val thumbnailUrl: String? = null,
     val distanceKm: Double? = null,
+    val bookmarkCount: Long = 0L,
     val isBookmarked: Boolean = false,
+    val likeCount: Long = 0L,
+    val isLiked: Boolean = false,
 )

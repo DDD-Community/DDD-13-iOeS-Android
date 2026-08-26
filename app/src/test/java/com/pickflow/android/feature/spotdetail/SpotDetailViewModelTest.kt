@@ -28,6 +28,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -101,17 +102,16 @@ class SpotDetailViewModelTest {
     }
 
     @Test
-    fun `load falls back to bookmarkService on failure`() = runTest(testDispatcher) {
+    fun `load failure leaves bookmarked false`() = runTest(testDispatcher) {
         val boom = RuntimeException("not found")
         coEvery { spotService.spot("9") } throws boom
-        coEvery { bookmarkService.isBookmarked("9") } returns true
 
         val vm = vm()
         vm.load("9"); advanceUntilIdle()
 
         val state = vm.spot.value
         assertTrue(state is LoadState.Failed && state.error === boom)
-        assertTrue(vm.bookmarked.value)
+        assertFalse(vm.bookmarked.value)
     }
 
     @Test
@@ -271,5 +271,73 @@ class SpotDetailViewModelTest {
 
         verify(exactly = 1) { analyticsLogger.log(ShareFakedoorAnalyticsEvent.NOTIFY_BUTTON_TAP) }
         assertEquals("추후 업데이트 시, 가장 먼저 알림 보내드릴게요!", vm.toast.value)
+    }
+
+    @Test
+    fun `load seeds liked from the response isLiked`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns fixture().copy(isLiked = true, isLikeable = true)
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+
+        assertTrue(vm.liked.value)
+    }
+
+    @Test
+    fun `toggleLike likes optimistically, calls the service and toasts`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns fixture().copy(isLiked = false, isLikeable = true)
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { spotService.like("1") } returns Unit
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+        vm.toggleLike(); advanceUntilIdle()
+
+        assertTrue(vm.liked.value)
+        assertEquals("이 스팟을 추천했어요.", vm.toast.value)
+        coVerify(exactly = 1) { spotService.like("1") }
+    }
+
+    @Test
+    fun `toggleLike unlikes without a toast`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns fixture().copy(isLiked = true, isLikeable = true)
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { spotService.unlike("1") } returns Unit
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+        vm.toggleLike(); advanceUntilIdle()
+
+        assertFalse(vm.liked.value)
+        assertNull(vm.toast.value)
+        coVerify(exactly = 1) { spotService.unlike("1") }
+    }
+
+    @Test
+    fun `toggleLike rolls back and toasts on failure`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns fixture().copy(isLiked = false, isLikeable = true)
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { spotService.like("1") } throws RuntimeException("net")
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+        vm.toggleLike(); advanceUntilIdle()
+
+        assertFalse(vm.liked.value)
+        assertEquals("추천에 실패했어요.", vm.toast.value)
+    }
+
+    @Test
+    fun `toggleLike when logged out shows login prompt without server call`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns fixture().copy(isLiked = false, isLikeable = true)
+        coEvery { authService.isLoggedIn() } returns false
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+        vm.toggleLike(); advanceUntilIdle()
+
+        assertTrue(vm.isLoginRequired.value)
+        assertFalse(vm.liked.value)
+        coVerify(exactly = 0) { spotService.like(any()) }
     }
 }

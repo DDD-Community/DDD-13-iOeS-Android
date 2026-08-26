@@ -34,7 +34,10 @@ fun SpotItemDto.toSpot(): Spot = Spot(
     imageUrl = thumbnailUrl?.takeIf { it.isNotBlank() },
     address = "",
     distanceKm = distanceKm,
+    bookmarkCount = bookmarkCount,
     isBookmarked = isBookmarked,
+    likeCount = likeCount,
+    isLiked = isLiked,
 )
 
 fun SpotListResponseDto.toSpotPage(): SpotPage = SpotPage(
@@ -96,6 +99,9 @@ fun SpotDetailResponseDto.toSpotDetail(): SpotDetail = SpotDetail(
     bookmarkCount = bookmarkCount,
     isBookmarked = isBookmarked,
     isMySpot = isMySpot,
+    likeCount = likeCount,
+    isLiked = isLiked,
+    isLikeable = isLikeable,
 )
 
 internal fun parseSky(value: String): WeatherSky = when (value.uppercase()) {

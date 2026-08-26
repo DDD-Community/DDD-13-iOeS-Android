@@ -26,19 +26,22 @@ import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 
 /**
- * iOS `SpotActionButtons` 1:1 이식 — 길 안내 + (북마크 | 내 스팟 오픈) 버튼.
+ * iOS `SpotActionButtons` 1:1 이식 — 길 안내 + (북마크 | 내 스팟 오픈) + 추천 버튼.
  *
- * iOS `icNearMe` 커스텀 아이콘은 Material `Send`, 북마크 아이콘은 Figma 에셋인
- * `ic_bookmark_filled`/`ic_bookmark_border` 드로어블을 쓴다.
+ * iOS `icNearMe` 커스텀 아이콘은 Material `Send`로 치환하고,
+ * 북마크는 Figma 에셋(ic_bookmark_border/ic_bookmark_filled)을 그대로 쓴다.
  */
 @Composable
 fun SpotActionButtons(
     isMine: Boolean,
     isBookmarked: Boolean,
     modifier: Modifier = Modifier,
+    isLikeable: Boolean = false,
+    isLiked: Boolean = false,
     onRoute: () -> Unit = {},
     onBookmark: () -> Unit = {},
     onOpenSpot: () -> Unit = {},
+    onLike: () -> Unit = {},
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -67,25 +70,49 @@ fun SpotActionButtons(
                 )
             }
         } else {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(PickflowColors.gray0)
-                    .clickable(onClick = onBookmark)
-                    .testTag("detail-bookmark"),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(
-                        id = if (isBookmarked) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark_border,
-                    ),
-                    contentDescription = "북마크",
-                    tint = PickflowColors.gray95,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
+            SquareIconButton(
+                iconRes = if (isBookmarked) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark_border,
+                contentDescription = if (isBookmarked) "북마크 해제" else "북마크 추가",
+                testTag = "detail-bookmark",
+                onClick = onBookmark,
+            )
         }
+
+        // 추천 가능 여부는 서버 isLikeable 을 그대로 따른다(내 스팟 등은 false).
+        if (isLikeable) {
+            SquareIconButton(
+                iconRes = if (isLiked) R.drawable.ic_thumb_up_filled else R.drawable.ic_thumb_up_border,
+                contentDescription = if (isLiked) "추천 취소" else "추천하기",
+                testTag = "detail-like",
+                onClick = onLike,
+            )
+        }
+    }
+}
+
+/** 북마크/추천 공통 56x56 정사각 아이콘 버튼 — gray0 배경 + gray95 아이콘. */
+@Composable
+private fun SquareIconButton(
+    iconRes: Int,
+    contentDescription: String,
+    testTag: String,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(56.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(PickflowColors.gray0)
+            .clickable(onClick = onClick)
+            .testTag(testTag),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = contentDescription,
+            tint = PickflowColors.gray95,
+            modifier = Modifier.size(24.dp),
+        )
     }
 }
 

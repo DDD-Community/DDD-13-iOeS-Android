@@ -336,8 +336,6 @@ private fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScop
                             distanceKm = my.distanceKm,
                             imageUrl = my.imageUrl,
                         ),
-                        isBookmarked = false,
-                        bookmarkCount = null,
                     )
                     MySpotStatusBadge(
                         status = my.status,
@@ -443,9 +441,8 @@ private fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScop
                             hasThumbnail = !saved.imageUrl.isNullOrBlank(),
                             distanceKm = saved.distanceKm,
                             imageUrl = saved.imageUrl,
+                            isBookmarked = true,
                         ),
-                        isBookmarked = true,
-                        bookmarkCount = null,
                     )
                     Box(
                         modifier = Modifier

@@ -76,58 +76,62 @@ class SpotListSnapshotTest {
         sortBar(SpotListSortOption.Nearest, expanded = false)
     @Test fun spot_list_sortbar_nearest_expanded_dark() =
         sortBar(SpotListSortOption.Nearest, expanded = true)
-    @Test fun spot_list_sortbar_bookmark_collapsed_light() =
-        sortBar(SpotListSortOption.Bookmark, expanded = false)
-    @Test fun spot_list_sortbar_bookmark_expanded_dark() =
-        sortBar(SpotListSortOption.Bookmark, expanded = true)
+    @Test fun spot_list_sortbar_recommended_collapsed_light() =
+        sortBar(SpotListSortOption.Recommended, expanded = false)
+    @Test fun spot_list_sortbar_recommended_expanded_dark() =
+        sortBar(SpotListSortOption.Recommended, expanded = true)
 
     // MARK: - Cell
 
     @Test fun spot_list_cell_sunset_bookmark_off_light() =
-        cell(cellItem(SpotListMood.Sunset), isBookmarked = false, count = 12)
+        cell(cellItem(SpotListMood.Sunset))
     @Test fun spot_list_cell_sunset_bookmark_off_dark() =
-        cell(cellItem(SpotListMood.Sunset), isBookmarked = false, count = 12)
+        cell(cellItem(SpotListMood.Sunset))
     @Test fun spot_list_cell_sunset_bookmark_on_light() =
-        cell(cellItem(SpotListMood.Sunset), isBookmarked = true, count = 13)
+        cell(cellItem(SpotListMood.Sunset, isBookmarked = true, likeCount = 13))
     @Test fun spot_list_cell_reflection_bookmark_off_light() =
-        cell(cellItem(SpotListMood.Reflection, name = "윤슬 스팟", distanceKm = 0.4), isBookmarked = false, count = 7)
+        cell(cellItem(SpotListMood.Reflection, name = "윤슬 스팟", distanceKm = 0.4, likeCount = 7))
     @Test fun spot_list_cell_reflection_bookmark_off_dark() =
-        cell(cellItem(SpotListMood.Reflection, name = "윤슬 스팟", distanceKm = 0.4), isBookmarked = false, count = 7)
+        cell(cellItem(SpotListMood.Reflection, name = "윤슬 스팟", distanceKm = 0.4, likeCount = 7))
     @Test fun spot_list_cell_distance_nil_light() =
-        cell(cellItem(SpotListMood.Sunset, distanceKm = null), isBookmarked = false, count = 12)
+        cell(cellItem(SpotListMood.Sunset, distanceKm = null))
     @Test fun spot_list_cell_thumbnail_nil_light() =
-        cell(cellItem(SpotListMood.Sunset, hasThumbnail = false), isBookmarked = false, count = 12)
+        cell(cellItem(SpotListMood.Sunset, hasThumbnail = false))
     @Test fun spot_list_cell_long_name_truncate_light() =
-        cell(cellItem(SpotListMood.Sunset, name = "아주아주 긴 한강 노을 스팟 이름 테스트 케이스"), isBookmarked = false, count = 12)
+        cell(cellItem(SpotListMood.Sunset, name = "아주아주 긴 한강 노을 스팟 이름 테스트 케이스"))
     @Test fun spot_list_cell_a11y_light() =
-        cell(cellItem(SpotListMood.Sunset), isBookmarked = false, count = 12, heightDp = 420, fontScale = 2.0f)
+        cell(cellItem(SpotListMood.Sunset), heightDp = 420, fontScale = 2.0f)
 
     // MARK: - Fixtures
 
     private val mixedItems: List<SpotListGridItem>
         get() = listOf(
-            SpotListGridItem(1, "한강 노을", SpotListMood.Sunset, distanceKm = 0.8),
-            SpotListGridItem(2, "윤슬 한 바퀴", SpotListMood.Reflection, distanceKm = 1.3),
-            SpotListGridItem(3, "응봉산 노을", SpotListMood.Sunset, distanceKm = 2.1),
-            SpotListGridItem(4, "잠실 윤슬", SpotListMood.Reflection, distanceKm = 3.2),
-            SpotListGridItem(5, "선유도 노을", SpotListMood.Sunset, distanceKm = 4.4),
-            SpotListGridItem(6, "반포 윤슬", SpotListMood.Reflection, distanceKm = 5.0),
+            SpotListGridItem(1, "한강 노을", SpotListMood.Sunset, distanceKm = 0.8, likeCount = 34),
+            SpotListGridItem(2, "윤슬 한 바퀴", SpotListMood.Reflection, distanceKm = 1.3, likeCount = 21, isBookmarked = true),
+            SpotListGridItem(3, "응봉산 노을", SpotListMood.Sunset, distanceKm = 2.1, likeCount = 8),
+            SpotListGridItem(4, "잠실 윤슬", SpotListMood.Reflection, distanceKm = 3.2, likeCount = 5),
+            SpotListGridItem(5, "선유도 노을", SpotListMood.Sunset, distanceKm = 4.4, likeCount = 3),
+            SpotListGridItem(6, "반포 윤슬", SpotListMood.Reflection, distanceKm = 5.0, likeCount = 0),
         )
 
     private val singleItem: SpotListGridItem
-        get() = SpotListGridItem(1, "한강 노을", SpotListMood.Sunset, distanceKm = 0.8)
+        get() = SpotListGridItem(1, "한강 노을", SpotListMood.Sunset, distanceKm = 0.8, likeCount = 34)
 
     private fun cellItem(
         mood: SpotListMood,
         name: String = "한강 노을 스팟",
         hasThumbnail: Boolean = true,
         distanceKm: Double? = 1.2,
+        isBookmarked: Boolean = false,
+        likeCount: Long? = 12,
     ) = SpotListGridItem(
         spotId = 1,
         name = name,
         mood = mood,
         hasThumbnail = hasThumbnail,
         distanceKm = distanceKm,
+        isBookmarked = isBookmarked,
+        likeCount = likeCount,
     )
 
     // MARK: - Renderers
@@ -146,8 +150,6 @@ class SpotListSnapshotTest {
 
     private fun cell(
         item: SpotListGridItem,
-        isBookmarked: Boolean,
-        count: Int?,
         heightDp: Int = 280,
         fontScale: Float = 1f,
     ) {
@@ -160,12 +162,7 @@ class SpotListSnapshotTest {
                         .background(PickflowColors.gray95),
                     contentAlignment = Alignment.Center,
                 ) {
-                    SpotListCell(
-                        item = item,
-                        isBookmarked = isBookmarked,
-                        bookmarkCount = count,
-                        modifier = Modifier.padding(8.dp),
-                    )
+                    SpotListCell(item = item, modifier = Modifier.padding(8.dp))
                 }
             }
         }

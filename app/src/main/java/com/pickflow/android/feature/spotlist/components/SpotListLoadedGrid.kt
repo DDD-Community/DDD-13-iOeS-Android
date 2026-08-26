@@ -64,7 +64,7 @@ private fun MasonryColumn(items: List<SpotListGridItem>, modifier: Modifier = Mo
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items.forEach { item ->
-            SpotListCell(item = item, isBookmarked = false, bookmarkCount = null)
+            SpotListCell(item = item)
         }
     }
 }

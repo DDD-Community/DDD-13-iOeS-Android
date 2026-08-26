@@ -297,8 +297,7 @@ private fun SheetActionButtons(
                 ) {
                     Icon(
                         painter = painterResource(
-                            id = if (isBookmarked) R.drawable.ic_bookmark_filled
-                            else R.drawable.ic_bookmark_border,
+                            if (isBookmarked) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark_border,
                         ),
                         contentDescription = null,
                         tint = PickflowColors.gray80,

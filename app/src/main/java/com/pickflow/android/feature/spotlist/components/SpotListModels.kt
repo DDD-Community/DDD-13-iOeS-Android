@@ -31,10 +31,14 @@ data class SpotListGridItem(
     val distanceKm: Double? = 1.2,
     /** 셀 썸네일 이미지 URL. null/blank 면 gray90 플레이스홀더만 표시. */
     val imageUrl: String? = null,
+    /** 서버 응답의 isBookmarked. */
+    val isBookmarked: Boolean = false,
+    /** 서버 응답의 likeCount(추천 수). null 이면 메타 행에서 생략. */
+    val likeCount: Long? = null,
 )
 
 /** iOS `SpotListSort` 1:1 대응. */
 enum class SpotListSortOption(val displayName: String) {
     Nearest("가까운 순"),
-    Bookmark("북마크 순"),
+    Recommended("추천 순"),
 }

@@ -1,11 +1,19 @@
 package com.pickflow.android.core.network.mapper
 
+import com.pickflow.android.core.network.dto.spot.SpotDetailResponseDto
+import com.pickflow.android.core.network.dto.spot.SpotItemDto
 import com.pickflow.android.core.network.dto.spot.SpotSummaryDto
+import com.pickflow.android.core.services.protocols.SpotTheme
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class SpotMapperTest {
+
+    private val json = Json { ignoreUnknownKeys = true }
 
     @Test
     fun `toMapMarker maps fields and coerces blank imageUrl to null`() {
@@ -16,5 +24,97 @@ class SpotMapperTest {
         assertEquals(1.0, marker.coordinates.latitude)
         assertEquals(2.0, marker.coordinates.longitude)
         assertEquals(true, marker.isMySpot)
+    }
+
+    @Test
+    fun `SpotItemDto decodes bookmark and like fields from the server payload`() {
+        // GET /v1/spots 실제 응답 1건. 필드가 없으면 ignoreUnknownKeys 로 조용히 버려진다.
+        val payload = """
+            {
+              "spotId": 3,
+              "name": "서울숲 억새길",
+              "theme": "SS",
+              "thumbnailUrl": "https://cdn.example/3.jpg",
+              "distanceKm": 4.52,
+              "bookmarkCount": 5,
+              "isBookmarked": true,
+              "likeCount": 34,
+              "isLiked": true
+            }
+        """.trimIndent()
+
+        val dto = json.decodeFromString<SpotItemDto>(payload)
+
+        assertEquals(5L, dto.bookmarkCount)
+        assertTrue(dto.isBookmarked)
+        assertEquals(34L, dto.likeCount)
+        assertTrue(dto.isLiked)
+    }
+
+    @Test
+    fun `toSpot carries bookmark and like fields`() {
+        val spot = SpotItemDto(
+            spotId = 3,
+            name = "서울숲 억새길",
+            theme = "SS",
+            thumbnailUrl = "https://cdn.example/3.jpg",
+            distanceKm = 4.52,
+            bookmarkCount = 5,
+            isBookmarked = true,
+            likeCount = 34,
+            isLiked = false,
+        ).toSpot()
+
+        assertEquals("3", spot.id)
+        assertEquals(SpotTheme.SUNSET, spot.theme)
+        assertEquals(5L, spot.bookmarkCount)
+        assertTrue(spot.isBookmarked)
+        assertEquals(34L, spot.likeCount)
+        assertFalse(spot.isLiked)
+    }
+
+    @Test
+    fun `SpotDetailResponseDto decodes status and like fields from the server payload`() {
+        // GET /v1/spots/28 실제 응답에서 기존 DTO 에 없던 필드만 추린 것.
+        val payload = """
+            {
+              "spotId": 28,
+              "name": "경복궁",
+              "theme": "YUNSEUL",
+              "bookmarkCount": 4,
+              "isBookmarked": false,
+              "isMySpot": false,
+              "status": "PUBLISHED",
+              "isCurated": true,
+              "likeCount": 7,
+              "isLiked": true,
+              "isLikeable": true,
+              "rejection": null
+            }
+        """.trimIndent()
+
+        val dto = json.decodeFromString<SpotDetailResponseDto>(payload)
+
+        assertEquals("PUBLISHED", dto.status)
+        assertTrue(dto.isCurated)
+        assertEquals(7L, dto.likeCount)
+        assertTrue(dto.isLiked)
+        assertTrue(dto.isLikeable)
+    }
+
+    @Test
+    fun `toSpotDetail carries like fields`() {
+        val detail = SpotDetailResponseDto(
+            spotId = 28,
+            name = "경복궁",
+            theme = "YUNSEUL",
+            likeCount = 7,
+            isLiked = true,
+            isLikeable = true,
+        ).toSpotDetail()
+
+        assertEquals(7L, detail.likeCount)
+        assertTrue(detail.isLiked)
+        assertTrue(detail.isLikeable)
     }
 }

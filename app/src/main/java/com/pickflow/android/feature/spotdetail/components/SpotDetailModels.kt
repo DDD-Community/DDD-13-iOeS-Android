@@ -25,8 +25,13 @@ data class SpotDetailData(
     val theme: SpotDetailTheme = SpotDetailTheme.Sunset,
     val comment: String = "걷다 보면 멀리 노을이 번져요.",
     val bookmarkCount: Int = 34,
+    /** 서버 `likeCount` — 상세 헤더의 "추천 N" 표기에 쓴다. */
+    val likeCount: Int = 34,
     val isMine: Boolean = false,
     val isBookmarked: Boolean = false,
+    val isLiked: Boolean = false,
+    /** 추천 버튼 노출 여부. 서버 `isLikeable` 그대로. */
+    val isLikeable: Boolean = false,
     val address: String = "서울 동작구",
     /** 펼침 시 표시할 도로명 주소(없으면 null). */
     val addressRoad: String? = null,
@@ -53,14 +58,17 @@ data class SpotDetailData(
  * iOS `SpotDetailView`가 `SpotDetail` 도메인 + `pickflowDisplayTime` 헬퍼로
  * 즉석에서 만드는 값을 동일 자리에서 한 번에 만든다.
  */
-fun SpotDetail.toDetailData(isBookmarked: Boolean): SpotDetailData =
+fun SpotDetail.toDetailData(isBookmarked: Boolean, isLiked: Boolean = this.isLiked): SpotDetailData =
     SpotDetailData(
         name = name,
         theme = theme.toDetailTheme(),
         comment = comment,
         bookmarkCount = bookmarkCount.toInt(),
+        likeCount = likeCount.toInt(),
         isMine = isMySpot,
         isBookmarked = isBookmarked,
+        isLiked = isLiked,
+        isLikeable = isLikeable,
         address = address,
         distanceKm = null,
         hasImage = imageUrl?.isNotBlank() == true,

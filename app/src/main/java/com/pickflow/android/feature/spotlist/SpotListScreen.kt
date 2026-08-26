@@ -269,7 +269,7 @@ private fun SpotListHeader(sort: SpotSort, onSelectSort: (SpotSort) -> Unit) {
     }
 }
 
-// iOS 매핑: "북마크 순" 의 서버 코드는 RECOMMENDED. BOOKMARK 라는 enum 값은 존재하지 않는다.
+// iOS 매핑: "추천 순" 의 서버 코드는 RECOMMENDED. 서버 정렬 기준은 like_count 다.
 private val SORT_OPTIONS = listOf(SpotSort.DISTANCE, SpotSort.RECOMMENDED)
 
 @Composable
@@ -388,12 +388,7 @@ private fun SpotListCell(
                 spot.distanceKm?.let { DistanceBadge(it) }
             }
         }
-        MetaRow(
-            spot = spot,
-            bookmarked = bookmarked,
-            bookmarkCount = null, // FIXME(BE-API): 응답 추가 시 전달
-            onBookmark = onBookmark,
-        )
+        MetaRow(spot = spot, bookmarked = bookmarked, onBookmark = onBookmark)
     }
 }
 
@@ -433,7 +428,6 @@ private fun DistanceBadge(km: Double) {
 private fun MetaRow(
     spot: Spot,
     bookmarked: Boolean,
-    bookmarkCount: Int?,
     onBookmark: () -> Unit,
 ) {
     Row(
@@ -457,18 +451,16 @@ private fun MetaRow(
                     style = PickflowTypography.labelSmall,
                     color = PickflowColors.gray10,
                 )
-                bookmarkCount?.let { count ->
-                    Text(
-                        text = "·",
-                        style = PickflowTypography.labelSmall,
-                        color = PickflowColors.gray50,
-                    )
-                    Text(
-                        text = "북마크 $count",
-                        style = PickflowTypography.labelSmall,
-                        color = PickflowColors.gray10,
-                    )
-                }
+                Text(
+                    text = "·",
+                    style = PickflowTypography.labelSmall,
+                    color = PickflowColors.gray50,
+                )
+                Text(
+                    text = "추천 ${spot.likeCount}",
+                    style = PickflowTypography.labelSmall,
+                    color = PickflowColors.gray10,
+                )
             }
         }
         IconButton(onClick = onBookmark) {
@@ -477,7 +469,7 @@ private fun MetaRow(
                     if (bookmarked) R.drawable.ic_bookmark_selected
                     else R.drawable.ic_bookmark,
                 ),
-                contentDescription = "북마크",
+                contentDescription = if (bookmarked) "북마크 해제" else "북마크 추가",
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -491,5 +483,5 @@ fun SpotTheme.label(): String = toMood().displayName
 
 fun SpotSort.displayName(): String = when (this) {
     SpotSort.DISTANCE -> "가까운 순"
-    SpotSort.RECOMMENDED -> "북마크 순"
+    SpotSort.RECOMMENDED -> "추천 순"
 }

@@ -97,9 +97,8 @@ class HomeMapMoodFilterSnapshotTest {
                                     mood = mood,
                                     hasThumbnail = false,
                                     distanceKm = 1.2,
+                                    isBookmarked = true,
                                 ),
-                                isBookmarked = true,
-                                bookmarkCount = null,
                                 modifier = Modifier.width(168.dp),
                             )
                         }
