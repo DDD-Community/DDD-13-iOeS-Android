@@ -12,9 +12,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
@@ -41,7 +43,7 @@ fun HomeScreen(
     onOpenNotice: () -> Unit = {},
     onOpenTermsAndPolicy: () -> Unit = {},
 ) {
-    var selectedTab by remember { mutableStateOf(HomeTab.EXPLORE) }
+    var selectedTab by rememberHomeTabState()
     // 마이페이지 카드 → 보관 탭의 특정 내부 탭으로 진입 요청.
     var pendingArchiveTab by remember { mutableStateOf<ArchiveTab?>(null) }
 
@@ -129,3 +131,13 @@ private fun HomeTab.iconRes(selected: Boolean): Int = when (this) {
     HomeTab.SAVED -> if (selected) R.drawable.ic_bookmark_selected else R.drawable.ic_bookmark
     HomeTab.MY -> if (selected) R.drawable.ic_person_selected else R.drawable.ic_person
 }
+
+/**
+ * 하단 탭 선택 상태. HOME 백스택 엔트리의 SavedState 에 얹는다.
+ *
+ * `remember` 로 두면 상세·공지 등 다른 라우트로 push 했다가 pop 할 때 HOME 컴포지션이
+ * 새로 만들어지면서 초기값 EXPLORE 로 되돌아간다(어느 탭에서 들어갔든 뒤로가기가 탐색 탭).
+ */
+@Composable
+internal fun rememberHomeTabState(): MutableState<HomeTab> =
+    rememberSaveable { mutableStateOf(HomeTab.EXPLORE) }
