@@ -116,8 +116,10 @@ fun PickflowNavHost(
         composable(PickflowRoute.ACCOUNT_MANAGEMENT) {
             AccountManagementScreen(
                 onBack = navController::popBackStack,
-                onSignedOut = {
-                    navController.navigate(PickflowRoute.LOGIN) {
+                // 비회원 탐색 이력이 있으면 로그인 화면 대신 탐색 탭으로 돌려보낸다.
+                onSignedOut = { keepBrowsing ->
+                    val target = if (keepBrowsing) PickflowRoute.HOME else PickflowRoute.LOGIN
+                    navController.navigate(target) {
                         popUpTo(PickflowRoute.HOME) { inclusive = true }
                     }
                 },
@@ -132,8 +134,10 @@ fun PickflowNavHost(
         composable(PickflowRoute.WITHDRAWAL) {
             WithdrawalScreen(
                 onBack = navController::popBackStack,
-                onWithdrawn = {
-                    navController.navigate(PickflowRoute.LOGIN) {
+                // 로그아웃과 같은 규칙 — 비회원 탐색 이력이 있으면 탐색 탭으로.
+                onWithdrawn = { keepBrowsing ->
+                    val target = if (keepBrowsing) PickflowRoute.HOME else PickflowRoute.LOGIN
+                    navController.navigate(target) {
                         popUpTo(PickflowRoute.HOME) { inclusive = true }
                     }
                 },
