@@ -6,6 +6,8 @@ import com.pickflow.android.core.network.ApiEnvironmentInterceptor
 import com.pickflow.android.core.services.protocols.ApiEnvironment
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.DevSettings
+import com.pickflow.android.core.services.protocols.GuestEntryStore
+import com.pickflow.android.core.services.impl.InMemoryOnboardingCompletionStore
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -51,16 +53,27 @@ private class FakeDevSettings(
     }
 }
 
+private class FakeGuestEntryStore(private var entered: Boolean = false) : GuestEntryStore {
+    override suspend fun hasEntered(): Boolean = entered
+    override suspend fun setEntered(entered: Boolean) {
+        this.entered = entered
+    }
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class DevModeViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var authService: AuthService
+    private lateinit var onboardingStore: InMemoryOnboardingCompletionStore
+    private lateinit var guestEntryStore: FakeGuestEntryStore
 
     @BeforeEach
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         authService = mockk(relaxed = true)
+        onboardingStore = InMemoryOnboardingCompletionStore()
+        guestEntryStore = FakeGuestEntryStore()
     }
 
     @AfterEach
@@ -68,7 +81,33 @@ class DevModeViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun vm(settings: DevSettings) = DevModeViewModel(settings, authService)
+    private fun vm(settings: DevSettings) =
+        DevModeViewModel(settings, authService, onboardingStore, guestEntryStore)
+
+    @Test
+    fun `온보딩 확인여부 토글은 저장소에 양방향으로 반영된다`() = runTest {
+        onboardingStore.setCompleted(true)
+        val viewModel = vm(FakeDevSettings())
+        advanceUntilIdle()
+        assertEquals(true, viewModel.onboardingCompleted.value)
+
+        viewModel.setOnboardingCompleted(false)
+        advanceUntilIdle()
+        assertEquals(false, viewModel.onboardingCompleted.value)
+        assertEquals(false, onboardingStore.isCompleted())
+    }
+
+    @Test
+    fun `비회원 진입 이력 토글은 저장소에 양방향으로 반영된다`() = runTest {
+        val viewModel = vm(FakeDevSettings())
+        advanceUntilIdle()
+        assertEquals(false, viewModel.guestEntered.value)
+
+        viewModel.setGuestEntered(true)
+        advanceUntilIdle()
+        assertEquals(true, viewModel.guestEntered.value)
+        assertEquals(true, guestEntryStore.hasEntered())
+    }
 
     @Test
     fun `기본 환경은 빌드 타입이 보던 서버이고 선택하면 즉시 반영된다`() = runTest {

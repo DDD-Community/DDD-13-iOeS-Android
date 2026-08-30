@@ -48,6 +48,8 @@ fun DevModeScreen(
     val badgeEnabled by viewModel.badgeEnabled.collectAsStateWithLifecycle()
     val touchIndicator by viewModel.touchIndicatorEnabled.collectAsStateWithLifecycle()
     val pendingEnvironment by viewModel.pendingEnvironment.collectAsStateWithLifecycle()
+    val onboardingCompleted by viewModel.onboardingCompleted.collectAsStateWithLifecycle()
+    val guestEntered by viewModel.guestEntered.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -127,6 +129,23 @@ fun DevModeScreen(
             checked = touchIndicator,
             onCheckedChange = viewModel::setTouchIndicatorEnabled,
             tag = "devmode-touch-toggle",
+        )
+
+        SectionTitle("진입")
+        ToggleRow(
+            title = "온보딩 확인여부",
+            description = "off 로 내리면 앱을 껐다 켤 때 온보딩이 다시 나와요.",
+            checked = onboardingCompleted,
+            onCheckedChange = viewModel::setOnboardingCompleted,
+            tag = "devmode-onboarding-toggle",
+        )
+        Spacer(Modifier.height(12.dp))
+        ToggleRow(
+            title = "비회원 진입 이력",
+            description = "on 이면 앱을 켤 때 로그인 화면을 건너뛰고 탐색 탭으로 바로 가요.",
+            checked = guestEntered,
+            onCheckedChange = viewModel::setGuestEntered,
+            tag = "devmode-guest-toggle",
         )
 
         SectionTitle("앱 정보")
