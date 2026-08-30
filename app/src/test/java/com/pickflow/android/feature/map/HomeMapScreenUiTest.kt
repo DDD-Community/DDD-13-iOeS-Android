@@ -128,6 +128,80 @@ class HomeMapScreenUiTest {
         assertEquals(setOf(MoodFilter.Night), vm.selectedMoods.value)
     }
 
+    // --- 지역 필터 ---
+
+    /** 로고 우측에 현재 적용 중인 지역명이 보인다. */
+    @Test
+    fun header_shows_applied_region_name() {
+        setScreen(viewModel())
+        composeRule.onNodeWithTag("homemap-region").assertIsDisplayed()
+        composeRule.onNodeWithText("서울").assertIsDisplayed()
+    }
+
+    /** 지역명 탭 → 지역 선택 바텀시트 노출. */
+    @Test
+    fun tapping_region_opens_picker_sheet() {
+        setScreen(viewModel())
+        composeRule.onNodeWithTag("homemap-region").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("어느 지역을 둘러볼까요?").assertIsDisplayed()
+    }
+
+    /** 다른 지역 선택 후 [적용하기] → 지역이 갱신되고 지도 이동 좌표가 나간다. */
+    @Test
+    fun selecting_another_region_and_applying_updates_region() {
+        val vm = viewModel()
+        setScreen(vm)
+        composeRule.onNodeWithTag("homemap-region").performClick()
+        composeRule.onNodeWithText("대전").performClick()
+        composeRule.onNodeWithTag("region-picker-apply").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(Region.Daejeon, vm.region.value)
+        assertEquals(Region.Daejeon.center, vm.regionTarget.value)
+    }
+
+    /** 다른 지역을 골라도 [취소] 면 기존 지역이 유지된다. */
+    @Test
+    fun cancelling_keeps_the_previously_applied_region() {
+        val vm = viewModel()
+        setScreen(vm)
+        composeRule.onNodeWithTag("homemap-region").performClick()
+        composeRule.onNodeWithText("대전").performClick()
+        composeRule.onNodeWithTag("region-picker-cancel").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(Region.Seoul, vm.region.value)
+        assertEquals(null, vm.regionTarget.value)
+    }
+
+    /** 재호출 시 현재 적용 중인 지역이 선택된 상태로 뜬다(취소로 버린 선택이 남지 않는다). */
+    @Test
+    fun reopening_the_sheet_resets_pending_selection_to_applied_region() {
+        val vm = viewModel()
+        setScreen(vm)
+        composeRule.onNodeWithTag("homemap-region").performClick()
+        composeRule.onNodeWithText("대전").performClick()
+        composeRule.onNodeWithTag("region-picker-cancel").performClick()
+        composeRule.waitForIdle()
+
+        // 다시 열어 그대로 [적용하기] → 버려진 대전이 아니라 서울이 유지돼야 한다.
+        composeRule.onNodeWithTag("homemap-region").performClick()
+        composeRule.onNodeWithTag("region-picker-apply").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(Region.Seoul, vm.region.value)
+    }
+
+    private fun setScreen(vm: HomeMapViewModel) {
+        composeRule.setContent {
+            PickflowTheme {
+                HomeMapScreen(onOpenSpotDetail = {}, onOpenRegistration = {}, viewModel = vm)
+            }
+        }
+        composeRule.waitForIdle()
+    }
+
     @Test
     fun cluster_tap_shows_bottom_sheet() {
         val spot = Spot("1", "한강 노을 스팟", SpotTheme.SUNSET, 37.5, 127.0)

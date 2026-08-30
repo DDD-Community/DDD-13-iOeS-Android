@@ -33,6 +33,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +58,7 @@ import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.feature.map.components.MoodFilterRow
+import com.pickflow.android.feature.map.components.RegionPickerSheet
 
 @Composable
 fun HomeMapScreen(
@@ -71,11 +75,15 @@ fun HomeMapScreen(
     val selectedCluster by viewModel.selectedCluster.collectAsStateWithLifecycle()
     val cameraTarget by viewModel.cameraTarget.collectAsStateWithLifecycle()
     val focusTarget by viewModel.focusTarget.collectAsStateWithLifecycle()
+    val regionTarget by viewModel.regionTarget.collectAsStateWithLifecycle()
+    val region by viewModel.region.collectAsStateWithLifecycle()
     val selectedPreview by viewModel.selectedPreview.collectAsStateWithLifecycle()
     val selectedBookmarked by viewModel.selectedBookmarked.collectAsStateWithLifecycle()
     val sheetLoginPrompt by viewModel.sheetLoginPrompt.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.load() }
+
+    var showRegionPicker by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     // iOS `showLocationPermissionPopup` 1:1 — 사용자가 권한 거부 후 현재위치 버튼 재탭 시 표시.
@@ -142,6 +150,8 @@ fun HomeMapScreen(
                     selectedSpotId = selectedSpotId,
                     focusTarget = focusTarget,
                     onFocusConsumed = viewModel::consumeFocusTarget,
+                    regionTarget = regionTarget,
+                    onRegionTargetConsumed = viewModel::consumeRegionTarget,
                     bottomInsetFraction = if (selectedCluster != null) 0.45f else 0f,
                 )
             }
@@ -160,13 +170,37 @@ fun HomeMapScreen(
                     .fillMaxWidth()
                     .padding(top = 12.dp),
             ) {
-                Image(
-                    painter = painterResource(R.drawable.logo),
-                    contentDescription = "PICKFLOW",
-                    modifier = Modifier
-                        .padding(start = 20.dp)
-                        .height(24.dp),
-                )
+                Row(
+                    modifier = Modifier.padding(start = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.logo),
+                        contentDescription = "PICKFLOW",
+                        modifier = Modifier.height(24.dp),
+                    )
+                    Row(
+                        modifier = Modifier
+                            .padding(start = 6.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { showRegionPicker = true }
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                            .testTag("homemap-region"),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = region.displayName,
+                            style = PickflowTypography.bodyLargeBold,
+                            color = PickflowColors.gray0,
+                        )
+                        Icon(
+                            imageVector = Icons.Filled.KeyboardArrowDown,
+                            contentDescription = "지역 선택",
+                            tint = PickflowColors.gray0,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
                 Spacer(Modifier.height(8.dp))
                 MoodFilterRow(
                     selected = selectedMoods,
@@ -235,6 +269,18 @@ fun HomeMapScreen(
                 )
             }
         }
+    }
+
+    if (showRegionPicker) {
+        RegionPickerSheet(
+            applied = region,
+            onApply = {
+                viewModel.applyRegion(it)
+                showRegionPicker = false
+            },
+            // 취소·바깥 탭·드래그 dismiss — 변경 사항을 버린다.
+            onDismiss = { showRegionPicker = false },
+        )
     }
 
     // 핀 탭 → 바텀시트(preview 데이터).
