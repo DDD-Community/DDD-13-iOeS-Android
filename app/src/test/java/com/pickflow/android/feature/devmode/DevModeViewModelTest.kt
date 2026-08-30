@@ -9,6 +9,7 @@ import com.pickflow.android.core.services.protocols.DevSettings
 import com.pickflow.android.core.services.protocols.GuestEntryStore
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.impl.InMemoryOnboardingCompletionStore
+import com.pickflow.android.core.services.protocols.V2NoticeStore
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -89,7 +90,7 @@ class DevModeViewModelTest {
     }
 
     private fun vm(settings: DevSettings) =
-        DevModeViewModel(settings, authService, onboardingStore, guestEntryStore)
+        DevModeViewModel(settings, authService, onboardingStore, guestEntryStore, FakeV2NoticeStore())
 
     @Test
     fun `온보딩 확인여부 토글은 저장소에 양방향으로 반영된다`() = runTest {
@@ -114,6 +115,14 @@ class DevModeViewModelTest {
         advanceUntilIdle()
         assertEquals(true, viewModel.guestEntered.value)
         assertEquals(true, guestEntryStore.hasEntered())
+    }
+
+    private class FakeV2NoticeStore : V2NoticeStore {
+        private val _seen = MutableStateFlow(false)
+        override val seen: StateFlow<Boolean> = _seen.asStateFlow()
+        override fun setSeen(seen: Boolean) {
+            _seen.value = seen
+        }
     }
 
     @Test

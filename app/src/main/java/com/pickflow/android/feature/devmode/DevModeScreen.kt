@@ -51,6 +51,7 @@ fun DevModeScreen(
     val badgeEnabled by viewModel.badgeEnabled.collectAsStateWithLifecycle()
     val touchIndicator by viewModel.touchIndicatorEnabled.collectAsStateWithLifecycle()
     val forcedStatus by viewModel.forcedMySpotStatus.collectAsStateWithLifecycle()
+    val v2NoticeEnabled by viewModel.v2NoticeEnabled.collectAsStateWithLifecycle()
     val pendingEnvironment by viewModel.pendingEnvironment.collectAsStateWithLifecycle()
     val onboardingCompleted by viewModel.onboardingCompleted.collectAsStateWithLifecycle()
     val guestEntered by viewModel.guestEntered.collectAsStateWithLifecycle()
@@ -133,6 +134,14 @@ fun DevModeScreen(
             checked = touchIndicator,
             onCheckedChange = viewModel::setTouchIndicatorEnabled,
             tag = "devmode-touch-toggle",
+        )
+        Spacer(Modifier.height(12.dp))
+        ToggleRow(
+            title = "V2 안내 팝업",
+            description = "탐색 탭에서 V2 업데이트 안내를 다시 띄워요. 확인하면 스스로 꺼져요.",
+            checked = v2NoticeEnabled,
+            onCheckedChange = viewModel::setV2NoticeEnabled,
+            tag = "devmode-v2-notice-toggle",
         )
 
         DevSectionTitle("진입")

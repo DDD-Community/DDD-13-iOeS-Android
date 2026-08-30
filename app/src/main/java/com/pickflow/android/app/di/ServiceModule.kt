@@ -12,7 +12,7 @@ import com.pickflow.android.core.services.impl.DefaultSocialLoginService
 import com.pickflow.android.core.services.impl.DefaultUserService
 import com.pickflow.android.core.services.impl.DataStoreGuestEntryStore
 import com.pickflow.android.core.services.impl.DataStoreOnboardingCompletionStore
-import com.pickflow.android.core.services.impl.DataStoreV2NoticeStore
+import com.pickflow.android.core.services.impl.PrefsV2NoticeStore
 import com.pickflow.android.core.services.impl.EncryptedTokenStore
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
 import com.pickflow.android.core.services.impl.DefaultRegionCatalog
@@ -96,11 +96,13 @@ abstract class ServiceModule {
         impl: DataStoreOnboardingCompletionStore
     ): OnboardingCompletionStore
 
+    // Dev Mode 스위치와 지도가 같은 플래그를 실시간으로 봐야 하므로 @Singleton 이어야 한다.
     @Binds
     abstract fun bindGuestEntryStore(impl: DataStoreGuestEntryStore): GuestEntryStore
 
     @Binds
-    abstract fun bindV2NoticeStore(impl: DataStoreV2NoticeStore): V2NoticeStore
+    @Singleton
+    abstract fun bindV2NoticeStore(impl: PrefsV2NoticeStore): V2NoticeStore
 
     // 탐색 탭(지도·리스트)이 공유하는 무드 선택 상태. 반드시 @Singleton 이어야 공유된다.
     @Binds

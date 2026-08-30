@@ -8,6 +8,7 @@ import com.pickflow.android.core.services.protocols.DevSettings
 import com.pickflow.android.core.services.protocols.GuestEntryStore
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.OnboardingCompletionStore
+import com.pickflow.android.core.services.protocols.V2NoticeStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,7 @@ class DevModeViewModel @Inject constructor(
     private val authService: AuthService,
     private val onboardingStore: OnboardingCompletionStore,
     private val guestEntryStore: GuestEntryStore,
+    private val v2NoticeStore: V2NoticeStore,
 ) : ViewModel() {
 
     val apiEnvironment = devSettings.apiEnvironment
@@ -41,6 +43,13 @@ class DevModeViewModel @Inject constructor(
     /** 비회원 진입 이력. on 이면 앱 실행 시 로그인 화면을 건너뛰고 탐색 탭으로 간다. */
     private val _guestEntered = MutableStateFlow(false)
     val guestEntered: StateFlow<Boolean> = _guestEntered.asStateFlow()
+
+    /** 켜져 있으면 탐색 탭에서 V2 안내가 뜬다 — 저장된 "봤음" 플래그의 반대. */
+    val v2NoticeEnabled: StateFlow<Boolean> = v2NoticeStore.seen
+        .map { !it }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, !v2NoticeStore.seen.value)
+
+    fun setV2NoticeEnabled(enabled: Boolean) = v2NoticeStore.setSeen(!enabled)
 
     /** 확인 대기 중인 환경 전환. null 이면 다이얼로그를 띄우지 않는다. */
     private val _pendingEnvironment = MutableStateFlow<ApiEnvironment?>(null)
