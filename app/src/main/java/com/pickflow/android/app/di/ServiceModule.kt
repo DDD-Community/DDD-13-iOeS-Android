@@ -9,6 +9,7 @@ import com.pickflow.android.core.services.impl.DefaultMySpotService
 import com.pickflow.android.core.services.impl.DefaultSpotReportService
 import com.pickflow.android.core.services.impl.DefaultSocialLoginService
 import com.pickflow.android.core.services.impl.DefaultUserService
+import com.pickflow.android.core.services.impl.DataStoreGuestEntryStore
 import com.pickflow.android.core.services.impl.DataStoreOnboardingCompletionStore
 import com.pickflow.android.core.services.impl.EncryptedTokenStore
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
@@ -36,6 +37,7 @@ import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.MySpotAlarmService
 import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.SpotReportService
+import com.pickflow.android.core.services.protocols.GuestEntryStore
 import com.pickflow.android.core.services.protocols.OnboardingCompletionStore
 import com.pickflow.android.core.services.protocols.ShareIntentService
 import com.pickflow.android.core.services.protocols.MoodFilterStore
@@ -81,6 +83,9 @@ abstract class ServiceModule {
     abstract fun bindOnboardingCompletionStore(
         impl: DataStoreOnboardingCompletionStore
     ): OnboardingCompletionStore
+
+    @Binds
+    abstract fun bindGuestEntryStore(impl: DataStoreGuestEntryStore): GuestEntryStore
 
     // 탐색 탭(지도·리스트)이 공유하는 무드 선택 상태. 반드시 @Singleton 이어야 공유된다.
     @Binds

@@ -34,7 +34,7 @@ class AccountManagementScreenUiTest {
             savedSpotCount = 0,
             recordedSpotCount = 0,
         )
-        return AccountManagementViewModel(authService, userService)
+        return AccountManagementViewModel(authService, userService, mockk(relaxed = true))
     }
 
     @Test

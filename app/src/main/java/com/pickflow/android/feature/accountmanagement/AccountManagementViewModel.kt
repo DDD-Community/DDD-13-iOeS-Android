@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pickflow.android.core.network.ApiException
 import com.pickflow.android.core.services.protocols.AuthService
+import com.pickflow.android.core.services.protocols.GuestEntryStore
 import com.pickflow.android.core.services.protocols.ImagePayload
 import com.pickflow.android.core.services.protocols.SocialProvider
 import com.pickflow.android.core.services.protocols.UserService
@@ -21,10 +22,18 @@ import kotlinx.coroutines.launch
 class AccountManagementViewModel @Inject constructor(
     private val authService: AuthService,
     private val userService: UserService,
+    private val guestEntryStore: GuestEntryStore,
 ) : ViewModel() {
 
     private val _signedOut = MutableStateFlow(false)
     val signedOut: StateFlow<Boolean> = _signedOut.asStateFlow()
+
+    /**
+     * 로그아웃 후 로그인 화면 대신 탐색 탭으로 돌아갈지. 비회원으로 탐색한 이력이 있으면 true.
+     * 앱 시작 분기([com.pickflow.android.app.navigation.PickflowEntryViewModel])와 같은 규칙이다.
+     */
+    private val _keepBrowsingAfterSignOut = MutableStateFlow(false)
+    val keepBrowsingAfterSignOut: StateFlow<Boolean> = _keepBrowsingAfterSignOut.asStateFlow()
 
     private val _nicknameDraft = MutableStateFlow("")
     val nicknameDraft: StateFlow<String> = _nicknameDraft.asStateFlow()
@@ -135,6 +144,8 @@ class AccountManagementViewModel @Inject constructor(
     fun logout() {
         viewModelScope.launch {
             authService.logout()
+            // signedOut 을 올리기 전에 목적지를 정해둔다 — 화면은 signedOut 을 보고 한 번에 이동한다.
+            _keepBrowsingAfterSignOut.value = guestEntryStore.hasEntered()
             _signedOut.value = true
         }
     }

@@ -65,11 +65,12 @@ import kotlinx.coroutines.delay
 @Composable
 fun AccountManagementScreen(
     onBack: () -> Unit,
-    onSignedOut: () -> Unit,
+    onSignedOut: (keepBrowsing: Boolean) -> Unit,
     onOpenWithdrawal: () -> Unit = {},
     viewModel: AccountManagementViewModel = hiltViewModel(),
 ) {
     val signedOut by viewModel.signedOut.collectAsStateWithLifecycle()
+    val keepBrowsing by viewModel.keepBrowsingAfterSignOut.collectAsStateWithLifecycle()
     val nicknameDraft by viewModel.nicknameDraft.collectAsStateWithLifecycle()
     val isSaveEnabled by viewModel.isSaveEnabled.collectAsStateWithLifecycle()
     val profileImageUrl by viewModel.profileImageUrl.collectAsStateWithLifecycle()
@@ -82,7 +83,7 @@ fun AccountManagementScreen(
     var toastVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(signedOut) {
-        if (signedOut) onSignedOut()
+        if (signedOut) onSignedOut(keepBrowsing)
     }
     LaunchedEffect(toastMessage) {
         if (toastMessage != null) {

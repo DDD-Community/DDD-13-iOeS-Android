@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.core.services.protocols.AuthService
+import com.pickflow.android.core.services.protocols.GuestEntryStore
 import com.pickflow.android.core.services.protocols.KakaoAuthProvider
 import com.pickflow.android.core.services.protocols.SocialLoginService
 import io.mockk.mockk
@@ -28,6 +29,7 @@ class LoginScreenUiTest {
         mockk<KakaoAuthProvider>(relaxed = true),
         mockk<SocialLoginService>(relaxed = true),
         mockk<AuthService>(relaxed = true),
+        mockk<GuestEntryStore>(relaxed = true),
     )
 
     @Test
