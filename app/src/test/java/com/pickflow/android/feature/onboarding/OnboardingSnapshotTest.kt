@@ -13,7 +13,6 @@ import app.cash.paparazzi.Paparazzi
 import com.android.resources.Density
 import com.android.resources.ScreenOrientation
 import com.pickflow.android.common.designsystem.PickflowTheme
-import com.pickflow.android.feature.onboarding.components.OnboardingFocusedCarousel
 import com.pickflow.android.feature.onboarding.components.OnboardingIllustration
 import com.pickflow.android.feature.onboarding.components.OnboardingPageIndicator
 import com.pickflow.android.feature.onboarding.components.OnboardingPalette
@@ -147,12 +146,7 @@ class OnboardingSnapshotTest {
     private fun illustration(index: Int) {
         paparazzi.unsafeUpdateConfig(device(393, 600))
         snapshot {
-            // 캐러셀 자동 슬라이드는 비활성 — 스냅샷은 정지 프레임으로 고정.
-            OnboardingIllustration(
-                page = pages[index],
-                isCarouselAnimating = false,
-                modifier = Modifier.fillMaxSize(),
-            )
+            OnboardingIllustration(page = pages[index], modifier = Modifier.fillMaxSize())
         }
     }
 

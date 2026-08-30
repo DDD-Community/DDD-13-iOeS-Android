@@ -1,109 +1,57 @@
 package com.pickflow.android.feature.onboarding.model
 
-import androidx.compose.ui.graphics.Color
-import com.pickflow.android.common.designsystem.PickflowColors
+import androidx.annotation.DrawableRes
+import com.pickflow.android.R
 
-/** iOS `OnboardingPage.AccentTheme` 1:1. */
-enum class OnboardingAccentTheme { ORANGE, BLUE }
+/**
+ * 일러스트 배치 방식.
+ *
+ * - [TOP_ALIGNED_IMAGE]: 그라데이션 배경 위에 이미지를 상단 정렬(0페이지).
+ * - [FULL_IMAGE]: 배경까지 포함된 단일 이미지를 영역 전체에 채움(1~3페이지).
+ */
+enum class OnboardingLayout { TOP_ALIGNED_IMAGE, FULL_IMAGE }
 
-/** iOS `OnboardingPage.Layout` 1:1. */
-enum class OnboardingLayout { TOP_ALIGNED_IMAGE, BOTTOM_ALIGNED_IMAGE, MOOD_CAROUSEL }
-
-/** iOS `MoodFilter` 1:1 — 라벨/아이콘/스트로크 색. 아이콘은 커스텀 에셋이라 이모지 placeholder. */
-enum class OnboardingMoodKind(val label: String, val emoji: String, val borderColor: Color) {
-    SUNSET(label = "노을", emoji = "🌅", borderColor = PickflowColors.sunsetOrange),
-    RIPPLE(label = "윤슬", emoji = "🌊", borderColor = Color(0xFF1E8AF6)),
-}
-
-/** iOS `OnboardingMoodHeader` 1:1. */
-data class OnboardingMood(
-    val primary: OnboardingMoodKind,
-    val secondary: OnboardingMoodKind,
-    val description: String,
-)
-
-/** iOS `OnboardingPageGradient.Stop` 1:1. */
-data class OnboardingGradientStop(val color: Color, val location: Float)
-
-/** iOS `OnboardingPage` 1:1. 이미지 에셋명은 placeholder 처리되므로 보관하지 않는다. */
 data class OnboardingPageContent(
     val id: Int,
     val title: String,
-    val titleHighlight: String?,
+    /** 타이틀 안에서 accent 색으로 강조할 구간들. 등장 순서대로 첫 매치를 칠한다. */
+    val titleHighlights: List<String>,
     val subtitle: String,
-    val theme: OnboardingAccentTheme,
-    val gradientStops: List<OnboardingGradientStop>,
-    val carouselImageCount: Int,
-    val mood: OnboardingMood?,
+    @DrawableRes val illustration: Int,
     val layout: OnboardingLayout,
 )
 
-// iOS OnboardingPageGradient 정의 1:1.
-private val orangeWarm = listOf(
-    OnboardingGradientStop(PickflowColors.sunsetOrange, 0f),
-    OnboardingGradientStop(Color(0xFFF69648), 1f),
-)
-private val nightWarm = listOf(
-    OnboardingGradientStop(PickflowColors.gray95, 0f),
-    OnboardingGradientStop(PickflowColors.sunsetOrange.copy(alpha = 0.5f), 1f),
-)
-private val nightCool = listOf(
-    OnboardingGradientStop(PickflowColors.gray95, 0f),
-    OnboardingGradientStop(Color(0xFF1E8AF6).copy(alpha = 0.5f), 1f),
-)
-
-/** iOS `OnboardingPage.defaultPages` 1:1. */
 val defaultOnboardingPages: List<OnboardingPageContent> = listOf(
     OnboardingPageContent(
         id = 0,
         title = "흩어진 포토스팟,\n이제 한 번에 찾을 수 있어요",
-        titleHighlight = "한 번에 찾을 수 있어요",
+        titleHighlights = listOf("한 번에 찾을 수 있어요"),
         subtitle = "지도 뷰와 리스트 뷰를 통해\n원하는 방식으로 스팟을 쉽게 탐색해요.",
-        theme = OnboardingAccentTheme.ORANGE,
-        gradientStops = orangeWarm,
-        carouselImageCount = 0,
-        mood = null,
+        illustration = R.drawable.onboarding_0,
         layout = OnboardingLayout.TOP_ALIGNED_IMAGE,
     ),
     OnboardingPageContent(
         id = 1,
-        title = "나만의 스팟을\n기록하고 공유해보세요",
-        titleHighlight = "나만의 스팟을",
-        subtitle = "내가 촬영한 스팟을 지도에 남기고\n확인할 수 있어요.",
-        theme = OnboardingAccentTheme.ORANGE,
-        gradientStops = orangeWarm,
-        carouselImageCount = 0,
-        mood = null,
-        layout = OnboardingLayout.BOTTOM_ALIGNED_IMAGE,
+        title = "나만의 스팟을\n기록하고, 오픈해보세요",
+        titleHighlights = listOf("기록하고,", "오픈"),
+        subtitle = "내가 촬영한 스팟을 지도에 남기고,\n기록한 스팟을 공개해보세요.",
+        illustration = R.drawable.onboarding_1,
+        layout = OnboardingLayout.FULL_IMAGE,
     ),
     OnboardingPageContent(
         id = 2,
-        title = "하루의 끝자락에서,\n노을이 가장 아름다운 순간",
-        titleHighlight = "노을이 가장 아름다운 순간",
-        subtitle = "노을 태그로,\n그 순간을 담은 스팟을 찾아보세요.",
-        theme = OnboardingAccentTheme.ORANGE,
-        gradientStops = nightWarm,
-        carouselImageCount = 3,
-        mood = OnboardingMood(
-            primary = OnboardingMoodKind.SUNSET,
-            secondary = OnboardingMoodKind.RIPPLE,
-            description = "해가 뜨거나 지려고 할 때에\n하늘이 햇빛을 받아 붉게 보이는 현상",
-        ),
-        layout = OnboardingLayout.MOOD_CAROUSEL,
+        title = "다른 사람의 스팟도\n만나볼 수 있어요",
+        titleHighlights = listOf("다른 사람의 스팟"),
+        subtitle = "다른 유저가 발견한 스팟을 살펴보고,\n마음에 드는 스팟을 추천해보세요.",
+        illustration = R.drawable.onboarding_2,
+        layout = OnboardingLayout.FULL_IMAGE,
     ),
     OnboardingPageContent(
         id = 3,
-        title = "물가에 빛이 닿을 때,\n윤슬이 가장 반짝이는 순간",
-        titleHighlight = "윤슬이 가장 반짝이는 순간",
-        subtitle = "윤슬 태그로,\n그 순간을 담은 스팟을 찾아보세요.",
-        theme = OnboardingAccentTheme.BLUE,
-        gradientStops = nightCool,
-        carouselImageCount = 3,
-        mood = OnboardingMood(
-            primary = OnboardingMoodKind.RIPPLE,
-            secondary = OnboardingMoodKind.SUNSET,
-            description = "달빛이나 햇빛에 비치어 반짝이는 잔물결\n",
-        ),
-        layout = OnboardingLayout.MOOD_CAROUSEL,
+        title = "원하는 순간의 스팟을\n찾아보세요",
+        titleHighlights = listOf("원하는 순간"),
+        subtitle = "햇살부터 윤슬, 노을, 야경까지\n지금 찍고 싶은 분위기에 맞는 스팟을 찾아보세요.",
+        illustration = R.drawable.onboarding_3,
+        layout = OnboardingLayout.FULL_IMAGE,
     ),
 )
