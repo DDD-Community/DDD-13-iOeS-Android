@@ -28,12 +28,12 @@ import com.pickflow.android.feature.withdrawal.components.WithdrawalContent
 
 /**
  * iOS `WithdrawalView` 1:1 — step 별 분기 + ViewModel 액션 라우팅.
- * 탈퇴 성공 시 `onWithdrawn` 으로 LoginScreen 까지 popBackStack.
+ * 탈퇴 성공 시 `onWithdrawn` 으로 이탈 — 비회원 탐색 이력이 있으면 탐색 탭, 없으면 LoginScreen.
  */
 @Composable
 fun WithdrawalScreen(
     onBack: () -> Unit,
-    onWithdrawn: () -> Unit,
+    onWithdrawn: (keepBrowsing: Boolean) -> Unit,
     viewModel: WithdrawalViewModel = hiltViewModel(),
 ) {
     val step by viewModel.step.collectAsStateWithLifecycle()
@@ -41,10 +41,11 @@ fun WithdrawalScreen(
     val isDropdownOpen by viewModel.isDropdownOpen.collectAsStateWithLifecycle()
     val otherFeedback by viewModel.otherFeedback.collectAsStateWithLifecycle()
     val didAgree by viewModel.didAgree.collectAsStateWithLifecycle()
+    val keepBrowsing by viewModel.keepBrowsingAfterWithdrawal.collectAsStateWithLifecycle()
 
-    // 완료 상태에서는 back 도 로그인 화면으로 이동.
+    // 완료 상태에서는 back 도 같은 목적지로 이동.
     if (step is WithdrawalViewModel.Step.Done) {
-        BackHandler { onWithdrawn() }
+        BackHandler { onWithdrawn(keepBrowsing) }
     }
 
     Box(
@@ -70,7 +71,7 @@ fun WithdrawalScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) { CircularProgressIndicator(color = PickflowColors.gray0) }
-            WithdrawalViewModel.Step.Done -> WithdrawalCompletedContent(onGoToLogin = onWithdrawn)
+            WithdrawalViewModel.Step.Done -> WithdrawalCompletedContent(onGoToLogin = { onWithdrawn(keepBrowsing) })
             is WithdrawalViewModel.Step.Failed -> Column(
                 modifier = Modifier
                     .fillMaxSize()

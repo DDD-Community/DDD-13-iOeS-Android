@@ -64,7 +64,7 @@ class LoginViewModelTest {
         )
         coEvery { social.loginWith(capture(captured)) } returns session
 
-        val vm = LoginViewModel(kakao, social, auth)
+        val vm = LoginViewModel(kakao, social, auth, mockk(relaxed = true))
 
         vm.session.test {
             assertEquals(LoadState.Idle, awaitItem())
@@ -86,7 +86,7 @@ class LoginViewModelTest {
         val boom = IllegalStateException("kakao down")
         coEvery { kakao.login() } throws boom
 
-        val vm = LoginViewModel(kakao, social, auth)
+        val vm = LoginViewModel(kakao, social, auth, mockk(relaxed = true))
 
         vm.session.test {
             assertEquals(LoadState.Idle, awaitItem())

@@ -27,7 +27,7 @@ class DataStoreOnboardingCompletionStore @Inject constructor(
     override suspend fun isCompleted(): Boolean =
         context.onboardingDataStore.data.first()[KEY_COMPLETED] ?: false
 
-    override suspend fun markCompleted() {
-        context.onboardingDataStore.edit { it[KEY_COMPLETED] = true }
+    override suspend fun setCompleted(completed: Boolean) {
+        context.onboardingDataStore.edit { it[KEY_COMPLETED] = completed }
     }
 }
