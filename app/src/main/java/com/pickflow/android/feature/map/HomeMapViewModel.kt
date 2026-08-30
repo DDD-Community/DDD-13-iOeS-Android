@@ -105,6 +105,14 @@ class HomeMapViewModel @Inject constructor(
     private val _cameraTarget = MutableStateFlow<Coordinates?>(null)
     val cameraTarget: StateFlow<Coordinates?> = _cameraTarget.asStateFlow()
 
+    /** 현재 적용 중인 지역. 바텀시트에서 [적용하기] 를 눌러야 바뀐다. */
+    private val _region = MutableStateFlow(Region.Seoul)
+    val region: StateFlow<Region> = _region.asStateFlow()
+
+    /** 지역 적용 시 지도가 이동할 좌표. 카메라 이동 → viewport 재조회로 스팟이 갱신된다. */
+    private val _regionTarget = MutableStateFlow<Coordinates?>(null)
+    val regionTarget: StateFlow<Coordinates?> = _regionTarget.asStateFlow()
+
     /** 마커 탭 시 바텀시트 위쪽 영역 중앙으로 정렬할 좌표(시트 높이만큼 하단 패딩 적용). */
     private val _focusTarget = MutableStateFlow<Coordinates?>(null)
     val focusTarget: StateFlow<Coordinates?> = _focusTarget.asStateFlow()
@@ -169,6 +177,18 @@ class HomeMapViewModel @Inject constructor(
      * 재조회는 [moodFilterStore] 구독(init)이 담당하므로 여기서 직접 부르지 않는다.
      */
     fun selectMood(mood: MoodFilter) = moodFilterStore.toggle(mood.toTheme())
+
+    /** 지역 선택 바텀시트의 [적용하기]. 같은 지역이면 카메라 이동·재조회를 건너뛴다. */
+    fun applyRegion(region: Region) {
+        if (region == _region.value) return
+        _region.value = region
+        _regionTarget.value = region.center
+    }
+
+    /** NaverMapView 가 지역 카메라 이동을 처리한 뒤 호출. */
+    fun consumeRegionTarget() {
+        _regionTarget.value = null
+    }
 
     fun selectMapListMode(mode: MapListMode) {
         _mapListMode.value = mode

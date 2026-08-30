@@ -143,6 +143,43 @@ class HomeMapViewModelTest {
         coVerify { spotListService.fetch(themes = emptySet(), page = 0) }
     }
 
+    /** 지역 필터 — 초기값은 서울(지도 최초 카메라와 동일). */
+    @Test
+    fun `region defaults to Seoul`() {
+        assertEquals(Region.Seoul, vm().region.value)
+    }
+
+    /** [적용하기] 시에만 지역이 바뀌고, 지도는 그 지역 중심으로 이동한다. */
+    @Test
+    fun `applyRegion updates region and emits camera target at region center`() {
+        val viewModel = vm()
+        viewModel.applyRegion(Region.Daejeon)
+
+        assertEquals(Region.Daejeon, viewModel.region.value)
+        assertEquals(Region.Daejeon.center, viewModel.regionTarget.value)
+    }
+
+    /** 같은 지역 재적용은 카메라 이동(=재조회)을 트리거하지 않는다. */
+    @Test
+    fun `applyRegion with the applied region emits no camera target`() {
+        val viewModel = vm()
+        viewModel.applyRegion(Region.Seoul)
+
+        assertEquals(Region.Seoul, viewModel.region.value)
+        assertEquals(null, viewModel.regionTarget.value)
+    }
+
+    /** 지도가 이동을 처리하면 target 을 비워 동일 좌표 재이동을 막는다. */
+    @Test
+    fun `consumeRegionTarget clears the target but keeps the region`() {
+        val viewModel = vm()
+        viewModel.applyRegion(Region.Daejeon)
+        viewModel.consumeRegionTarget()
+
+        assertEquals(null, viewModel.regionTarget.value)
+        assertEquals(Region.Daejeon, viewModel.region.value)
+    }
+
     @Test
     fun `selectMapListMode switches between MAP and LIST`() {
         val viewModel = vm()
