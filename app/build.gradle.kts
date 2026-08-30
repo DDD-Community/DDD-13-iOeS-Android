@@ -60,8 +60,8 @@ val firebaseCredentialsFile: String = System.getenv("FIREBASE_SERVICE_ACCOUNT_FI
 // versionName 은 release-aab 워크플로가 태그 vX.Y.Z 에서 주입.
 // versionCode 는 단조증가 정수 — 이 fallback 이 단일 출처이며 릴리스마다 커밋해 갱신한다.
 // 1.0.2 부터 XYZNN(versionName 3자리 + 빌드 차수 2자리) 형태로 읽되, 단조증가가 우선 제약이다.
-val appVersionCode: Int = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1000401
-val appVersionName: String = System.getenv("VERSION_NAME") ?: "1.0.4"
+val appVersionCode: Int = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1010005
+val appVersionName: String = System.getenv("VERSION_NAME") ?: "1.1.0"
 
 // 로컬 QA 배포 완료 알림(Discord). 비어 있으면 알림을 건너뛴다 — CI 는 설정하지 않는다.
 val discordWebhookUrl: String = System.getenv("DISCORD_WEBHOOK_URL")
