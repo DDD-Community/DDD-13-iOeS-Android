@@ -12,6 +12,7 @@ import com.pickflow.android.core.services.impl.DefaultSocialLoginService
 import com.pickflow.android.core.services.impl.DefaultUserService
 import com.pickflow.android.core.services.impl.DataStoreGuestEntryStore
 import com.pickflow.android.core.services.impl.DataStoreOnboardingCompletionStore
+import com.pickflow.android.core.services.impl.DataStoreV2NoticeStore
 import com.pickflow.android.core.services.impl.EncryptedTokenStore
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
 import com.pickflow.android.core.services.impl.DefaultRegionCatalog
@@ -45,6 +46,7 @@ import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.SpotReportService
 import com.pickflow.android.core.services.protocols.GuestEntryStore
 import com.pickflow.android.core.services.protocols.OnboardingCompletionStore
+import com.pickflow.android.core.services.protocols.V2NoticeStore
 import com.pickflow.android.core.services.protocols.ShareIntentService
 import com.pickflow.android.core.services.protocols.MoodFilterStore
 import com.pickflow.android.core.services.protocols.RegionCatalog
@@ -96,6 +98,9 @@ abstract class ServiceModule {
 
     @Binds
     abstract fun bindGuestEntryStore(impl: DataStoreGuestEntryStore): GuestEntryStore
+
+    @Binds
+    abstract fun bindV2NoticeStore(impl: DataStoreV2NoticeStore): V2NoticeStore
 
     // 탐색 탭(지도·리스트)이 공유하는 무드 선택 상태. 반드시 @Singleton 이어야 공유된다.
     @Binds

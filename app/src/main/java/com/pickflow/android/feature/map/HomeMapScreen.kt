@@ -64,6 +64,7 @@ fun HomeMapScreen(
     onOpenRegistration: () -> Unit,
     onRequireLogin: () -> Unit = {},
     viewModel: HomeMapViewModel = hiltViewModel(),
+    v2NoticeViewModel: V2NoticeViewModel = hiltViewModel(),
 ) {
     val curationSpots by viewModel.curationSpots.collectAsStateWithLifecycle()
     val mySpots by viewModel.mySpots.collectAsStateWithLifecycle()
@@ -79,6 +80,7 @@ fun HomeMapScreen(
     val selectedPreview by viewModel.selectedPreview.collectAsStateWithLifecycle()
     val selectedBookmarked by viewModel.selectedBookmarked.collectAsStateWithLifecycle()
     val sheetLoginPrompt by viewModel.sheetLoginPrompt.collectAsStateWithLifecycle()
+    val showV2Notice by v2NoticeViewModel.visible.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.load() }
 
@@ -239,6 +241,24 @@ fun HomeMapScreen(
                         .align(Alignment.Center)
                         .padding(horizontal = 32.dp)
                         .clickable(enabled = false) {},
+                )
+            }
+        }
+
+        // V2 오픈 후 최초 1회 안내. 확인 버튼으로만 닫힌다(바깥 탭 dismiss 없음).
+        if (showV2Notice) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f))
+                    .clickable(enabled = false) {}
+                    .testTag("homemap-v2-notice-overlay"),
+            ) {
+                com.pickflow.android.feature.map.components.V2NoticePopup(
+                    onConfirm = v2NoticeViewModel::confirm,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 32.dp),
                 )
             }
         }
