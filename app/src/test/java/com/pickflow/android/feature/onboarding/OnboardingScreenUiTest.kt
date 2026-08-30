@@ -33,16 +33,12 @@ class OnboardingScreenUiTest {
     fun first_page_renders_with_cta() {
         composeRule.setContent {
             PickflowTheme {
-                OnboardingScreen(
-                    viewModel = viewModel(),
-                    isCarouselAnimating = false,
-                    onFinished = {},
-                )
+                OnboardingScreen(viewModel = viewModel(), onFinished = {})
             }
         }
         composeRule.onNodeWithTag("onboarding-screen").assertIsDisplayed()
         // 하단 패널은 고정 1개뿐이므로 CTA 노드도 정확히 1개다.
-        composeRule.onNodeWithText("시작하기").assertIsDisplayed()
+        composeRule.onNodeWithText("다음으로").assertIsDisplayed()
     }
 
     @Test
@@ -50,11 +46,7 @@ class OnboardingScreenUiTest {
         val vm = viewModel()
         composeRule.setContent {
             PickflowTheme {
-                OnboardingScreen(
-                    viewModel = vm,
-                    isCarouselAnimating = false,
-                    onFinished = {},
-                )
+                OnboardingScreen(viewModel = vm, onFinished = {})
             }
         }
         composeRule.onNodeWithTag("onboarding-screen").performTouchInput { swipeLeft() }
@@ -64,15 +56,25 @@ class OnboardingScreenUiTest {
     }
 
     @Test
-    fun cta_finishes_onboarding() {
-        var finished = false
+    fun cta_advances_to_next_page() {
+        val vm = viewModel()
         composeRule.setContent {
             PickflowTheme {
-                OnboardingScreen(
-                    viewModel = viewModel(),
-                    isCarouselAnimating = false,
-                    onFinished = { finished = true },
-                )
+                OnboardingScreen(viewModel = vm, onFinished = {})
+            }
+        }
+        composeRule.onNodeWithText("다음으로").performClick()
+        composeRule.waitForIdle()
+        assertEquals(1, vm.pageIndex.value)
+    }
+
+    @Test
+    fun cta_on_last_page_finishes_onboarding() {
+        var finished = false
+        val vm = viewModel().apply { setPage(3) }
+        composeRule.setContent {
+            PickflowTheme {
+                OnboardingScreen(viewModel = vm, onFinished = { finished = true })
             }
         }
         composeRule.onNodeWithText("시작하기").performClick()

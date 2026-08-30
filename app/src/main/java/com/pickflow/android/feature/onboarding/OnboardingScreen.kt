@@ -15,42 +15,30 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import com.pickflow.android.R
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.pickflow.android.common.designsystem.PickflowColors
-import com.pickflow.android.common.designsystem.PickflowTypography
+import com.pickflow.android.R
 import com.pickflow.android.feature.onboarding.components.OnboardingIllustration
 import com.pickflow.android.feature.onboarding.components.OnboardingPalette
 import com.pickflow.android.feature.onboarding.components.OnboardingPanel
-import com.pickflow.android.feature.onboarding.model.OnboardingLayout
 import com.pickflow.android.feature.onboarding.model.OnboardingPageContent
 import com.pickflow.android.feature.onboarding.model.defaultOnboardingPages
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
@@ -67,25 +55,24 @@ import kotlin.math.roundToInt
  * 드래그 중 임시 위치만 화면 로컬 상태(`rowOffsetPx`)로 둔다.
  *
  * 행 오프셋은 일반 `mutableFloatStateOf`로 두고 드래그 콜백에서 **동기적으로**만
- * 갱신한다. 릴리스 스냅 애니메이션은 `onDragStopped` 코루틴 안에서만 돈다 — 드래그
- * 입력과 시간상 겹치지 않으므로 둘 사이의 경쟁(race)이 원천 차단된다.
+ * 갱신한다. 스냅 애니메이션은 드래그 종료 콜백/CTA 탭 코루틴 안에서만 돌아
+ * 드래그 입력과 시간상 겹치지 않으므로 둘 사이의 경쟁(race)이 원천 차단된다.
  */
 @Preview
 @Composable
 fun OnboardingScreen(
     viewModel: OnboardingViewModel = hiltViewModel(),
-    isCarouselAnimating: Boolean = true,
     onFinished: () -> Unit,
 ) {
     val completed by viewModel.completed.collectAsStateWithLifecycle()
     val currentIndex by viewModel.pageIndex.collectAsStateWithLifecycle()
-    val toast by viewModel.toast.collectAsStateWithLifecycle()
 
     LaunchedEffect(completed) {
         if (completed) onFinished()
     }
 
     val pages = defaultOnboardingPages
+    val scope = rememberCoroutineScope()
     // 상단 일러스트 페이저의 가로 이동량(px). 0 = 0번 페이지, -pageWidth*i = i번 페이지.
     var rowOffsetPx by remember { mutableFloatStateOf(0f) }
 
@@ -97,6 +84,18 @@ fun OnboardingScreen(
         // 폭이 측정되거나 구성 변경으로 currentIndex가 복원되면 페이저 위치를 맞춘다.
         LaunchedEffect(pageWidthPx) {
             rowOffsetPx = -currentIndex * pageWidthPx
+        }
+
+        suspend fun snapTo(target: Int, velocity: Float = 0f) {
+            animate(
+                initialValue = rowOffsetPx,
+                targetValue = -target * pageWidthPx,
+                initialVelocity = velocity,
+                animationSpec = spring(
+                    dampingRatio = 1f,
+                    stiffness = Spring.StiffnessMediumLow,
+                ),
+            ) { value, _ -> rowOffsetPx = value }
         }
 
         val dragState = rememberDraggableState { delta ->
@@ -122,15 +121,7 @@ fun OnboardingScreen(
                         )
                         viewModel.setPage(target)
                         // 릴리스 스냅 — 이 코루틴 안에서만 rowOffsetPx를 움직인다.
-                        animate(
-                            initialValue = rowOffsetPx,
-                            targetValue = -target * pageWidthPx,
-                            initialVelocity = velocity,
-                            animationSpec = spring(
-                                dampingRatio = 1f,
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
-                        ) { value, _ -> rowOffsetPx = value }
+                        snapTo(target, velocity)
                     },
                 ),
         ) {
@@ -147,12 +138,6 @@ fun OnboardingScreen(
                 pages.forEachIndexed { index, page ->
                     OnboardingIllustration(
                         page = page,
-                        isCarouselAnimating = isCarouselAnimating,
-                        toastText = if (page.layout == OnboardingLayout.BOTTOM_ALIGNED_IMAGE) {
-                            toast
-                        } else {
-                            null
-                        },
                         modifier = Modifier
                             .fillMaxSize()
                             .offset {
@@ -176,7 +161,12 @@ fun OnboardingScreen(
                 page = pages[currentIndex],
                 currentIndex = currentIndex,
                 pageCount = pages.size,
-                onPrimaryTap = viewModel::finish,
+                onPrimaryTap = {
+                    // 마지막 페이지의 "시작하기"만 종료, 그 외 "다음으로"는 한 장 넘긴다.
+                    val target = currentIndex + 1
+                    viewModel.next()
+                    if (target <= pages.lastIndex) scope.launch { snapTo(target) }
+                },
                 modifier = Modifier.weight(4f),
             )
         }
@@ -196,7 +186,6 @@ fun OnboardingScreenContent(
     currentIndex: Int,
     pageCount: Int,
     onPrimaryTap: () -> Unit = {},
-    isCarouselAnimating: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -207,7 +196,6 @@ fun OnboardingScreenContent(
         Box(modifier = Modifier.fillMaxWidth().weight(6f)) {
             OnboardingIllustration(
                 page = page,
-                isCarouselAnimating = isCarouselAnimating,
                 modifier = Modifier.fillMaxSize(),
             )
             OnboardingWordmark(
@@ -268,23 +256,4 @@ private fun snapTargetIndex(
         else -> currentIndex
     }
     return target.coerceIn(0, pageCount - 1)
-}
-
-/**
- * 일러스트 페이저용 비대칭 클립 — 가로는 자기 box 내부로 hard-clip(인접 페이지 bleed 방지),
- * 세로는 BOTTOM 방향으로 [BOTTOM_OVERFLOW_DP] 만큼 확장 허용.
- * BOTTOM_ALIGNED_IMAGE 페이지의 폰 mockup이 panel 영역으로 흘러내려가 panel paint에 가려지는
- * 효과(Figma 매칭)를 만들기 위함.
- */
-private const val BOTTOM_OVERFLOW_DP = 80f
-
-private val BottomOverflowClipShape = object : Shape {
-    override fun createOutline(
-        size: Size,
-        layoutDirection: LayoutDirection,
-        density: Density,
-    ): Outline {
-        val extra = with(density) { BOTTOM_OVERFLOW_DP.dp.toPx() }
-        return Outline.Rectangle(Rect(0f, 0f, size.width, size.height + extra))
-    }
 }

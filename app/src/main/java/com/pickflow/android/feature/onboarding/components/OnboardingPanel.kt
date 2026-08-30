@@ -58,24 +58,24 @@ fun OnboardingPanel(
 
         OnboardingPageIndicator(count = pageCount, currentIndex = currentIndex)
 
-        OnboardingPrimaryButton(title = "시작하기", onClick = onPrimaryTap)
+        OnboardingPrimaryButton(
+            title = if (currentIndex == pageCount - 1) "시작하기" else "다음으로",
+            onClick = onPrimaryTap,
+        )
     }
 }
 
-/** iOS `makeTitleAttributedString` 1:1 — 하이라이트 구간만 theme accent 색. */
+/** 타이틀에서 [OnboardingPageContent.titleHighlights] 구간만 accent 색으로 칠한다. */
 private fun titleAnnotated(page: OnboardingPageContent): AnnotatedString = buildAnnotatedString {
-    val title = page.title
-    val highlight = page.titleHighlight
-    val start = highlight?.let { title.indexOf(it) } ?: -1
-    if (highlight == null || start < 0) {
-        withStyle(SpanStyle(color = OnboardingPalette.title)) { append(title) }
-        return@buildAnnotatedString
-    }
-    withStyle(SpanStyle(color = OnboardingPalette.title)) { append(title.substring(0, start)) }
-    withStyle(SpanStyle(color = page.theme.accentColor)) {
-        append(title.substring(start, start + highlight.length))
-    }
-    withStyle(SpanStyle(color = OnboardingPalette.title)) {
-        append(title.substring(start + highlight.length))
+    withStyle(SpanStyle(color = OnboardingPalette.title)) { append(page.title) }
+    page.titleHighlights.forEach { highlight ->
+        val start = page.title.indexOf(highlight)
+        if (start >= 0) {
+            addStyle(
+                SpanStyle(color = OnboardingPalette.accentOrange),
+                start,
+                start + highlight.length,
+            )
+        }
     }
 }
