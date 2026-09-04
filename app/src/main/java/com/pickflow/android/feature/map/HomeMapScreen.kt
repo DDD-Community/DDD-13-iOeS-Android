@@ -33,9 +33,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,6 +55,7 @@ import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.feature.map.components.MoodFilterRow
+import com.pickflow.android.feature.map.components.RegionHeader
 import com.pickflow.android.feature.map.components.RegionPickerSheet
 
 @Composable
@@ -170,37 +168,12 @@ fun HomeMapScreen(
                     .fillMaxWidth()
                     .padding(top = 12.dp),
             ) {
-                Row(
+                RegionHeader(
+                    region = region,
+                    onClick = { showRegionPicker = true },
                     modifier = Modifier.padding(start = 20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.logo),
-                        contentDescription = "PICKFLOW",
-                        modifier = Modifier.height(24.dp),
-                    )
-                    Row(
-                        modifier = Modifier
-                            .padding(start = 6.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { showRegionPicker = true }
-                            .padding(horizontal = 4.dp, vertical = 2.dp)
-                            .testTag("homemap-region"),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = region.displayName,
-                            style = PickflowTypography.bodyLargeBold,
-                            color = PickflowColors.gray0,
-                        )
-                        Icon(
-                            imageVector = Icons.Filled.KeyboardArrowDown,
-                            contentDescription = "지역 선택",
-                            tint = PickflowColors.gray0,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
-                }
+                    testTag = "homemap-region",
+                )
                 Spacer(Modifier.height(8.dp))
                 MoodFilterRow(
                     selected = selectedMoods,

@@ -46,8 +46,14 @@ class SpotListViewModel @Inject constructor(
         }
     }
 
-    /** 현재 적용 중인 지역. 지역 변경은 지도의 바텀시트에서만 일어난다. */
+    /** 현재 적용 중인 지역. 지도와 공유하므로 어느 쪽에서 바꿔도 같이 움직인다. */
     val region: StateFlow<Region> = regionStore.selected
+
+    /**
+     * 리스트 헤더의 지역 선택 바텀시트 [적용하기].
+     * 재조회는 [regionStore] 구독(init)이 담당하므로 여기서 직접 부르지 않는다.
+     */
+    fun applyRegion(region: Region) = regionStore.select(region)
 
     private val _spots = MutableStateFlow<LoadState<List<Spot>>>(LoadState.Idle)
     val spots: StateFlow<LoadState<List<Spot>>> = _spots.asStateFlow()

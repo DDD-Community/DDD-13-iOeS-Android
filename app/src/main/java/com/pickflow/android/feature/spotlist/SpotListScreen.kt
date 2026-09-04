@@ -56,11 +56,14 @@ import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.common.ui.LoadStateContent
+import com.pickflow.android.core.services.protocols.Region
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotSort
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.feature.map.MoodFilter
 import com.pickflow.android.feature.map.components.MoodFilterRow
+import com.pickflow.android.feature.map.components.RegionHeader
+import com.pickflow.android.feature.map.components.RegionPickerSheet
 import com.pickflow.android.feature.map.toMood
 import com.pickflow.android.feature.map.toTheme
 
@@ -76,6 +79,9 @@ fun SpotListScreen(
     val bookmarkedIds by viewModel.bookmarkedIds.collectAsStateWithLifecycle()
     val showLoginPrompt by viewModel.showLoginPrompt.collectAsStateWithLifecycle()
     val toast by viewModel.toast.collectAsStateWithLifecycle()
+    val region by viewModel.region.collectAsStateWithLifecycle()
+
+    var showRegionPicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
@@ -105,6 +111,8 @@ fun SpotListScreen(
             .testTag("spotlist-screen"),
     ) {
         SpotListHeader(
+            region = region,
+            onRegionClick = { showRegionPicker = true },
             sort = sort,
             onSelectSort = onSelectSort,
         )
@@ -127,6 +135,18 @@ fun SpotListScreen(
             )
         }
     }
+
+        if (showRegionPicker) {
+            RegionPickerSheet(
+                applied = region,
+                onApply = {
+                    viewModel.applyRegion(it)
+                    showRegionPicker = false
+                },
+                // 취소·바깥 탭·드래그 dismiss — 변경 사항을 버린다.
+                onDismiss = { showRegionPicker = false },
+            )
+        }
 
         if (showLoginPrompt) {
             // iOS `SpotListView` overlay + `LoginPromptPopup` 1:1.
@@ -192,19 +212,24 @@ private fun android.content.Context.hasLocationPermission(): Boolean =
 
 /** iOS `HomeMapView.headerBar` + `SpotListSortDropdownHeader` 1:1 — 로고 + 정렬 드롭다운. */
 @Composable
-private fun SpotListHeader(sort: SpotSort, onSelectSort: (SpotSort) -> Unit) {
+private fun SpotListHeader(
+    region: Region,
+    onRegionClick: () -> Unit,
+    sort: SpotSort,
+    onSelectSort: (SpotSort) -> Unit,
+) {
     var expanded by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
-        Image(
-            painter = painterResource(R.drawable.logo),
-            contentDescription = "PICKFLOW",
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .height(24.dp),
+        // 지도 헤더와 같은 컴포넌트 — 로고 높이와 지역명 타이포가 두 모드에서 동일해야 한다.
+        RegionHeader(
+            region = region,
+            onClick = onRegionClick,
+            modifier = Modifier.align(Alignment.CenterStart),
+            testTag = "spotlist-region",
         )
         Row(
             modifier = Modifier

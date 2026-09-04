@@ -3,8 +3,10 @@ package com.pickflow.android.feature.map
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
 import com.android.resources.Density
@@ -12,6 +14,7 @@ import com.android.resources.ScreenOrientation
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.core.services.protocols.Region
+import com.pickflow.android.feature.map.components.RegionHeader
 import com.pickflow.android.feature.map.components.RegionPickerContent
 import org.junit.Rule
 import org.junit.Test
@@ -66,5 +69,29 @@ class RegionPickerSnapshotTest {
                 density = Density.XHIGH,
                 orientation = if (wDp > hDp) ScreenOrientation.LANDSCAPE else ScreenOrientation.PORTRAIT,
             )
+    }
+
+    /**
+     * 헤더 브랜드 영역 — 지도·리스트가 같은 [RegionHeader] 를 쓰므로 이 한 장이 두 모드를
+     * 함께 보증한다. 지역명은 Figma `Heading/medium`(SemiBold 22 / 120% / gray0).
+     */
+    @Test
+    fun regionheader_dark() {
+        paparazzi.unsafeUpdateConfig(device(390, 56))
+        paparazzi.snapshot {
+            PickflowTheme {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(PickflowColors.gray95),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    RegionHeader(
+                        region = Region.Daejeon,
+                        onClick = {},
+                        modifier = Modifier.padding(start = 20.dp),
+                        testTag = "snapshot-region-header",
+                    )
+                }
+            }
+        }
     }
 }

@@ -59,6 +59,15 @@ class HomeMapViewModel @Inject constructor(
                 lastViewport?.let { box -> onViewportChanged(box, _zoom.value) } ?: load()
             }
         }
+        // 지역 변경은 지도(바텀시트)와 리스트(헤더) 양쪽에서 일어나므로 store 구독 한 곳에서 받는다.
+        // MutableStateFlow 라 같은 지역 재적용은 emit 되지 않는다 = 카메라도 재조회도 없다.
+        viewModelScope.launch {
+            regionStore.selected.drop(1).collect { region ->
+                _regionTarget.value = region.center
+                lastViewport = null // 이전 지역의 뷰포트로 재조회하지 않도록 버린다.
+                load()
+            }
+        }
     }
 
     /** 큐레이션 스팟(클러스터링 대상). NaverMapView 가 SDK Clusterer 에 넣는다. */
@@ -193,19 +202,12 @@ class HomeMapViewModel @Inject constructor(
     fun selectMood(mood: MoodFilter) = moodFilterStore.toggle(mood.toTheme())
 
     /**
-     * 지역 선택 바텀시트의 [적용하기]. 같은 지역이면 카메라 이동·재조회를 건너뛴다.
+     * 지역 선택 바텀시트의 [적용하기].
      *
-     * 지역은 스팟 조회의 필수 파라미터라 목록을 즉시 다시 받는다([load]). 카메라는
-     * 그 지역 중심으로 옮겨두고, 이동이 끝나면 [onViewportChanged] 가 새 regionId 로
-     * 뷰포트 조회를 한 번 더 해 지도 마커를 맞춘다.
+     * 실제 반응(카메라 이동 + 재조회)은 init 의 [regionStore] 구독이 담당한다 —
+     * 리스트 헤더에서 바꿨을 때도 같은 경로를 타야 하기 때문이다.
      */
-    fun applyRegion(region: Region) {
-        if (region == regionStore.selected.value) return
-        regionStore.select(region)
-        _regionTarget.value = region.center
-        lastViewport = null // 이전 지역의 뷰포트로 재조회하지 않도록 버린다.
-        load()
-    }
+    fun applyRegion(region: Region) = regionStore.select(region)
 
     /** NaverMapView 가 지역 카메라 이동을 처리한 뒤 호출. */
     fun consumeRegionTarget() {

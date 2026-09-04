@@ -148,15 +148,23 @@ class HomeMapViewModelTest {
 
     /** 지역 필터 — 초기값은 서울(지도 최초 카메라와 동일). */
     @Test
-    fun `region defaults to Seoul`() {
+    fun `region defaults to Seoul`() = runTest(testDispatcher) {
         assertEquals(Region.Seoul, vm().region.value)
     }
 
-    /** [적용하기] 시에만 지역이 바뀌고, 지도는 그 지역 중심으로 이동한다. */
+    /**
+     * [적용하기] 시에만 지역이 바뀌고, 지도는 그 지역 중심으로 이동한다.
+     * 카메라 이동은 store 구독을 거치므로 코루틴을 한 번 돌려야 관측된다.
+     */
     @Test
-    fun `applyRegion updates region and emits camera target at region center`() {
-        val viewModel = vm()
-        viewModel.applyRegion(Region.Daejeon)
+    fun `applyRegion updates region and emits camera target at region center`() = runTest(testDispatcher) {
+        coEvery { spotListService.fetch(themes = any(), page = 0, region = any()) } returns
+            SpotPage(items = emptyList(), page = 0, hasNext = false)
+
+        // vm() 직후 advance — init 의 store 구독이 붙기 전에 select 하면 drop(1) 이
+        // 그 값을 삼킨다(무드 필터 구독과 같은 관례).
+        val viewModel = vm(); advanceUntilIdle()
+        viewModel.applyRegion(Region.Daejeon); advanceUntilIdle()
 
         assertEquals(Region.Daejeon, viewModel.region.value)
         assertEquals(Region.Daejeon.center, viewModel.regionTarget.value)
@@ -164,9 +172,9 @@ class HomeMapViewModelTest {
 
     /** 같은 지역 재적용은 카메라 이동(=재조회)을 트리거하지 않는다. */
     @Test
-    fun `applyRegion with the applied region emits no camera target`() {
-        val viewModel = vm()
-        viewModel.applyRegion(Region.Seoul)
+    fun `applyRegion with the applied region emits no camera target`() = runTest(testDispatcher) {
+        val viewModel = vm(); advanceUntilIdle()
+        viewModel.applyRegion(Region.Seoul); advanceUntilIdle()
 
         assertEquals(Region.Seoul, viewModel.region.value)
         assertEquals(null, viewModel.regionTarget.value)
@@ -174,9 +182,12 @@ class HomeMapViewModelTest {
 
     /** 지도가 이동을 처리하면 target 을 비워 동일 좌표 재이동을 막는다. */
     @Test
-    fun `consumeRegionTarget clears the target but keeps the region`() {
-        val viewModel = vm()
-        viewModel.applyRegion(Region.Daejeon)
+    fun `consumeRegionTarget clears the target but keeps the region`() = runTest(testDispatcher) {
+        coEvery { spotListService.fetch(themes = any(), page = 0, region = any()) } returns
+            SpotPage(items = emptyList(), page = 0, hasNext = false)
+
+        val viewModel = vm(); advanceUntilIdle()
+        viewModel.applyRegion(Region.Daejeon); advanceUntilIdle()
         viewModel.consumeRegionTarget()
 
         assertEquals(null, viewModel.regionTarget.value)

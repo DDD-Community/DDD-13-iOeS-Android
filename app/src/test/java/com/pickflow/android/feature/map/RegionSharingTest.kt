@@ -128,4 +128,34 @@ class RegionSharingTest {
 
         coVerify(atLeast = 1) { listService.fetch(themes = any(), page = 0, region = Region.Daejeon) }
     }
+
+    /**
+     * 리스트 헤더에서 지역을 바꿔도 지도가 따라온다 — 지도의 반응은 store 구독에 걸려 있고
+     * 바텀시트 콜백에 걸려 있지 않다는 뜻이다(어느 헤더에서 눌러도 같은 경로).
+     */
+    @Test
+    fun `applying a region on the list moves the map camera and refetches`() = runTest(testDispatcher) {
+        val map = mapVm()
+        val list = listVm()
+        advanceUntilIdle()
+
+        list.applyRegion(Region.Daejeon)
+        advanceUntilIdle()
+
+        assertEquals(Region.Daejeon, map.region.value)
+        assertEquals(Region.Daejeon.center, map.regionTarget.value)
+        coVerify(atLeast = 1) { listService.fetch(themes = any(), page = 0, region = Region.Daejeon) }
+    }
+
+    /** 같은 지역 재적용은 카메라 이동도 재조회도 만들지 않는다. */
+    @Test
+    fun `applying the already applied region does nothing`() = runTest(testDispatcher) {
+        val map = mapVm()
+        advanceUntilIdle()
+
+        map.applyRegion(Region.Seoul)
+        advanceUntilIdle()
+
+        assertEquals(null, map.regionTarget.value)
+    }
 }
