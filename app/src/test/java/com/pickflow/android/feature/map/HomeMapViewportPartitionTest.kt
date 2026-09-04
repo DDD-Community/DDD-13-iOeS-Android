@@ -2,6 +2,7 @@ package com.pickflow.android.feature.map
 
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
+import com.pickflow.android.core.services.impl.InMemoryRegionStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.Coordinates
@@ -61,6 +62,7 @@ class HomeMapViewportPartitionTest {
         mockk<BookmarkService>(relaxed = true),
         mockk<ExternalAppLauncher>(relaxed = true),
         InMemoryMoodFilterStore(),
+        InMemoryRegionStore(),
     )
 
     private fun box() = ViewportBox(
@@ -79,7 +81,7 @@ class HomeMapViewportPartitionTest {
 
     @Test
     fun `viewport response partitions curation into curationSpots and mySpots`() = runTest(testDispatcher) {
-        coEvery { mapService.fetchInViewport(any(), any()) } returns listOf(
+        coEvery { mapService.fetchInViewport(any(), any(), any()) } returns listOf(
             marker(1, isMine = false),
             marker(2, isMine = true),
             marker(3, isMine = false),
@@ -100,7 +102,7 @@ class HomeMapViewportPartitionTest {
 
     @Test
     fun `selectSpot updates selectedSpotId and selectedCluster`() = runTest(testDispatcher) {
-        coEvery { mapService.fetchInViewport(any(), any()) } returns listOf(marker(7, false))
+        coEvery { mapService.fetchInViewport(any(), any(), any()) } returns listOf(marker(7, false))
         val viewModel = vm()
         viewModel.onViewportChanged(box(), 12)
         advanceUntilIdle()
@@ -122,7 +124,7 @@ class HomeMapViewportPartitionTest {
 
     @Test
     fun `viewport failure clears mySpots and emits Failed`() = runTest(testDispatcher) {
-        coEvery { mapService.fetchInViewport(any(), any()) } throws RuntimeException("net")
+        coEvery { mapService.fetchInViewport(any(), any(), any()) } throws RuntimeException("net")
         val viewModel = vm()
         viewModel.onViewportChanged(box(), 12)
         advanceUntilIdle()
@@ -132,13 +134,13 @@ class HomeMapViewportPartitionTest {
 
     @Test
     fun `selectMood toggles theme and reissues viewport`() = runTest(testDispatcher) {
-        coEvery { mapService.fetchInViewport(any(), any()) } returns emptyList()
+        coEvery { mapService.fetchInViewport(any(), any(), any()) } returns emptyList()
         val viewModel = vm()
         viewModel.onViewportChanged(box(), 12)
         advanceUntilIdle()
         viewModel.selectMood(MoodFilter.Sunset)
         advanceUntilIdle()
         assertEquals(setOf(MoodFilter.Sunset), viewModel.selectedMoods.value)
-        coVerify { mapService.fetchInViewport(any(), setOf(SpotTheme.SUNSET)) }
+        coVerify { mapService.fetchInViewport(any(), setOf(SpotTheme.SUNSET), any()) }
     }
 }

@@ -33,7 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
-import com.pickflow.android.feature.map.Region
+import com.pickflow.android.core.services.protocols.Region
 
 /**
  * 지역 선택 바텀시트.

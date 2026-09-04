@@ -6,11 +6,11 @@ import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.LocationService
+import com.pickflow.android.core.services.protocols.Region
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotMapService
 import com.pickflow.android.core.services.protocols.SpotPage
 import com.pickflow.android.core.services.protocols.SpotService
-import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.feature.spotlist.SpotListViewModel
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -28,19 +28,19 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 /**
- * 탐색 탭 무드 선택은 **지도와 리스트가 공유한다.**
+ * PV-65 — 지역 선택은 **지도와 리스트가 공유한다.**
  *
- * 두 화면은 별개 ViewModel 이지만 사용자에게는 같은 화면의 두 모드다.
- * 한쪽에서 고른 무드가 다른 쪽에도 즉시 반영되고, 반영된 쪽은 재조회까지 해야 한다.
- * 공유의 실체는 `@Singleton` [InMemoryMoodFilterStore] 하나를 두 ViewModel 이 함께 보는 것이다.
+ * 무드와 같은 구조([MoodFilterSharingTest])지만 이유가 하나 더 있다. `regionId` 는
+ * 스팟 조회 API 의 **필수** 파라미터라, 지역이 바뀌면 두 화면 모두 새 regionId 로 다시
+ * 받아야 한다. 공유의 실체는 `@Singleton` [InMemoryRegionStore] 하나다.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class MoodFilterSharingTest {
+class RegionSharingTest {
 
     private val testDispatcher = StandardTestDispatcher()
 
     /** 실제 앱에서 Hilt 가 @Singleton 으로 하나만 주입하는 것과 같은 조건. */
-    private val store = InMemoryMoodFilterStore()
+    private val moodStore = InMemoryMoodFilterStore()
     private val regionStore = InMemoryRegionStore()
 
     private lateinit var listService: SpotListService
@@ -66,7 +66,7 @@ class MoodFilterSharingTest {
         mockk<AuthService>(relaxed = true),
         mockk<BookmarkService>(relaxed = true),
         mockk<ExternalAppLauncher>(relaxed = true),
-        store,
+        moodStore,
         regionStore,
     )
 
@@ -75,81 +75,57 @@ class MoodFilterSharingTest {
         mockk<BookmarkService>(relaxed = true),
         mockk<AuthService>(relaxed = true),
         mockk<LocationService>(relaxed = true),
-        store,
+        moodStore,
         regionStore,
     )
 
     @Test
-    fun `selecting on the map is visible on the list`() = runTest(testDispatcher) {
+    fun `both screens start on Seoul`() = runTest(testDispatcher) {
+        assertEquals(Region.Seoul, mapVm().region.value)
+        assertEquals(Region.Seoul, listVm().region.value)
+    }
+
+    @Test
+    fun `applying a region on the map moves the list to the same region`() = runTest(testDispatcher) {
         val map = mapVm()
         val list = listVm()
         advanceUntilIdle()
 
-        map.selectMood(MoodFilter.Night)
+        map.applyRegion(Region.Daejeon)
         advanceUntilIdle()
 
-        assertEquals(setOf(SpotTheme.NIGHT_VIEW), list.themes.value)
-        assertEquals(setOf(MoodFilter.Night), map.selectedMoods.value)
+        assertEquals(Region.Daejeon, list.region.value)
     }
 
     @Test
-    fun `selecting on the list is visible on the map`() = runTest(testDispatcher) {
-        val map = mapVm()
-        val list = listVm()
-        advanceUntilIdle()
-
-        list.toggleTheme(SpotTheme.SUNLIGHT)
-        advanceUntilIdle()
-
-        assertEquals(setOf(MoodFilter.Sunlight), map.selectedMoods.value)
-    }
-
-    @Test
-    fun `multi selection accumulates across both screens`() = runTest(testDispatcher) {
-        val map = mapVm()
-        val list = listVm()
-        advanceUntilIdle()
-
-        map.selectMood(MoodFilter.Sunlight)
-        list.toggleTheme(SpotTheme.NIGHT_VIEW)
-        advanceUntilIdle()
-
-        assertEquals(setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT_VIEW), list.themes.value)
-        assertEquals(setOf(MoodFilter.Sunlight, MoodFilter.Night), map.selectedMoods.value)
-
-        // 재탭은 그 하나만 해제 — 어느 화면에서 눌러도 동일.
-        list.toggleTheme(SpotTheme.SUNLIGHT)
-        advanceUntilIdle()
-        assertEquals(setOf(MoodFilter.Night), map.selectedMoods.value)
-    }
-
-    @Test
-    fun `the other screen refetches when the shared selection changes`() = runTest(testDispatcher) {
+    fun `the list refetches with the new regionId when the map applies a region`() = runTest(testDispatcher) {
         val map = mapVm()
         listVm()
         advanceUntilIdle()
 
-        // 지도에서 토글 → 리스트 ViewModel 도 구독을 통해 스스로 재조회한다.
-        map.selectMood(MoodFilter.Sunlight)
+        map.applyRegion(Region.Daejeon)
         advanceUntilIdle()
 
         coVerify(atLeast = 1) {
-            listService.fetch(themes = setOf(SpotTheme.SUNLIGHT), page = 0, region = any(), coordinates = any(), sort = any())
+            listService.fetch(
+                themes = any(),
+                page = 0,
+                region = Region.Daejeon,
+                coordinates = any(),
+                sort = any(),
+            )
         }
     }
 
+    /** 지도 자신도 새 regionId 로 목록을 다시 받는다 — 카메라 이동만으로는 부족하다. */
     @Test
-    fun `clear returns both screens to the unfiltered state`() = runTest(testDispatcher) {
+    fun `the map refetches with the new regionId`() = runTest(testDispatcher) {
         val map = mapVm()
-        val list = listVm()
         advanceUntilIdle()
 
-        map.selectMood(MoodFilter.Sunlight)
-        advanceUntilIdle()
-        store.clear()
+        map.applyRegion(Region.Daejeon)
         advanceUntilIdle()
 
-        assertEquals(emptySet<SpotTheme>(), list.themes.value)
-        assertEquals(emptySet<MoodFilter>(), map.selectedMoods.value)
+        coVerify(atLeast = 1) { listService.fetch(themes = any(), page = 0, region = Region.Daejeon) }
     }
 }

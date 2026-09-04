@@ -12,6 +12,7 @@ import com.pickflow.android.core.services.impl.DefaultUserService
 import com.pickflow.android.core.services.impl.DataStoreOnboardingCompletionStore
 import com.pickflow.android.core.services.impl.EncryptedTokenStore
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
+import com.pickflow.android.core.services.impl.InMemoryRegionStore
 import com.pickflow.android.core.services.impl.PrefsDevSettings
 import com.pickflow.android.core.services.impl.compat.MoodCompatSpotListService
 import com.pickflow.android.core.services.impl.FirebaseAnalyticsLogger
@@ -39,6 +40,7 @@ import com.pickflow.android.core.services.protocols.SpotReportService
 import com.pickflow.android.core.services.protocols.OnboardingCompletionStore
 import com.pickflow.android.core.services.protocols.ShareIntentService
 import com.pickflow.android.core.services.protocols.MoodFilterStore
+import com.pickflow.android.core.services.protocols.RegionStore
 import com.pickflow.android.core.services.protocols.DevSettings
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotMapService
@@ -86,6 +88,11 @@ abstract class ServiceModule {
     @Binds
     @Singleton
     abstract fun bindMoodFilterStore(impl: InMemoryMoodFilterStore): MoodFilterStore
+
+    // 탐색 탭(지도·리스트)이 공유하는 지역 선택 상태. 무드와 같은 이유로 @Singleton.
+    @Binds
+    @Singleton
+    abstract fun bindRegionStore(impl: InMemoryRegionStore): RegionStore
 
     @Binds
     @Singleton

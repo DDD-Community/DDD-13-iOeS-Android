@@ -2,10 +2,12 @@ package com.pickflow.android.feature.map
 
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
+import com.pickflow.android.core.services.impl.InMemoryRegionStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.LocationService
+import com.pickflow.android.core.services.protocols.Region
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotMapService
@@ -62,12 +64,13 @@ class HomeMapViewModelTest {
         mockk<BookmarkService>(relaxed = true),
         mockk<ExternalAppLauncher>(relaxed = true),
         InMemoryMoodFilterStore(),
+        InMemoryRegionStore(),
     )
 
     @Test
     fun `load emits Loaded with raw spots`() = runTest(testDispatcher) {
         val spot = Spot("s1", "n", SpotTheme.SUNSET, 0.0, 0.0)
-        coEvery { spotListService.fetch(themes = emptySet(), page = 0) } returns
+        coEvery { spotListService.fetch(themes = emptySet(), page = 0, region = any()) } returns
             SpotPage(items = listOf(spot), page = 0, hasNext = false)
 
         val viewModel = vm()
@@ -78,7 +81,7 @@ class HomeMapViewModelTest {
 
     @Test
     fun `load emits Empty when no spots`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(themes = emptySet(), page = 0) } returns
+        coEvery { spotListService.fetch(themes = emptySet(), page = 0, region = any()) } returns
             SpotPage(items = emptyList(), page = 0, hasNext = false)
 
         val viewModel = vm()
@@ -88,7 +91,7 @@ class HomeMapViewModelTest {
 
     @Test
     fun `setZoom without prior viewport reloads via load`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(themes = emptySet(), page = 0) } returns
+        coEvery { spotListService.fetch(themes = emptySet(), page = 0, region = any()) } returns
             SpotPage(items = emptyList(), page = 0, hasNext = false)
 
         val viewModel = vm()
@@ -98,7 +101,7 @@ class HomeMapViewModelTest {
 
     @Test
     fun `selectMood accumulates multiple moods and unselects only the retapped one`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(themes = any(), page = 0) } returns
+        coEvery { spotListService.fetch(themes = any(), page = 0, region = any()) } returns
             SpotPage(items = emptyList(), page = 0, hasNext = false)
 
         val viewModel = vm()
@@ -120,7 +123,7 @@ class HomeMapViewModelTest {
 
     @Test
     fun `selectMood maps moods to domain themes when fetching`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(themes = any(), page = 0) } returns
+        coEvery { spotListService.fetch(themes = any(), page = 0, region = any()) } returns
             SpotPage(items = emptyList(), page = 0, hasNext = false)
 
         val viewModel = vm()
@@ -128,19 +131,19 @@ class HomeMapViewModelTest {
         viewModel.selectMood(MoodFilter.Reflection); advanceUntilIdle()
 
         coVerify {
-            spotListService.fetch(themes = setOf(SpotTheme.SUNLIGHT, SpotTheme.YUNSEUL), page = 0)
+            spotListService.fetch(themes = setOf(SpotTheme.SUNLIGHT, SpotTheme.YUNSEUL), page = 0, region = any())
         }
     }
 
     @Test
     fun `no mood selected fetches without theme filter`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(themes = emptySet(), page = 0) } returns
+        coEvery { spotListService.fetch(themes = emptySet(), page = 0, region = any()) } returns
             SpotPage(items = emptyList(), page = 0, hasNext = false)
 
         val viewModel = vm()
         viewModel.load(); advanceUntilIdle()
 
-        coVerify { spotListService.fetch(themes = emptySet(), page = 0) }
+        coVerify { spotListService.fetch(themes = emptySet(), page = 0, region = any()) }
     }
 
     /** 지역 필터 — 초기값은 서울(지도 최초 카메라와 동일). */

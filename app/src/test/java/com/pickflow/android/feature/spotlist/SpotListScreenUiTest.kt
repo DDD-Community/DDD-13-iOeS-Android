@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
+import com.pickflow.android.core.services.impl.InMemoryRegionStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.LocationService
@@ -45,12 +46,12 @@ class SpotListScreenUiTest {
     fun loaded_state_shows_grid() {
         val listService = mockk<SpotListService>()
         val bookmarkService = mockk<BookmarkService>(relaxed = true)
-        coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(
+        coEvery { listService.fetch(any(), any(), any(), any(), any()) } returns SpotPage(
             items = listOf(Spot("s1", "Spot One", SpotTheme.SUNSET, 0.0, 0.0)),
             page = 0,
             hasNext = false,
         )
-        val vm = SpotListViewModel(listService, bookmarkService, authService(), mockk(relaxed = true), InMemoryMoodFilterStore())
+        val vm = SpotListViewModel(listService, bookmarkService, authService(), mockk(relaxed = true), InMemoryMoodFilterStore(), InMemoryRegionStore())
 
         composeRule.setContent {
             PickflowTheme {
@@ -65,8 +66,8 @@ class SpotListScreenUiTest {
     fun empty_state_shows_empty_message() {
         val listService = mockk<SpotListService>()
         val bookmarkService = mockk<BookmarkService>(relaxed = true)
-        coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(items = emptyList(), page = 0, hasNext = false)
-        val vm = SpotListViewModel(listService, bookmarkService, authService(), mockk(relaxed = true), InMemoryMoodFilterStore())
+        coEvery { listService.fetch(any(), any(), any(), any(), any()) } returns SpotPage(items = emptyList(), page = 0, hasNext = false)
+        val vm = SpotListViewModel(listService, bookmarkService, authService(), mockk(relaxed = true), InMemoryMoodFilterStore(), InMemoryRegionStore())
 
         composeRule.setContent {
             PickflowTheme {
@@ -79,7 +80,7 @@ class SpotListScreenUiTest {
     @Test
     fun cell_meta_shows_mood_and_like_count() {
         val listService = mockk<SpotListService>()
-        coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(
+        coEvery { listService.fetch(any(), any(), any(), any(), any()) } returns SpotPage(
             items = listOf(
                 Spot("s1", "윤슬 스팟", SpotTheme.YUNSEUL, 0.0, 0.0, likeCount = 34),
             ),
@@ -92,6 +93,7 @@ class SpotListScreenUiTest {
             authService(),
             mockk(relaxed = true),
             InMemoryMoodFilterStore(),
+            InMemoryRegionStore(),
         )
 
         composeRule.setContent {
@@ -106,7 +108,7 @@ class SpotListScreenUiTest {
     @Test
     fun bookmarked_spot_from_response_renders_as_bookmarked() {
         val listService = mockk<SpotListService>()
-        coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(
+        coEvery { listService.fetch(any(), any(), any(), any(), any()) } returns SpotPage(
             items = listOf(Spot("s1", "Spot One", SpotTheme.SUNSET, 0.0, 0.0, isBookmarked = true)),
             page = 0,
             hasNext = false,
@@ -117,6 +119,7 @@ class SpotListScreenUiTest {
             authService(),
             mockk(relaxed = true),
             InMemoryMoodFilterStore(),
+            InMemoryRegionStore(),
         )
 
         composeRule.setContent {
@@ -130,13 +133,14 @@ class SpotListScreenUiTest {
     @Test
     fun sort_header_shows_recommended_label() {
         val listService = mockk<SpotListService>()
-        coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(emptyList(), 0, false)
+        coEvery { listService.fetch(any(), any(), any(), any(), any()) } returns SpotPage(emptyList(), 0, false)
         val vm = SpotListViewModel(
             listService,
             mockk<BookmarkService>(relaxed = true),
             authService(),
             mockk(relaxed = true),
             InMemoryMoodFilterStore(),
+            InMemoryRegionStore(),
         )
 
         composeRule.setContent {
@@ -149,7 +153,7 @@ class SpotListScreenUiTest {
 
     private fun loadedViewModel(): SpotListViewModel {
         val listService = mockk<SpotListService>()
-        coEvery { listService.fetch(any(), any(), any(), any()) } returns SpotPage(
+        coEvery { listService.fetch(any(), any(), any(), any(), any()) } returns SpotPage(
             items = listOf(Spot("s1", "Spot One", SpotTheme.SUNSET, 0.0, 0.0)),
             page = 0,
             hasNext = false,
@@ -160,6 +164,7 @@ class SpotListScreenUiTest {
             authService(),
             mockk(relaxed = true),
             InMemoryMoodFilterStore(),
+            InMemoryRegionStore(),
         )
     }
 

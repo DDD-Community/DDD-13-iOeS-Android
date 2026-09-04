@@ -8,6 +8,8 @@ import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.MoodFilterStore
+import com.pickflow.android.core.services.protocols.Region
+import com.pickflow.android.core.services.protocols.RegionStore
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotSort
@@ -28,6 +30,8 @@ class SpotListViewModel @Inject constructor(
     private val locationService: LocationService,
     /** 지도와 공유하는 무드 선택. 어느 쪽에서 바꿔도 양쪽이 같이 움직인다. */
     private val moodFilterStore: MoodFilterStore,
+    /** 지도와 공유하는 지역 선택. 스팟 조회 API 의 필수 파라미터 출처. */
+    private val regionStore: RegionStore,
 ) : ViewModel() {
 
     init {
@@ -36,7 +40,14 @@ class SpotListViewModel @Inject constructor(
         viewModelScope.launch {
             moodFilterStore.selected.drop(1).collect { refresh() }
         }
+        // 지도에서 지역을 바꿨을 때도 리스트가 따라와야 한다. drop(1) 이유는 위와 같다.
+        viewModelScope.launch {
+            regionStore.selected.drop(1).collect { refresh() }
+        }
     }
+
+    /** 현재 적용 중인 지역. 지역 변경은 지도의 바텀시트에서만 일어난다. */
+    val region: StateFlow<Region> = regionStore.selected
 
     private val _spots = MutableStateFlow<LoadState<List<Spot>>>(LoadState.Idle)
     val spots: StateFlow<LoadState<List<Spot>>> = _spots.asStateFlow()
@@ -158,6 +169,7 @@ class SpotListViewModel @Inject constructor(
                 spotListService.fetch(
                     themes = moodFilterStore.selected.value,
                     page = nextPage,
+                    region = regionStore.selected.value,
                     coordinates = currentCoordinates,
                     sort = _sort.value,
                 )

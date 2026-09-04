@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
+import com.pickflow.android.core.services.impl.InMemoryRegionStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
@@ -39,7 +40,7 @@ class HomeMapScreenUiTest {
         val listService = mockk<SpotListService>()
         val mapService = mockk<SpotMapService>(relaxed = true)
         val locationService = mockk<LocationService>(relaxed = true)
-        coEvery { listService.fetch(any(), any()) } returns SpotPage(items = spots, page = 0, hasNext = false)
+        coEvery { listService.fetch(any(), any(), any()) } returns SpotPage(items = spots, page = 0, hasNext = false)
         return HomeMapViewModel(
             listService,
             mapService,
@@ -49,6 +50,7 @@ class HomeMapScreenUiTest {
             mockk<BookmarkService>(relaxed = true),
             mockk<ExternalAppLauncher>(relaxed = true),
         InMemoryMoodFilterStore(),
+        InMemoryRegionStore(),
         )
     }
 
@@ -157,8 +159,8 @@ class HomeMapScreenUiTest {
         composeRule.onNodeWithTag("region-picker-apply").performClick()
         composeRule.waitForIdle()
 
-        assertEquals(Region.Daejeon, vm.region.value)
-        assertEquals(Region.Daejeon.center, vm.regionTarget.value)
+        assertEquals(com.pickflow.android.core.services.protocols.Region.Daejeon, vm.region.value)
+        assertEquals(com.pickflow.android.core.services.protocols.Region.Daejeon.center, vm.regionTarget.value)
     }
 
     /** 다른 지역을 골라도 [취소] 면 기존 지역이 유지된다. */
@@ -171,7 +173,7 @@ class HomeMapScreenUiTest {
         composeRule.onNodeWithTag("region-picker-cancel").performClick()
         composeRule.waitForIdle()
 
-        assertEquals(Region.Seoul, vm.region.value)
+        assertEquals(com.pickflow.android.core.services.protocols.Region.Seoul, vm.region.value)
         assertEquals(null, vm.regionTarget.value)
     }
 
@@ -190,7 +192,7 @@ class HomeMapScreenUiTest {
         composeRule.onNodeWithTag("region-picker-apply").performClick()
         composeRule.waitForIdle()
 
-        assertEquals(Region.Seoul, vm.region.value)
+        assertEquals(com.pickflow.android.core.services.protocols.Region.Seoul, vm.region.value)
     }
 
     private fun setScreen(vm: HomeMapViewModel) {

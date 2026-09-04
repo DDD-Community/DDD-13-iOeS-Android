@@ -5,6 +5,7 @@ import com.pickflow.android.core.network.ApiException
 import com.pickflow.android.core.network.api.SpotApi
 import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.SpotSort
+import com.pickflow.android.core.services.protocols.Region
 import com.pickflow.android.core.services.protocols.SpotTheme
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -54,6 +55,7 @@ class DefaultSpotListServiceTest {
         val page = service.fetch(
             themes = setOf(SpotTheme.SUNSET),
             page = 0,
+            region = Region.Seoul,
             coordinates = Coordinates(37.5, 127.0),
             sort = SpotSort.DISTANCE,
         )
@@ -82,7 +84,7 @@ class DefaultSpotListServiceTest {
             )
         )
 
-        val page = service.fetch(themes = emptySet(), page = 3)
+        val page = service.fetch(themes = emptySet(), page = 3, region = Region.Seoul)
         assertEquals(3, page.page)
         assertEquals(false, page.hasNext)
         assertEquals(0, page.items.size)
@@ -103,7 +105,7 @@ class DefaultSpotListServiceTest {
             )
         )
         val ex = assertThrows(ApiException::class.java) {
-            runBlocking { service.fetch(themes = emptySet(), page = 0) }
+            runBlocking { service.fetch(themes = emptySet(), page = 0, region = Region.Seoul) }
         }
         assertEquals("LIST_001", ex.code)
     }
@@ -117,9 +119,23 @@ class DefaultSpotListServiceTest {
         )
 
         // 선택 순서와 무관하게 SpotTheme 선언 순서(햇살→윤슬→노을→야경)로 직렬화된다.
-        service.fetch(themes = setOf(SpotTheme.NIGHT_VIEW, SpotTheme.SUNLIGHT), page = 0)
+        service.fetch(themes = setOf(SpotTheme.NIGHT_VIEW, SpotTheme.SUNLIGHT), page = 0, region = Region.Seoul)
 
         val url = server.takeRequest().requestUrl!!
         assertEquals(listOf("SUNLIGHT", "NIGHT_VIEW"), url.queryParameterValues("theme"))
+    }
+
+    /** PV-65 — `regionId` 는 서버 필수 파라미터다. 빠지면 C003 으로 목록이 통째로 실패한다. */
+    @Test
+    fun `fetch always sends the selected regionId`() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """{"success":true,"code":"OK","message":"","data":{"spots":[],"page":0,"hasNext":false}}"""
+            )
+        )
+
+        service.fetch(themes = emptySet(), page = 0, region = Region.Daejeon)
+
+        assertEquals("2", server.takeRequest().requestUrl!!.queryParameter("regionId"))
     }
 }

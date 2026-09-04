@@ -1,6 +1,7 @@
 package com.pickflow.android.core.services.impl.compat
 
 import com.pickflow.android.core.services.impl.DefaultSpotMapService
+import com.pickflow.android.core.services.protocols.Region
 import com.pickflow.android.core.services.protocols.SpotMapMarker
 import com.pickflow.android.core.services.protocols.SpotMapService
 import com.pickflow.android.core.services.protocols.SpotTheme
@@ -21,11 +22,12 @@ class MoodCompatSpotMapService @Inject constructor(
     override suspend fun fetchInViewport(
         box: ViewportBox,
         themes: Set<SpotTheme>,
+        region: Region,
     ): List<SpotMapMarker> {
         val serverMarkers = if (MoodBackendCompat.shouldSkipNetwork(themes)) {
             emptyList()
         } else {
-            delegate.fetchInViewport(box, MoodBackendCompat.serverQueryThemes(themes))
+            delegate.fetchInViewport(box, MoodBackendCompat.serverQueryThemes(themes), region)
         }
 
         return serverMarkers + MoodBackendCompat.stubMarkers(box, themes)
