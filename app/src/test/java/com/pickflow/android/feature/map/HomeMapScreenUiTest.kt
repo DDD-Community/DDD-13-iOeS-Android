@@ -231,7 +231,13 @@ class HomeMapScreenUiTest {
     private fun setScreen(vm: HomeMapViewModel) {
         composeRule.setContent {
             PickflowTheme {
-                HomeMapScreen(onOpenSpotDetail = {}, onOpenRegistration = {}, viewModel = vm)
+                HomeMapScreen(
+                    onOpenSpotDetail = {},
+                    onOpenRegistration = {},
+                    viewModel = vm,
+                    v2NoticeViewModel = noticeViewModel(),
+                    newFeatureBadgeViewModel = badgeViewModel(),
+                )
             }
         }
         composeRule.waitForIdle()
