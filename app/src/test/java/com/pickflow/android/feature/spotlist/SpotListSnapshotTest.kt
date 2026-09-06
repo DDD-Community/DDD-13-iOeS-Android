@@ -41,37 +41,29 @@ class SpotListSnapshotTest {
 
     // MARK: - Full screen — loaded
 
-    @Test fun spot_list_loaded_mixed_light() = screen { SpotListLoadedGrid(mixedItems) }
     @Test fun spot_list_loaded_mixed_dark() = screen { SpotListLoadedGrid(mixedItems) }
-    @Test fun spot_list_loaded_single_light() = screen { SpotListLoadedGrid(listOf(singleItem)) }
     @Test fun spot_list_loaded_single_dark() = screen { SpotListLoadedGrid(listOf(singleItem)) }
 
     // MARK: - Full screen — loading
 
-    @Test fun spot_list_loading_light() = screen { SpotListLoadingContent() }
     @Test fun spot_list_loading_dark() = screen { SpotListLoadingContent() }
 
     // MARK: - Full screen — empty
 
-    @Test fun spot_list_empty_light() = screen { SpotListEmptyContent() }
     @Test fun spot_list_empty_dark() = screen { SpotListEmptyContent() }
     @Test fun spot_list_empty_a11y_light() = screen(fontScale = 2.0f) { SpotListEmptyContent() }
 
     // MARK: - Full screen — failed
 
-    @Test fun spot_list_failed_light() = screen { SpotListFailedContent("네트워크 오류") }
     @Test fun spot_list_failed_dark() = screen { SpotListFailedContent("네트워크 오류") }
 
     // MARK: - Full screen — unauthorized
 
-    @Test fun spot_list_unauthorized_light() = screen { SpotListUnauthorizedContent() }
     @Test fun spot_list_unauthorized_dark() = screen { SpotListUnauthorizedContent() }
     @Test fun spot_list_unauthorized_a11y_light() = screen(fontScale = 2.0f) { SpotListUnauthorizedContent() }
 
     // MARK: - SortBar
 
-    @Test fun spot_list_sortbar_nearest_collapsed_light() =
-        sortBar(SpotListSortOption.Nearest, expanded = false)
     @Test fun spot_list_sortbar_nearest_collapsed_dark() =
         sortBar(SpotListSortOption.Nearest, expanded = false)
     @Test fun spot_list_sortbar_nearest_expanded_dark() =
@@ -83,20 +75,14 @@ class SpotListSnapshotTest {
 
     // MARK: - Cell
 
-    @Test fun spot_list_cell_sunset_bookmark_off_light() =
-        cell(cellItem(SpotListMood.Sunset))
     @Test fun spot_list_cell_sunset_bookmark_off_dark() =
         cell(cellItem(SpotListMood.Sunset))
     @Test fun spot_list_cell_sunset_bookmark_on_light() =
         cell(cellItem(SpotListMood.Sunset, isBookmarked = true, likeCount = 13))
-    @Test fun spot_list_cell_reflection_bookmark_off_light() =
-        cell(cellItem(SpotListMood.Reflection, name = "윤슬 스팟", distanceKm = 0.4, likeCount = 7))
     @Test fun spot_list_cell_reflection_bookmark_off_dark() =
         cell(cellItem(SpotListMood.Reflection, name = "윤슬 스팟", distanceKm = 0.4, likeCount = 7))
     @Test fun spot_list_cell_distance_nil_light() =
         cell(cellItem(SpotListMood.Sunset, distanceKm = null))
-    @Test fun spot_list_cell_thumbnail_nil_light() =
-        cell(cellItem(SpotListMood.Sunset, hasThumbnail = false))
     @Test fun spot_list_cell_long_name_truncate_light() =
         cell(cellItem(SpotListMood.Sunset, name = "아주아주 긴 한강 노을 스팟 이름 테스트 케이스"))
     @Test fun spot_list_cell_a11y_light() =

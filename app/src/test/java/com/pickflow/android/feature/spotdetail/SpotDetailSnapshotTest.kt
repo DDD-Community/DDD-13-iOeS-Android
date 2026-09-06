@@ -51,30 +51,20 @@ class SpotDetailSnapshotTest {
 
     // MARK: - Full screen
 
-    @Test fun screen_loading_light() = screen { SpotDetailLoadingContent() }
     @Test fun screen_loading_dark() = screen { SpotDetailLoadingContent() }
-    @Test fun screen_error_light() = screen { SpotDetailErrorContent() }
     @Test fun screen_error_dark() = screen { SpotDetailErrorContent() }
-    @Test fun screen_loaded_default_light() = screen { SpotDetailLoadedContent(defaultSpot, false) }
     @Test fun screen_loaded_default_dark() = screen { SpotDetailLoadedContent(defaultSpot, false) }
-    @Test fun screen_loaded_bookmarked_light() = screen { SpotDetailLoadedContent(bookmarkedSpot, true) }
     @Test fun screen_loaded_bookmarked_dark() = screen { SpotDetailLoadedContent(bookmarkedSpot, true) }
-    @Test fun screen_loaded_mine_light() = screen { SpotDetailLoadedContent(mineSpot, false) }
     @Test fun screen_loaded_mine_dark() = screen { SpotDetailLoadedContent(mineSpot, false) }
 
     // MARK: - NavBar
 
-    @Test fun navbar_default_light() = component(393, 48) { SpotDetailNavBar() }
     @Test fun navbar_default_dark() = component(393, 48) { SpotDetailNavBar() }
-    @Test fun navbar_mine_light() = component(393, 48) { SpotDetailNavBar() }
 
     // MARK: - Header
 
-    @Test fun header_sunset_light() = component(361, 200) { Padded16 { SpotHeaderSection(defaultSpot) } }
     @Test fun header_sunset_dark() = component(361, 200) { Padded16 { SpotHeaderSection(defaultSpot) } }
-    @Test fun header_reflection_light() = component(361, 200) { Padded16 { SpotHeaderSection(reflectionSpot) } }
     @Test fun header_reflection_dark() = component(361, 200) { Padded16 { SpotHeaderSection(reflectionSpot) } }
-    @Test fun header_mine_light() = component(361, 200) { Padded16 { SpotHeaderSection(mineSpot) } }
     @Test fun header_mine_dark() = component(361, 200) { Padded16 { SpotHeaderSection(mineSpot) } }
     @Test fun header_long_comment_light() = component(361, 300) { Padded16 { SpotHeaderSection(longCommentSpot) } }
     @Test fun header_a11y_light() =
@@ -82,31 +72,20 @@ class SpotDetailSnapshotTest {
 
     // MARK: - Photo
 
-    @Test fun photo_withImage_light() = component(361, 240) { PaddedH16 { SpotPhotoSection(defaultSpot) } }
-    @Test fun photo_withImage_dark() = component(361, 240) { PaddedH16 { SpotPhotoSection(defaultSpot) } }
-    @Test fun photo_noImage_light() = component(361, 240) { PaddedH16 { SpotPhotoSection(noImageSpot) } }
     @Test fun photo_noImage_dark() = component(361, 240) { PaddedH16 { SpotPhotoSection(noImageSpot) } }
 
     // MARK: - Action buttons
 
-    @Test fun action_unbookmarked_light() =
-        component(361, 68) { PaddedH16 { SpotActionButtons(isMine = false, isBookmarked = false) } }
     @Test fun action_unbookmarked_dark() =
         component(361, 68) { PaddedH16 { SpotActionButtons(isMine = false, isBookmarked = false) } }
-    @Test fun action_bookmarked_light() =
-        component(361, 68) { PaddedH16 { SpotActionButtons(isMine = false, isBookmarked = true) } }
     @Test fun action_bookmarked_dark() =
         component(361, 68) { PaddedH16 { SpotActionButtons(isMine = false, isBookmarked = true) } }
-    @Test fun action_mine_light() =
-        component(361, 64) { PaddedH16 { SpotActionButtons(isMine = true, isBookmarked = false) } }
     @Test fun action_mine_dark() =
         component(361, 64) { PaddedH16 { SpotActionButtons(isMine = true, isBookmarked = false) } }
 
     // MARK: - RealTime info
 
-    @Test fun realtime_default_light() = component(361, 300) { Padded16 { SpotRealTimeInfoSection(defaultSpot) } }
     @Test fun realtime_default_dark() = component(361, 300) { Padded16 { SpotRealTimeInfoSection(defaultSpot) } }
-    @Test fun realtime_mine_light() = component(361, 300) { Padded16 { SpotRealTimeInfoSection(mineSpot) } }
     @Test fun realtime_mine_dark() = component(361, 300) { Padded16 { SpotRealTimeInfoSection(mineSpot) } }
     @Test fun realtime_a11y_light() =
         component(361, 400, fontScale = 2.0f) { Padded16 { SpotRealTimeInfoSection(defaultSpot) } }

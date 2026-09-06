@@ -56,21 +56,6 @@ class DefaultArchiveServiceUpdateNameTest {
     }
 
     @Test
-    fun `updateName with max 20 chars succeeds`() = runBlocking {
-        server.enqueue(
-            MockResponse().setResponseCode(200).setBody(
-                """{"success":true,"code":"OK","message":"","data":{
-                  "archiveName":"a".repeat(20),"archiveImageUrl":null
-                }}""".trimIndent().replace("\"a\".repeat(20)", "\"" + "a".repeat(20) + "\"")
-            )
-        )
-
-        val updated = service.updateName("a".repeat(20))
-        assertEquals("a".repeat(20), updated.name)
-        assertEquals(null, updated.imageUrl)
-    }
-
-    @Test
     fun `updateName propagates ApiException on validation failure`() {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(

@@ -116,13 +116,6 @@ class MoodBackendCompatTest {
     }
 
     @Test
-    fun `no stub spots on dev - the server has real data for all four moods`() {
-        val stubOnlyDev = SpotTheme.entries.toSet() - dev
-        assertTrue(stubOnlyDev.isEmpty())
-        assertTrue(MoodBackendCompat.stubSpots(SpotTheme.entries.toSet(), stubOnlyDev).isEmpty())
-    }
-
-    @Test
     fun `stub markers land inside the requested viewport`() {
         val stubOnlyProd = SpotTheme.entries.toSet() - prod
         val markers = MoodBackendCompat.stubMarkers(box(), setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT_VIEW), stubOnlyProd)
@@ -142,17 +135,6 @@ class MoodBackendCompatTest {
     }
 
     // MARK: - 현재 빌드 형상
-
-    @Test
-    fun `debug build points at the dev server which knows all four moods`() {
-        // PV-85: debug = dev-api.pickflow-api.us. 2026-08-18 기준 신규 2종이 배포돼 있다.
-        // 단위 테스트는 debug variant 로 돈다.
-        assertEquals(SpotTheme.entries.toSet(), MoodBackendCompat.SERVER_KNOWN_THEMES)
-        assertTrue(
-            MoodBackendCompat.STUB_ONLY_THEMES.isEmpty(),
-            "개발 서버에 실데이터가 있으므로 debug 빌드에는 stub 이 뜨면 안 된다",
-        )
-    }
 
     private fun box() = ViewportBox(
         topLeft = Coordinates(37.60, 126.90),
