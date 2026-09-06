@@ -1,5 +1,6 @@
 package com.pickflow.android.feature.archive.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,8 +27,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 
@@ -166,20 +169,33 @@ private fun SheetDragHandle() {
 }
 
 /**
- * 기능을 보여주는 삽화 — 스팟 상세의 "내 스팟 오픈하기" 버튼이 담긴 목업 이미지.
+ * 기능을 보여주는 삽화 — 스팟 상세의 "내 스팟 오픈하기" 버튼이 담긴 목업.
  *
- * TODO(PV-79): Figma 에서 이미지를 export 해 `res/drawable/img_spot_open_guide.png` 로 넣고
- * 이 Box 를 `Image(painterResource(R.drawable.img_spot_open_guide), ...)` 로 바꾼다.
- * (Figma MCP 토큰 만료로 아직 못 받았다. 자리·비율은 디자인 그대로다.)
+ * 원본(Figma `Detail-Default-My.svg`)은 사진이 base64 로 박힌 SVG 라 벡터 드로어블로 못 옮긴다.
+ * xxhdpi PNG 로 래스터화해 넣었다(190x170dp @3x). 아래쪽 안내 문구가 잘려 보이는 건
+ * 원본이 이미 그렇게 잘린 것이라 따로 클립하지 않는다.
  */
 @Composable
 private fun GuideIllustration() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(160.dp)
+            .height(ILLUSTRATION_HEIGHT)
             .clip(RoundedCornerShape(12.dp))
             .background(PickflowColors.gray90)
             .testTag("spot-open-guide-illustration"),
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            painter = painterResource(R.drawable.img_spot_open_guide),
+            contentDescription = null,
+            modifier = Modifier
+                .width(ILLUSTRATION_WIDTH)
+                .height(ILLUSTRATION_HEIGHT),
+        )
+    }
 }
+
+/** 원본 SVG 의 자체 크기. 늘리면 사진이 뭉개진다. */
+private val ILLUSTRATION_WIDTH = 190.dp
+private val ILLUSTRATION_HEIGHT = 170.dp
