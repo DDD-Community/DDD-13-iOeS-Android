@@ -3,6 +3,7 @@ package com.pickflow.android.feature.withdrawal
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pickflow.android.core.services.protocols.AuthService
+import com.pickflow.android.core.services.protocols.GuestEntryStore
 import com.pickflow.android.feature.withdrawal.model.WithdrawalReason
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class WithdrawalViewModel @Inject constructor(
     private val authService: AuthService,
+    private val guestEntryStore: GuestEntryStore,
 ) : ViewModel() {
 
     sealed interface Step {
@@ -41,6 +43,13 @@ class WithdrawalViewModel @Inject constructor(
 
     private val _didAgree = MutableStateFlow(false)
     val didAgree: StateFlow<Boolean> = _didAgree.asStateFlow()
+
+    /**
+     * 탈퇴 후 로그인 화면 대신 탐색 탭으로 돌아갈지. 비회원으로 탐색한 이력이 있으면 true.
+     * 로그아웃·앱 시작 분기와 같은 규칙이다.
+     */
+    private val _keepBrowsingAfterWithdrawal = MutableStateFlow(false)
+    val keepBrowsingAfterWithdrawal: StateFlow<Boolean> = _keepBrowsingAfterWithdrawal.asStateFlow()
 
     fun toggleDropdown() { _isDropdownOpen.value = !_isDropdownOpen.value }
 
@@ -67,7 +76,11 @@ class WithdrawalViewModel @Inject constructor(
         _step.value = Step.Processing
         viewModelScope.launch {
             runCatching { authService.withdraw() }
-                .onSuccess { _step.value = Step.Done }
+                .onSuccess {
+                    // Done 을 올리기 전에 목적지를 정해둔다 — 화면은 step 만 보고 이동한다.
+                    _keepBrowsingAfterWithdrawal.value = guestEntryStore.hasEntered()
+                    _step.value = Step.Done
+                }
                 .onFailure { _step.value = Step.Failed(it.message ?: "탈퇴 처리에 실패했어요.") }
         }
     }

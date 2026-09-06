@@ -9,7 +9,7 @@ import javax.inject.Singleton
 class InMemoryOnboardingCompletionStore @Inject constructor() : OnboardingCompletionStore {
     private val completed = AtomicBoolean(false)
     override suspend fun isCompleted(): Boolean = completed.get()
-    override suspend fun markCompleted() {
-        completed.set(true)
+    override suspend fun setCompleted(completed: Boolean) {
+        this.completed.set(completed)
     }
 }

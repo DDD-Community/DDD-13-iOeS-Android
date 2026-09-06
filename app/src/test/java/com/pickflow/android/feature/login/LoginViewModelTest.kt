@@ -3,6 +3,7 @@ package com.pickflow.android.feature.login
 import app.cash.turbine.test
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.AuthService
+import com.pickflow.android.core.services.protocols.GuestEntryStore
 import com.pickflow.android.core.services.protocols.KakaoAuthProvider
 import com.pickflow.android.core.services.protocols.KakaoAuthResult
 import com.pickflow.android.core.services.protocols.AuthenticatedSession
@@ -18,6 +19,7 @@ import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -34,6 +36,7 @@ class LoginViewModelTest {
     private lateinit var kakao: KakaoAuthProvider
     private lateinit var social: SocialLoginService
     private lateinit var auth: AuthService
+    private lateinit var guestEntryStore: GuestEntryStore
 
     @BeforeEach
     fun setUp() {
@@ -41,6 +44,7 @@ class LoginViewModelTest {
         kakao = mockk()
         social = mockk()
         auth = mockk(relaxed = true)
+        guestEntryStore = mockk(relaxed = true)
     }
 
     @AfterEach
@@ -64,7 +68,7 @@ class LoginViewModelTest {
         )
         coEvery { social.loginWith(capture(captured)) } returns session
 
-        val vm = LoginViewModel(kakao, social, auth)
+        val vm = LoginViewModel(kakao, social, auth, guestEntryStore)
 
         vm.session.test {
             assertEquals(LoadState.Idle, awaitItem())
@@ -86,7 +90,7 @@ class LoginViewModelTest {
         val boom = IllegalStateException("kakao down")
         coEvery { kakao.login() } throws boom
 
-        val vm = LoginViewModel(kakao, social, auth)
+        val vm = LoginViewModel(kakao, social, auth, guestEntryStore)
 
         vm.session.test {
             assertEquals(LoadState.Idle, awaitItem())
@@ -96,5 +100,17 @@ class LoginViewModelTest {
             assertTrue(failed is LoadState.Failed && failed.error === boom)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun `비회원 시작은 이력을 저장한 뒤에 이동한다`() = runTest(testDispatcher) {
+        // 순서가 뒤집히면 이동으로 로그인 화면이 사라지며 저장이 취소될 수 있다.
+        val order = mutableListOf<String>()
+        coEvery { guestEntryStore.setEntered(true) } coAnswers { order += "store" }
+
+        LoginViewModel(kakao, social, auth, guestEntryStore).enterAsGuest { order += "nav" }
+        advanceUntilIdle()
+
+        assertEquals(listOf("store", "nav"), order)
     }
 }

@@ -7,6 +7,7 @@ import com.pickflow.android.core.network.ApiException
 import com.pickflow.android.core.network.isWithdrawalRestoreRequired
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.AuthenticatedSession
+import com.pickflow.android.core.services.protocols.GuestEntryStore
 import com.pickflow.android.core.services.protocols.KakaoAuthProvider
 import com.pickflow.android.core.services.protocols.SocialAuthCredential
 import com.pickflow.android.core.services.protocols.SocialLoginService
@@ -23,6 +24,7 @@ class LoginViewModel @Inject constructor(
     private val kakaoAuthProvider: KakaoAuthProvider,
     private val socialLoginService: SocialLoginService,
     private val authService: AuthService,
+    private val guestEntryStore: GuestEntryStore,
 ) : ViewModel() {
 
     /** 재가입 안내 팝업 상태(서버 message + 복구 토큰). null = 미표시. */
@@ -36,6 +38,19 @@ class LoginViewModel @Inject constructor(
 
     /** 재가입 확정 후 재로그인에 사용할 자격 증명. */
     private var lastCredential: SocialAuthCredential? = null
+
+    /**
+     * "비회원으로 시작하기" — 이력을 남겨 다음 실행부터 로그인 화면을 건너뛴다.
+     *
+     * 저장이 끝난 뒤에 [onEntered] 를 부른다. 이동이 먼저면 로그인 화면의 백스택 엔트리가
+     * 사라지며 viewModelScope 가 취소돼 DataStore 쓰기가 잘릴 수 있다.
+     */
+    fun enterAsGuest(onEntered: () -> Unit) {
+        viewModelScope.launch {
+            guestEntryStore.setEntered(true)
+            onEntered()
+        }
+    }
 
     fun loginWithKakao() {
         viewModelScope.launch {
