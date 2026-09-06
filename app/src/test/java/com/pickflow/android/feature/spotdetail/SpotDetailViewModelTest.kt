@@ -7,6 +7,7 @@ import com.pickflow.android.core.analytics.events.SpotDetailAnalyticsEvent
 import com.pickflow.android.core.services.protocols.AnalyticsLogger
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
+import com.pickflow.android.core.services.protocols.LikeService
 import com.pickflow.android.core.services.protocols.SharePayload
 import com.pickflow.android.core.services.protocols.ShareIntentService
 import com.pickflow.android.core.services.protocols.SpotDetail
@@ -39,6 +40,7 @@ class SpotDetailViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var spotService: SpotService
     private lateinit var bookmarkService: BookmarkService
+    private lateinit var likeService: LikeService
     private lateinit var shareIntentService: ShareIntentService
     private lateinit var spotReportService: SpotReportService
     private lateinit var authService: AuthService
@@ -75,6 +77,7 @@ class SpotDetailViewModelTest {
         Dispatchers.setMain(testDispatcher)
         spotService = mockk()
         bookmarkService = mockk()
+        likeService = mockk()
         shareIntentService = mockk(relaxed = true)
         spotReportService = mockk(relaxed = true)
         authService = mockk(relaxed = true)
@@ -85,8 +88,8 @@ class SpotDetailViewModelTest {
     fun tearDown() { Dispatchers.resetMain() }
 
     private fun vm() = SpotDetailViewModel(
-        spotService, bookmarkService, shareIntentService, spotReportService, authService,
-        analyticsLogger,
+        spotService, bookmarkService, likeService, shareIntentService, spotReportService,
+        authService, analyticsLogger,
     )
 
     @Test
@@ -287,7 +290,7 @@ class SpotDetailViewModelTest {
     fun `toggleLike likes optimistically, calls the service and toasts`() = runTest(testDispatcher) {
         coEvery { spotService.spot("1") } returns fixture().copy(isLiked = false, isLikeable = true)
         coEvery { authService.isLoggedIn() } returns true
-        coEvery { spotService.like("1") } returns Unit
+        coEvery { likeService.add("1") } returns 8L
 
         val vm = vm()
         vm.load("1"); advanceUntilIdle()
@@ -295,14 +298,14 @@ class SpotDetailViewModelTest {
 
         assertTrue(vm.liked.value)
         assertEquals("이 스팟을 추천했어요.", vm.toast.value)
-        coVerify(exactly = 1) { spotService.like("1") }
+        coVerify(exactly = 1) { likeService.add("1") }
     }
 
     @Test
     fun `toggleLike unlikes without a toast`() = runTest(testDispatcher) {
         coEvery { spotService.spot("1") } returns fixture().copy(isLiked = true, isLikeable = true)
         coEvery { authService.isLoggedIn() } returns true
-        coEvery { spotService.unlike("1") } returns Unit
+        coEvery { likeService.remove("1") } returns 7L
 
         val vm = vm()
         vm.load("1"); advanceUntilIdle()
@@ -310,14 +313,14 @@ class SpotDetailViewModelTest {
 
         assertFalse(vm.liked.value)
         assertNull(vm.toast.value)
-        coVerify(exactly = 1) { spotService.unlike("1") }
+        coVerify(exactly = 1) { likeService.remove("1") }
     }
 
     @Test
     fun `toggleLike rolls back and toasts on failure`() = runTest(testDispatcher) {
         coEvery { spotService.spot("1") } returns fixture().copy(isLiked = false, isLikeable = true)
         coEvery { authService.isLoggedIn() } returns true
-        coEvery { spotService.like("1") } throws RuntimeException("net")
+        coEvery { likeService.add("1") } throws RuntimeException("net")
 
         val vm = vm()
         vm.load("1"); advanceUntilIdle()
@@ -325,6 +328,43 @@ class SpotDetailViewModelTest {
 
         assertFalse(vm.liked.value)
         assertEquals("추천에 실패했어요.", vm.toast.value)
+    }
+
+    @Test
+    fun `rapid toggleLike sends only the final state and toasts once`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns fixture().copy(isLiked = false, isLikeable = true)
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { likeService.add("1") } returns 9L
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+
+        // 따다다닥 — 홀수 번이라 최종 상태는 "추천함".
+        repeat(5) { vm.toggleLike() }
+        advanceUntilIdle()
+
+        assertTrue(vm.liked.value)
+        assertEquals("이 스팟을 추천했어요.", vm.toast.value)
+        coVerify(exactly = 1) { likeService.add("1") }
+        coVerify(exactly = 0) { likeService.remove(any()) }
+    }
+
+    @Test
+    fun `rapid toggleLike back to the original state sends nothing`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns fixture().copy(isLiked = false, isLikeable = true)
+        coEvery { authService.isLoggedIn() } returns true
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+
+        // 짝수 번이라 원래 상태로 되돌아온다 — 요청도 토스트도 없어야 한다.
+        repeat(4) { vm.toggleLike() }
+        advanceUntilIdle()
+
+        assertFalse(vm.liked.value)
+        assertNull(vm.toast.value)
+        coVerify(exactly = 0) { likeService.add(any()) }
+        coVerify(exactly = 0) { likeService.remove(any()) }
     }
 
     @Test
@@ -338,6 +378,6 @@ class SpotDetailViewModelTest {
 
         assertTrue(vm.isLoginRequired.value)
         assertFalse(vm.liked.value)
-        coVerify(exactly = 0) { spotService.like(any()) }
+        coVerify(exactly = 0) { likeService.add(any()) }
     }
 }

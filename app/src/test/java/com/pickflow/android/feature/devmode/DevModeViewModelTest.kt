@@ -7,6 +7,7 @@ import com.pickflow.android.core.services.protocols.ApiEnvironment
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.DevSettings
 import com.pickflow.android.core.services.protocols.GuestEntryStore
+import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.impl.InMemoryOnboardingCompletionStore
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -15,6 +16,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -42,6 +44,11 @@ private class FakeDevSettings(
     override val apiEnvironment: StateFlow<ApiEnvironment> = _apiEnvironment
     override val badgeEnabled: StateFlow<Boolean> = _badgeEnabled
     override val touchIndicatorEnabled: StateFlow<Boolean> = _touchIndicatorEnabled
+    private val _forcedMySpotStatus = MutableStateFlow<MySpotStatus?>(null)
+    override val forcedMySpotStatus: StateFlow<MySpotStatus?> = _forcedMySpotStatus
+    override fun setForcedMySpotStatus(status: MySpotStatus?) {
+        _forcedMySpotStatus.value = status
+    }
     override fun setApiEnvironment(environment: ApiEnvironment) {
         _apiEnvironment.value = environment
     }

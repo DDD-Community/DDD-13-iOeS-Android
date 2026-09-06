@@ -45,6 +45,9 @@ object PickflowColors {
     val spotDivider = Color(0x14FFFFFF)
     val spotPillBackground = Color(0xFF1E2124)
 
+    /** Figma 1014:18974 `#FFA100` — "유저 등록" 배지 보더·텍스트. */
+    val userSpotAmber = Color(0xFFFFA100)
+
     /** Figma 1067:5060 `#FEE404` — 카카오 로그인 버튼. */
     val kakaoYellow = Color(0xFFFEE404)
 }

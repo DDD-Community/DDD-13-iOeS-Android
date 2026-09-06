@@ -3,6 +3,7 @@ package com.pickflow.android.core.services.impl
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.pickflow.android.core.network.ApiException
 import com.pickflow.android.core.network.api.MySpotApi
+import com.pickflow.android.core.network.api.SpotApi
 import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.SpotTheme
@@ -32,7 +33,11 @@ class DefaultMySpotServiceTest {
             .baseUrl(server.url("/"))
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
-        service = DefaultMySpotService(retrofit.create(MySpotApi::class.java), json)
+        service = DefaultMySpotService(
+            retrofit.create(MySpotApi::class.java),
+            retrofit.create(SpotApi::class.java),
+            json,
+        )
     }
 
     @AfterEach

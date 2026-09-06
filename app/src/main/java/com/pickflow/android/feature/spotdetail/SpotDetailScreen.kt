@@ -48,6 +48,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.common.ui.LoadState
+import com.pickflow.android.core.services.protocols.MySpotStatus
+import com.pickflow.android.core.services.protocols.SpotRejection
+import androidx.compose.ui.text.style.TextDecoration
 import com.pickflow.android.core.services.protocols.SpotDetail
 import com.pickflow.android.feature.spotdetail.components.FullscreenImageViewer
 import com.pickflow.android.feature.spotdetail.components.LoginPromptPopup
@@ -56,6 +59,13 @@ import com.pickflow.android.feature.spotdetail.components.ReportButton
 import com.pickflow.android.feature.spotdetail.components.SpotActionButtons
 import com.pickflow.android.feature.spotdetail.components.SpotDetailNavBar
 import com.pickflow.android.feature.spotdetail.components.SpotHeaderSection
+import com.pickflow.android.feature.spotdetail.components.SpotOpenConfirmOverlay
+import com.pickflow.android.feature.spotdetail.components.SpotOpenSheet
+import com.pickflow.android.feature.spotdetail.components.openActionSheet
+import com.pickflow.android.core.services.protocols.ReviewDecision
+import com.pickflow.android.feature.home.ReviewResultViewModel
+import com.pickflow.android.feature.spotdetail.components.SpotPublishedOverlay
+import com.pickflow.android.feature.spotdetail.components.SpotPublishToggle
 import com.pickflow.android.feature.spotdetail.components.SpotPhotoSection
 import com.pickflow.android.feature.spotdetail.components.SpotRealTimeInfoSection
 import com.pickflow.android.feature.spotdetail.components.toDetailData
@@ -80,6 +90,13 @@ fun SpotDetailScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onRequireLogin: () -> Unit = {},
+    /**
+     * 반려 후 "다시 신청하기" — 보완 폼으로 이동한다.
+     * null 이면 오픈 플로우를 쓰지 않는 임베드 모드로 보고 기존 준비중 안내 시트를 띄운다.
+     */
+    onReviseMySpot: ((Long) -> Unit)? = null,
+    /** 삭제 완료 후 이동(보통 뒤로가기). */
+    onSpotDeleted: (() -> Unit)? = null,
     showRegisteredToast: Boolean = false,
     /**
      * 신고/오픈알림 등 내부 모달 시트 열림 여부 통지 — 지도 바텀시트에 임베드될 때
@@ -88,6 +105,8 @@ fun SpotDetailScreen(
     onOverlaySheetVisible: (Boolean) -> Unit = {},
     viewModel: SpotDetailViewModel = hiltViewModel(),
     actionsViewModel: SpotDetailActionsViewModel = hiltViewModel(),
+    openActionsViewModel: SpotOpenActionsViewModel = hiltViewModel(),
+    reviewResultViewModel: ReviewResultViewModel = hiltViewModel(),
 ) {
     val spotState by viewModel.spot.collectAsStateWithLifecycle()
     val bookmarked by viewModel.bookmarked.collectAsStateWithLifecycle()
@@ -96,17 +115,42 @@ fun SpotDetailScreen(
     val isLoginRequired by viewModel.isLoginRequired.collectAsStateWithLifecycle()
     val reportDraft by viewModel.reportDraft.collectAsStateWithLifecycle()
 
+    val isOpenActionInFlight by openActionsViewModel.isInFlight.collectAsStateWithLifecycle()
+    val isReleased by openActionsViewModel.isReleased.collectAsStateWithLifecycle()
+    val openActionToast by openActionsViewModel.toast.collectAsStateWithLifecycle()
+    val reviewStatus by reviewResultViewModel.status.collectAsStateWithLifecycle()
+    var activeOpenSheet by remember { mutableStateOf<SpotOpenSheet?>(null) }
+    // 반려 배너 닫기는 서버 상태를 바꾸지 않는다(REJECTED 는 이미 나만보기다).
+    // 세션 한정이라 화면을 다시 열면 배너가 복귀한다. docs/PV-41/10-open-questions.md A1
+    var isRejectionDismissed by remember(spotId) { mutableStateOf(false) }
     var isReportSheetOpen by remember { mutableStateOf(false) }
     var isComingSoonSheetOpen by remember { mutableStateOf(false) }
     var toastVisible by remember { mutableStateOf(false) }
     var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(spotId) { viewModel.load(spotId) }
+    LaunchedEffect(spotId) {
+        viewModel.load(spotId)
+        spotId.toLongOrNull()?.let(openActionsViewModel::loadReleased)
+        if (onReviseMySpot != null) reviewResultViewModel.load()
+    }
     LaunchedEffect(Unit) {
         if (showRegisteredToast) viewModel.showRegisteredToast()
     }
     LaunchedEffect(isReportSheetOpen, isComingSoonSheetOpen) {
         onOverlaySheetVisible(isReportSheetOpen || isComingSoonSheetOpen)
+    }
+    // 상태 전이가 끝나면 상세를 다시 읽는다 — 배지·버튼 문구가 새 상태를 따라가야 한다.
+    LaunchedEffect(openActionsViewModel, spotId) {
+        openActionsViewModel.statusChanges.collect { viewModel.load(spotId) }
+    }
+    LaunchedEffect(openActionsViewModel) {
+        openActionsViewModel.deleted.collect { onSpotDeleted?.invoke() }
+    }
+    LaunchedEffect(openActionToast) {
+        openActionToast?.let {
+            viewModel.showToast(it)
+            openActionsViewModel.consumeToast()
+        }
     }
     LaunchedEffect(toastMessage) {
         if (toastMessage != null) {
@@ -148,9 +192,26 @@ fun SpotDetailScreen(
                     onRoute = { actionsViewModel.openInMap(state.value) },
                     onBookmark = viewModel::toggleBookmark,
                     onLike = viewModel::toggleLike,
-                    onOpenSpot = { isComingSoonSheetOpen = true },
+                    onOpenSpot = {
+                        val status = state.value.mySpotStatus
+                        when {
+                            // 오픈 플로우를 쓰지 않는 임베드 모드 — 기존 준비중 안내 유지.
+                            onReviseMySpot == null -> isComingSoonSheetOpen = true
+                            // 반려는 확인 없이 보완 폼으로 바로 보낸다.
+                            status == MySpotStatus.REJECTED -> onReviseMySpot(state.value.id)
+                            else -> activeOpenSheet = status.openActionSheet()
+                        }
+                    },
+                    onDeleteSpot = { activeOpenSheet = SpotOpenSheet.DELETE }
+                        .takeIf { onReviseMySpot != null },
+                    isOpenActionInFlight = isOpenActionInFlight,
                     onReport = { viewModel.requestReport { isReportSheetOpen = true } },
                     onImageClick = { fullscreenImageUrl = state.value.imageUrl },
+                    isRejectionDismissed = isRejectionDismissed,
+                    onDismissRejection = { isRejectionDismissed = true },
+                    onRevise = { onReviseMySpot?.invoke(state.value.id) },
+                    isReleased = isReleased,
+                    onToggleRelease = { openActionsViewModel.setReleased(state.value.id, it) },
                 )
             }
         }
@@ -185,6 +246,40 @@ fun SpotDetailScreen(
                 )
             }
         }
+    }
+
+    val publishedResult = (reviewStatus as? LoadState.Loaded)
+        ?.value
+        ?.unacknowledgedResults
+        ?.firstOrNull { result ->
+            result.spotId.toString() == spotId &&
+                result.decision == ReviewDecision.APPROVED &&
+                !result.publishedModalAcknowledged
+        }
+    publishedResult?.let { result ->
+        SpotPublishedOverlay(
+            onConfirm = { reviewResultViewModel.acknowledgePublishedModal(result.resultId) },
+        )
+    }
+
+    activeOpenSheet?.let { sheet ->
+        val spot = (spotState as? LoadState.Loaded<SpotDetail>)?.value
+        SpotOpenConfirmOverlay(
+            sheet = sheet,
+            onDismiss = { activeOpenSheet = null },
+            onConfirm = {
+                activeOpenSheet = null
+                val id = spot?.id ?: return@SpotOpenConfirmOverlay
+                when (sheet) {
+                    SpotOpenSheet.REQUEST_OPEN -> openActionsViewModel.requestOpen(id)
+                    SpotOpenSheet.WITHDRAW_REQUEST,
+                    SpotOpenSheet.CANCEL_OPEN,
+                    -> openActionsViewModel.unpublish(id)
+                    SpotOpenSheet.DELETE -> openActionsViewModel.delete(id)
+                    SpotOpenSheet.LOGIN -> onRequireLogin()
+                }
+            },
+        )
     }
 
     fullscreenImageUrl?.let { url ->
@@ -298,6 +393,13 @@ private fun LoadedBody(
     onOpenSpot: () -> Unit,
     onReport: () -> Unit,
     onImageClick: () -> Unit,
+    onDeleteSpot: (() -> Unit)?,
+    isOpenActionInFlight: Boolean,
+    isRejectionDismissed: Boolean,
+    onDismissRejection: () -> Unit,
+    onRevise: () -> Unit,
+    isReleased: Boolean,
+    onToggleRelease: (Boolean) -> Unit,
 ) {
     val data = spot.toDetailData(isBookmarked, isLiked)
     Column(
@@ -308,10 +410,22 @@ private fun LoadedBody(
             .padding(top = 8.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
+        // 반려 배너는 헤더보다 위 — 화면을 열자마자 사유와 다음 행동이 먼저 보여야 한다.
+        if (data.mySpotStatus == MySpotStatus.REJECTED && !isRejectionDismissed) {
+            SpotRejectionBanner(
+                rejection = data.rejection,
+                onWithdraw = onDismissRejection,
+                onRevise = onRevise,
+            )
+        }
         SpotHeaderSection(spot = data)
         SpotPhotoSection(spot = data, onImageClick = onImageClick)
         SpotActionButtons(
             isMine = data.isMine,
+            // 반려는 배너 안 두 버튼이, 공개는 아래 공개 토글이 다음 행동을 맡는다.
+            // 둘 다 하단 오픈 버튼과 중복이라 숨긴다.
+            showOpenAction = data.isMine && data.mySpotStatus !in BANNER_DRIVEN_STATUSES,
+            mySpotStatus = data.mySpotStatus,
             isBookmarked = isBookmarked,
             isLikeable = data.isLikeable,
             isLiked = isLiked,
@@ -321,9 +435,125 @@ private fun LoadedBody(
             onLike = onLike,
         )
         SpotRealTimeInfoSection(spot = data)
+        if (data.isMine && data.mySpotStatus == MySpotStatus.PUBLISHED) {
+            // 노출 on/off 는 재검수 없이 왕복되는 플래그라 확인 시트 없이 즉시 반영한다.
+            SpotPublishToggle(
+                isPublished = isReleased,
+                enabled = !isOpenActionInFlight,
+                onToggle = onToggleRelease,
+            )
+        }
         // 내가 등록한 스팟은 스스로 신고할 일이 없으므로 진입점 자체를 숨긴다.
         if (!data.isMine) ReportButton(onClick = onReport)
+        if (data.isMine && onDeleteSpot != null) {
+            Text(
+                text = "스팟 삭제하기",
+                style = PickflowTypography.bodyMedium.copy(
+                    textDecoration = TextDecoration.Underline,
+                ),
+                color = PickflowColors.sunsetOrange,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !isOpenActionInFlight, onClick = onDeleteSpot)
+                    .padding(vertical = 8.dp)
+                    .testTag("detail-delete-spot"),
+            )
+        }
     }
+}
+
+/** 하단 오픈 버튼 대신 다른 UI 가 다음 행동을 맡는 상태들. */
+private val BANNER_DRIVEN_STATUSES = setOf(MySpotStatus.REJECTED, MySpotStatus.PUBLISHED)
+
+/**
+ * 반려 배너. 사유와 다음 행동(철회 / 수정 후 재신청)을 한 덩어리로 보여준다.
+ * 문구는 서버 `rejection` 값을 그대로 쓴다.
+ */
+@Composable
+private fun SpotRejectionBanner(
+    rejection: SpotRejection?,
+    onWithdraw: () -> Unit,
+    onRevise: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(PickflowColors.gray90)
+            .background(Color(0x1FB83311))
+            .padding(16.dp)
+            .testTag("detail-rejection-banner"),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = rejectedAtLabel(rejection?.rejectedAt),
+            style = PickflowTypography.bodySmall,
+            color = PickflowColors.gray30,
+        )
+        Text(
+            text = rejection?.let { it.guideMessage ?: it.reasonLabel }
+                ?: "등록 정보를 다시 확인해주세요.",
+            style = PickflowTypography.bodyMediumBold,
+            color = PickflowColors.gray0,
+        )
+        Row(
+            modifier = Modifier.padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            RejectionActionButton(
+                text = "스팟 오픈 철회",
+                background = PickflowColors.gray0,
+                contentColor = PickflowColors.gray80,
+                testTag = "detail-dismiss-rejection",
+                modifier = Modifier.weight(1f),
+                onClick = onWithdraw,
+            )
+            RejectionActionButton(
+                text = "수정 후 재신청",
+                background = PickflowColors.sunsetOrange,
+                contentColor = PickflowColors.gray0,
+                testTag = "detail-revise-spot",
+                modifier = Modifier.weight(1f),
+                onClick = onRevise,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RejectionActionButton(
+    text: String,
+    background: Color,
+    contentColor: Color,
+    testTag: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .heightIn(min = 52.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(background)
+            .clickable(onClick = onClick)
+            .testTag(testTag),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = PickflowTypography.bodyLargeBold,
+            color = contentColor,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+/** 서버 ISO 시각 → "26.07.21 반려됨". 파싱 못 하면 "반려됨" 만 남긴다. */
+private fun rejectedAtLabel(rejectedAt: String?): String {
+    val date = rejectedAt?.take(10)?.split("-")
+        ?.takeIf { it.size == 3 && it[0].length == 4 }
+        ?.let { (y, m, d) -> "${y.takeLast(2)}.$m.$d" }
+    return listOfNotNull(date, "반려됨").joinToString(" ")
 }
 
 /** iOS `viewModel.toast`(체크 아이콘 + 텍스트, gray0 배경) 1:1. */
@@ -362,7 +592,7 @@ private fun ReportSubmittedToast(
  * 시트가 recomposition 되어도 입력/등록 버튼 활성 상태가 유지된다.
  */
 @Composable
-private fun ReportSheetBody(
+internal fun ReportSheetBody(
     text: String,
     onTextChange: (String) -> Unit,
     onClose: () -> Unit,

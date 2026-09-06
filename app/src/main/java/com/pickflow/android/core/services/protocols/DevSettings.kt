@@ -32,7 +32,17 @@ interface DevSettings {
     val badgeEnabled: StateFlow<Boolean>
     val touchIndicatorEnabled: StateFlow<Boolean>
 
+    /**
+     * 상세 화면의 내 스팟 상태를 강제로 덮어쓴다(디버그 전용, null 이면 서버 값 그대로).
+     *
+     * 어드민 검수 API(`POST /v1/admin/spots/{id}/reviews`)가 `USER_ADMIN` 전용이라
+     * 일반 계정으로는 반려·공개 상태를 만들 수 없다. 상태별 UI 를 실기기에서 보기 위한 임시 장치다.
+     * 어드민 도구나 시드 데이터가 생기면 지운다.
+     */
+    val forcedMySpotStatus: StateFlow<MySpotStatus?>
+
     fun setApiEnvironment(environment: ApiEnvironment)
     fun setBadgeEnabled(enabled: Boolean)
     fun setTouchIndicatorEnabled(enabled: Boolean)
+    fun setForcedMySpotStatus(status: MySpotStatus?)
 }

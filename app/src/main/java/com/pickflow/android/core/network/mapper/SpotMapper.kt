@@ -11,6 +11,7 @@ import com.pickflow.android.core.services.protocols.Precipitation
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotCongestion
 import com.pickflow.android.core.services.protocols.SpotDetail
+import com.pickflow.android.core.services.protocols.SpotSource
 import com.pickflow.android.core.services.protocols.SpotMapMarker
 import com.pickflow.android.core.services.protocols.SpotPage
 import com.pickflow.android.core.services.protocols.SpotPreview
@@ -95,13 +96,21 @@ fun SpotDetailResponseDto.toSpotDetail(): SpotDetail = SpotDetail(
     astronomyDate = astronomyDate?.takeIf { it.isNotBlank() },
     weatherUpdatedAt = weatherUpdatedAt?.takeIf { it.isNotBlank() },
     congestionUpdatedAt = congestionUpdatedAt?.takeIf { it.isNotBlank() },
-    parkingInfo = parkingInfo?.takeIf { it.isNotBlank() },
+    // 서버가 값 없음을 빈 문자열이 아니라 "-" 로 내려준다(2026-09-07 실측). 화면은 "정보 없음" 을 쓴다.
+    parkingInfo = parkingInfo?.trim()?.takeIf { it.isNotEmpty() && it.trimStart('-').isNotEmpty() },
     bookmarkCount = bookmarkCount,
     isBookmarked = isBookmarked,
     isMySpot = isMySpot,
     likeCount = likeCount,
     isLiked = isLiked,
     isLikeable = isLikeable,
+    // 출처 표기(운영 큐레이션 / 유저 등록). 소유권은 isMySpot 이 따로 본다.
+    source = if (isCurated) SpotSource.Curated(displayName = "") else SpotSource.User,
+    // 유저 스팟의 공개 상태. 큐레이션 스팟은 상태 개념이 없어 null 이다.
+    mySpotStatus = status.takeIf { it.isNotBlank() && !isCurated }?.let(::parseMySpotStatus),
+    rejection = rejection?.toSpotRejection(),
+    recommendationCount = likeCount,
+    isRecommended = isLiked,
 )
 
 internal fun parseSky(value: String): WeatherSky = when (value.uppercase()) {

@@ -5,6 +5,7 @@ import androidx.core.content.edit
 import com.pickflow.android.BuildConfig
 import com.pickflow.android.core.services.protocols.ApiEnvironment
 import com.pickflow.android.core.services.protocols.DevSettings
+import com.pickflow.android.core.services.protocols.MySpotStatus
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +17,7 @@ private const val PREFS = "dev_settings"
 private const val KEY_ENVIRONMENT = "api_environment"
 private const val KEY_BADGE = "badge_enabled"
 private const val KEY_TOUCH = "touch_indicator_enabled"
+private const val KEY_FORCED_STATUS = "forced_my_spot_status"
 
 /**
  * DataStore 대신 SharedPreferences 를 쓰는 이유: OkHttp 인터셉터가 요청 스레드에서
@@ -45,6 +47,18 @@ class PrefsDevSettings @Inject constructor(
 
     private val _touchIndicatorEnabled = MutableStateFlow(prefs?.getBoolean(KEY_TOUCH, false) ?: false)
     override val touchIndicatorEnabled: StateFlow<Boolean> = _touchIndicatorEnabled.asStateFlow()
+
+    private val _forcedMySpotStatus = MutableStateFlow(
+        prefs?.getString(KEY_FORCED_STATUS, null)
+            ?.let { saved -> MySpotStatus.entries.firstOrNull { it.name == saved } },
+    )
+    override val forcedMySpotStatus: StateFlow<MySpotStatus?> = _forcedMySpotStatus.asStateFlow()
+
+    override fun setForcedMySpotStatus(status: MySpotStatus?) {
+        val prefs = prefs ?: return
+        prefs.edit { putString(KEY_FORCED_STATUS, status?.name) }
+        _forcedMySpotStatus.value = status
+    }
 
     override fun setApiEnvironment(environment: ApiEnvironment) {
         val prefs = prefs ?: return

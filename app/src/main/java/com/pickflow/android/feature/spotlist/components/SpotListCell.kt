@@ -3,6 +3,7 @@ package com.pickflow.android.feature.spotlist.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -37,18 +38,20 @@ import coil.compose.AsyncImage
 fun SpotListCell(
     item: SpotListGridItem,
     modifier: Modifier = Modifier,
+    /** 썸네일 위 오버레이 슬롯. 나만의 스팟 탭이 좌하단 상태 배지를 여기에 얹는다. */
+    thumbnailOverlay: @Composable BoxScope.() -> Unit = {},
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        ThumbnailBox(item = item)
+        ThumbnailBox(item = item, overlay = thumbnailOverlay)
         MetaRow(item = item)
     }
 }
 
 @Composable
-private fun ThumbnailBox(item: SpotListGridItem) {
+private fun ThumbnailBox(item: SpotListGridItem, overlay: @Composable BoxScope.() -> Unit) {
     // iOS: spotId 짝수 → aspect 1.2(세로 김), 홀수 → 0.9. ContentScale 비율 = width/height.
     val ratio = if (item.spotId % 2L == 0L) 1f / 1.2f else 1f / 0.9f
     Box {
@@ -79,6 +82,7 @@ private fun ThumbnailBox(item: SpotListGridItem) {
                 item.distanceKm?.let { DistanceBadge(it) }
             }
         }
+        overlay()
     }
 }
 
@@ -150,15 +154,17 @@ private fun MetaRow(item: SpotListGridItem) {
                 }
             }
         }
-        Box(modifier = Modifier.padding(10.dp)) {
-            Icon(
-                painter = painterResource(
-                    id = if (item.isBookmarked) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark_border,
-                ),
-                contentDescription = "북마크",
-                tint = if (item.isBookmarked) PickflowColors.gray0 else PickflowColors.gray30,
-                modifier = Modifier.size(24.dp),
-            )
+        item.isBookmarked?.let { bookmarked ->
+            Box(modifier = Modifier.padding(10.dp)) {
+                Icon(
+                    painter = painterResource(
+                        id = if (bookmarked) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark_border,
+                    ),
+                    contentDescription = "북마크",
+                    tint = if (bookmarked) PickflowColors.gray0 else PickflowColors.gray30,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
         }
     }
 }

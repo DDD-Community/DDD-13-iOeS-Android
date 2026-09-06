@@ -5,10 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.AddressSuggestion
 import com.pickflow.android.core.services.protocols.Coordinates
-import com.pickflow.android.core.services.protocols.CreateMySpotResult
 import com.pickflow.android.core.services.protocols.ImagePayload
 import com.pickflow.android.core.services.protocols.LocationService
+import com.pickflow.android.core.services.protocols.MySpotDetail
 import com.pickflow.android.core.services.protocols.MySpotService
+import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.SpotDraft
 import com.pickflow.android.core.services.protocols.SpotTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +27,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+enum class SpotRegistrationMode { CREATE, REVISE }
+
+data class SpotRegistrationSubmissionResult(
+    val spotId: Long,
+    val status: MySpotStatus,
+)
+
 /**
  * iOS `SpotRegistrationViewModel` 1:1 — 입력 + multipart 사진 업로드.
  *
@@ -38,6 +46,24 @@ class SpotRegistrationViewModel @Inject constructor(
     private val mySpotService: MySpotService,
     private val locationService: LocationService,
 ) : ViewModel() {
+
+    private val _mode = MutableStateFlow(SpotRegistrationMode.CREATE)
+    val mode: StateFlow<SpotRegistrationMode> = _mode.asStateFlow()
+
+    private val _revisionLoadState = MutableStateFlow<LoadState<MySpotDetail>>(LoadState.Idle)
+    val revisionLoadState: StateFlow<LoadState<MySpotDetail>> = _revisionLoadState.asStateFlow()
+
+    private val _existingImageUrl = MutableStateFlow<String?>(null)
+    val existingImageUrl: StateFlow<String?> = _existingImageUrl.asStateFlow()
+
+    private var revisionSpotId: Long? = null
+
+    /**
+     * 보완 내용은 저장됐지만 재신청이 실패한 상태.
+     * 재시도 시 수정을 다시 보내지 않고 재신청만 수행한다.
+     */
+    private val _isRevisionSaved = MutableStateFlow(false)
+    val isRevisionSaved: StateFlow<Boolean> = _isRevisionSaved.asStateFlow()
 
     private val _imagePayload = MutableStateFlow<ImagePayload?>(null)
     val imagePayload: StateFlow<ImagePayload?> = _imagePayload.asStateFlow()
@@ -70,22 +96,33 @@ class SpotRegistrationViewModel @Inject constructor(
     private val _comment = MutableStateFlow("")
     val comment: StateFlow<String> = _comment.asStateFlow()
 
-    private val _submission = MutableStateFlow<LoadState<CreateMySpotResult>>(LoadState.Idle)
-    val submission: StateFlow<LoadState<CreateMySpotResult>> = _submission.asStateFlow()
+    private val _submission =
+        MutableStateFlow<LoadState<SpotRegistrationSubmissionResult>>(LoadState.Idle)
+    val submission: StateFlow<LoadState<SpotRegistrationSubmissionResult>> = _submission.asStateFlow()
 
     /** 모든 필수값 충족 + 업로드 중 아님 → 등록 가능. iOS `isRegisterEnabled` 1:1. */
     val isRegisterEnabled: StateFlow<Boolean> =
         combine(
-            _imagePayload, _selectedAddress, _spotName, _theme, _capturedDate, _capturedTime, _submission,
+            _imagePayload,
+            _existingImageUrl,
+            _selectedAddress,
+            _spotName,
+            _theme,
+            _capturedDate,
+            _capturedTime,
+            _submission,
+            _mode,
         ) { values ->
             val image = values[0] as ImagePayload?
-            val address = values[1] as AddressSuggestion?
-            val name = values[2] as String
-            val theme = values[3] as SpotTheme?
-            val date = values[4] as LocalDate?
-            val time = values[5] as LocalTime?
-            val submission = values[6] as LoadState<*>
-            image != null &&
+            val existingImageUrl = values[1] as String?
+            val address = values[2] as AddressSuggestion?
+            val name = values[3] as String
+            val theme = values[4] as SpotTheme?
+            val date = values[5] as LocalDate?
+            val time = values[6] as LocalTime?
+            val submission = values[7] as LoadState<*>
+            val mode = values[8] as SpotRegistrationMode
+            (image != null || mode == SpotRegistrationMode.REVISE && existingImageUrl != null) &&
                 name.isNotBlank() &&
                 address != null &&
                 theme != null &&
@@ -93,6 +130,46 @@ class SpotRegistrationViewModel @Inject constructor(
                 time != null &&
                 submission !is LoadState.Loading
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    fun loadRevision(spotId: Long) {
+        _mode.value = SpotRegistrationMode.REVISE
+        revisionSpotId = spotId
+        _revisionLoadState.value = LoadState.Loading
+        viewModelScope.launch {
+            _revisionLoadState.value = runCatching {
+                val detail = mySpotService.detail(spotId)
+                require(detail.status == MySpotStatus.REJECTED) {
+                    "Only rejected spots can be revised."
+                }
+                val date = LocalDate.parse(detail.capturedDate, DATE_FORMATTER)
+                val time = LocalTime.parse(detail.capturedTime, TIME_FORMATTER)
+
+                _spotName.value = detail.name
+                _theme.value = detail.theme
+                val selectedAddress = AddressSuggestion(
+                    name = detail.name,
+                    fullAddress = detail.address,
+                    latitude = detail.latitude,
+                    longitude = detail.longitude,
+                )
+                _selectedAddress.value = selectedAddress
+                _capturedDate.value = date
+                _capturedTime.value = time
+                _comment.value = detail.comment
+                _existingImageUrl.value = detail.imageUrl
+                _imagePayload.value = null
+                _selectedImageUri.value = detail.imageUrl
+                _submission.value = LoadState.Idle
+
+                val current = runCatching { locationService.currentLocation() }.getOrNull()
+                _distanceText.value = current?.let { distanceText(it, selectedAddress) }.orEmpty()
+                detail
+            }.fold(
+                onSuccess = { LoadState.Loaded(it) },
+                onFailure = { LoadState.Failed(it) },
+            )
+        }
+    }
 
     fun setImagePayload(payload: ImagePayload?, previewUri: String?) {
         _imagePayload.value = payload
@@ -128,10 +205,14 @@ class SpotRegistrationViewModel @Inject constructor(
 
     fun submit() {
         val image = _imagePayload.value
+        val mode = _mode.value
+        val reviseSpotId = revisionSpotId
         val address = _selectedAddress.value
         val date = _capturedDate.value
         val time = _capturedTime.value
-        if (image == null || address == null || _spotName.value.isBlank() ||
+        val hasImage =
+            image != null || mode == SpotRegistrationMode.REVISE && _existingImageUrl.value != null
+        if (!hasImage || address == null || _spotName.value.isBlank() ||
             _theme.value == null || date == null || time == null
         ) {
             _submission.value = LoadState.Failed(IllegalStateException("입력값이 부족합니다."))
@@ -150,7 +231,30 @@ class SpotRegistrationViewModel @Inject constructor(
         )
         viewModelScope.launch {
             _submission.value = LoadState.Loading
-            _submission.value = runCatching { mySpotService.create(draft, image) }
+            _submission.value = runCatching {
+                when (mode) {
+                    SpotRegistrationMode.CREATE -> {
+                        val created = mySpotService.create(draft, checkNotNull(image))
+                        SpotRegistrationSubmissionResult(created.spotId, created.status)
+                    }
+                    // 서버는 수정(PUT)과 재신청(POST open-requests)이 분리된 2-step 이다.
+                    // 수정이 저장된 뒤 재신청만 실패하면 재시도 시 수정을 다시 보내지 않는다.
+                    SpotRegistrationMode.REVISE -> {
+                        val spotId = checkNotNull(reviseSpotId)
+                        if (!_isRevisionSaved.value) {
+                            mySpotService.update(
+                                spotId = spotId,
+                                draft = draft,
+                                replacementImage = image,
+                            )
+                            _isRevisionSaved.value = true
+                        }
+                        val reopened = mySpotService.requestOpen(spotId)
+                        _isRevisionSaved.value = false
+                        SpotRegistrationSubmissionResult(reopened.spotId, reopened.status)
+                    }
+                }
+            }
                 .fold(
                     onSuccess = { LoadState.Loaded(it) },
                     onFailure = { LoadState.Failed(it) },
@@ -169,7 +273,7 @@ class SpotRegistrationViewModel @Inject constructor(
     companion object {
         const val MAX_NAME_LENGTH = 20
         const val MAX_COMMENT_LENGTH = 50
-        private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
         private val TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
     }
 }

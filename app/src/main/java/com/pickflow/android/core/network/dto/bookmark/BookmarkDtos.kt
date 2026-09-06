@@ -25,4 +25,6 @@ data class SavedSpotItemDto(
     val distanceKm: Double? = null,
     val savedAt: String = "",
     val deleted: Boolean = false,
+    /** 작성자가 비공개로 돌린 유저 스팟. 서버는 이때 imageUrl 을 null 로 마스킹한다. */
+    val isPrivate: Boolean = false,
 )

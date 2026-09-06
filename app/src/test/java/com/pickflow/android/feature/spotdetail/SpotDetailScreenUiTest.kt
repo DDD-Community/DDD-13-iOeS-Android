@@ -2,6 +2,7 @@ package com.pickflow.android.feature.spotdetail
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -9,9 +10,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.pickflow.android.common.designsystem.PickflowTheme
+import com.pickflow.android.feature.home.ReviewResultViewModel
 import com.pickflow.android.core.services.protocols.AnalyticsLogger
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
+import com.pickflow.android.core.services.protocols.LikeService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.ShareIntentService
 import com.pickflow.android.core.services.protocols.SpotDetail
@@ -34,6 +37,9 @@ class SpotDetailScreenUiTest {
 
     @get:Rule
     val composeRule = createComposeRule()
+
+    private fun openActionsViewModel() =
+        SpotOpenActionsViewModel(mockk(relaxed = true), mockk(relaxed = true))
 
     private fun actionsViewModel() =
         SpotDetailActionsViewModel(mockk<ExternalAppLauncher>(relaxed = true))
@@ -72,6 +78,7 @@ class SpotDetailScreenUiTest {
         val vm = SpotDetailViewModel(
             spotService,
             mockk<BookmarkService>(relaxed = true),
+            mockk<LikeService>(relaxed = true),
             mockk<ShareIntentService>(relaxed = true),
             mockk<SpotReportService>(relaxed = true),
             authService,
@@ -84,6 +91,8 @@ class SpotDetailScreenUiTest {
                     onBack = {},
                     viewModel = vm,
                     actionsViewModel = actionsViewModel(),
+                    openActionsViewModel = openActionsViewModel(),
+                    reviewResultViewModel = ReviewResultViewModel(mockk(relaxed = true)),
                 )
             }
         }
@@ -141,6 +150,7 @@ class SpotDetailScreenUiTest {
         val vm = SpotDetailViewModel(
             spotService,
             bookmarkService,
+            mockk<LikeService>(relaxed = true),
             shareIntentService,
             mockk<SpotReportService>(relaxed = true),
             mockk<AuthService>(relaxed = true),
@@ -154,6 +164,8 @@ class SpotDetailScreenUiTest {
                     onBack = {},
                     viewModel = vm,
                     actionsViewModel = actionsViewModel(),
+                    openActionsViewModel = openActionsViewModel(),
+                    reviewResultViewModel = ReviewResultViewModel(mockk(relaxed = true)),
                 )
             }
         }
@@ -171,6 +183,7 @@ class SpotDetailScreenUiTest {
         val vm = SpotDetailViewModel(
             spotService,
             bookmarkService,
+            mockk<LikeService>(relaxed = true),
             shareIntentService,
             mockk<SpotReportService>(relaxed = true),
             mockk<AuthService>(relaxed = true),
@@ -184,6 +197,8 @@ class SpotDetailScreenUiTest {
                     onBack = {},
                     viewModel = vm,
                     actionsViewModel = actionsViewModel(),
+                    openActionsViewModel = openActionsViewModel(),
+                    reviewResultViewModel = ReviewResultViewModel(mockk(relaxed = true)),
                 )
             }
         }
@@ -222,14 +237,19 @@ class SpotDetailScreenUiTest {
         likeCount = likeCount,
     )
 
-    private fun viewModel(spotService: SpotService, authService: AuthService) = SpotDetailViewModel(
+    private fun viewModel(
+        spotService: SpotService,
+        authService: AuthService,
+        likeService: LikeService = mockk(relaxed = true),
+    ) = SpotDetailViewModel(
         spotService,
         mockk<BookmarkService>(relaxed = true),
+        likeService,
         mockk<ShareIntentService>(relaxed = true),
         mockk<SpotReportService>(relaxed = true),
         authService,
         mockk<AnalyticsLogger>(relaxed = true),
-    )
+    ).apply { likeDebounceMillis = 0L }
 
     private fun render(vm: SpotDetailViewModel) {
         composeRule.setContent {
@@ -239,6 +259,8 @@ class SpotDetailScreenUiTest {
                     onBack = {},
                     viewModel = vm,
                     actionsViewModel = actionsViewModel(),
+                    openActionsViewModel = openActionsViewModel(),
+                    reviewResultViewModel = ReviewResultViewModel(mockk(relaxed = true)),
                 )
             }
         }
@@ -270,13 +292,17 @@ class SpotDetailScreenUiTest {
     fun tapping_like_shows_toast() {
         val spotService = mockk<SpotService>()
         coEvery { spotService.spot("1") } returns spot(isLikeable = true)
-        coEvery { spotService.like("1") } returns Unit
+        val likeService = mockk<LikeService>()
+        coEvery { likeService.add("1") } returns 8L
         val authService = mockk<AuthService>(relaxed = true)
         coEvery { authService.isLoggedIn() } returns true
 
-        render(viewModel(spotService, authService))
+        render(viewModel(spotService, authService, likeService))
 
         composeRule.onNodeWithTag("detail-like").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithTag("spotdetail-toast").fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithTag("spotdetail-toast").assertIsDisplayed()
         composeRule.onNodeWithText("이 스팟을 추천했어요.").assertIsDisplayed()
     }

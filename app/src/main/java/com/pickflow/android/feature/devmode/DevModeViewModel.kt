@@ -6,11 +6,15 @@ import com.pickflow.android.core.services.protocols.ApiEnvironment
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.DevSettings
 import com.pickflow.android.core.services.protocols.GuestEntryStore
+import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.OnboardingCompletionStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -25,6 +29,10 @@ class DevModeViewModel @Inject constructor(
     val apiEnvironment = devSettings.apiEnvironment
     val badgeEnabled = devSettings.badgeEnabled
     val touchIndicatorEnabled = devSettings.touchIndicatorEnabled
+    val forcedMySpotStatus = devSettings.forcedMySpotStatus
+
+    fun setForcedMySpotStatus(status: MySpotStatus?) =
+        devSettings.setForcedMySpotStatus(status)
 
     /** 온보딩 확인 여부. off 로 내리면 다음 앱 실행 때 온보딩이 다시 뜬다. */
     private val _onboardingCompleted = MutableStateFlow(false)

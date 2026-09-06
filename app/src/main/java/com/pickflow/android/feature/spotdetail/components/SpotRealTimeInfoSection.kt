@@ -64,13 +64,22 @@ fun SpotRealTimeInfoSection(spot: SpotDetailData, modifier: Modifier = Modifier)
         Text(
             text = buildAnnotatedString {
                 append("공공 API를 활용한 ")
-                withStyle(SpanStyle(color = PickflowColors.sunsetOrange)) { append("실시간 정보") }
-                append("를 확인해 보세요")
+                withStyle(SpanStyle(color = PickflowColors.sunsetOrange)) { append("현재 스팟 상황") }
+                append("을 살펴보세요")
             },
             style = PickflowTypography.bodyMedium,
             color = PickflowColors.gray0,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            text = "지역에 따라 정보 기준이 다르거나\n일부 정보가 제공되지 않을 수 있어요",
+            style = PickflowTypography.bodyMedium,
+            color = PickflowColors.gray50,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("realtime-info-disclaimer"),
         )
 
         Column(
@@ -80,37 +89,42 @@ fun SpotRealTimeInfoSection(spot: SpotDetailData, modifier: Modifier = Modifier)
                 .background(PickflowColors.gray90)
                 .padding(16.dp),
         ) {
-            Text(
-                text = "${spot.sunsetTime} 기준 정보입니다.",
-                style = PickflowTypography.bodySmall,
-                color = PickflowColors.gray50,
-                textAlign = TextAlign.End,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-            )
+            // 기준 시각을 모르면 "정보 없음 기준 정보입니다." 가 되므로 줄 자체를 감춘다.
+            if (spot.sunsetTime != NO_INFO) {
+                Text(
+                    text = "${spot.sunsetTime} 기준 정보입니다.",
+                    style = PickflowTypography.bodySmall,
+                    color = PickflowColors.gray50,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                )
+            }
             InfoRow(
                 icon = { MaterialGlyph(Icons.Filled.WbSunny) },
                 label = "현재 날씨",
                 value = spot.weatherCondition,
-                sub = "강수확률 ${spot.precipitationProbability}%",
+                // 날씨를 못 받았으면 "강수확률 0%" 를 같이 띄우지 않는다.
+                sub = "강수확률 ${spot.precipitationProbability}%"
+                    .takeIf { spot.weatherCondition != NO_INFO },
             )
             InfoRow(
                 icon = { MaterialGlyph(Icons.Filled.WbTwilight) },
                 label = "일몰 시간",
                 value = spot.sunsetTime,
-                sub = "오차 시간",
+                sub = "오차 시간".takeIf { spot.sunsetTime != NO_INFO },
             )
             InfoRow(
                 icon = { MaterialGlyph(Icons.Filled.LocalParking) },
                 label = "주차 관련",
-                value = if (spot.isMine) "-" else (spot.parking ?: "-"),
+                value = if (spot.isMine) NO_INFO else (spot.parking ?: NO_INFO),
                 sub = null,
             )
             InfoRow(
                 icon = { MaterialGlyph(Icons.Filled.People) },
                 label = "혼잡도",
-                value = if (spot.isMine) "-" else spot.congestion,
+                value = if (spot.isMine) NO_INFO else spot.congestion,
                 sub = null,
                 trailing = {
                     Icon(
