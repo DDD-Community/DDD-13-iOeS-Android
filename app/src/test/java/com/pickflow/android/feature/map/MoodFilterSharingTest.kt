@@ -1,7 +1,7 @@
 package com.pickflow.android.feature.map
 
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
-import com.pickflow.android.core.services.impl.InMemoryRegionStore
+import com.pickflow.android.core.services.impl.DefaultRegionStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
@@ -41,7 +41,7 @@ class MoodFilterSharingTest {
 
     /** 실제 앱에서 Hilt 가 @Singleton 으로 하나만 주입하는 것과 같은 조건. */
     private val store = InMemoryMoodFilterStore()
-    private val regionStore = InMemoryRegionStore()
+    private val regionStore = DefaultRegionStore(mockk(relaxed = true))
 
     private lateinit var listService: SpotListService
     private lateinit var mapService: SpotMapService

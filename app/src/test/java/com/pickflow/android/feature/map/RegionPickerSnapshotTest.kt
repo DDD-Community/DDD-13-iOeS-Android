@@ -53,7 +53,7 @@ class RegionPickerSnapshotTest {
                     modifier = Modifier.fillMaxSize().background(PickflowColors.gray95),
                     contentAlignment = Alignment.BottomCenter,
                 ) {
-                    RegionPickerContent(applied = applied, onApply = {}, onCancel = {})
+                    RegionPickerContent(applied = applied, regions = Region.FALLBACK, onApply = {}, onCancel = {})
                 }
             }
         }

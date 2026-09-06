@@ -44,10 +44,14 @@ class SpotListViewModel @Inject constructor(
         viewModelScope.launch {
             regionStore.selected.drop(1).collect { refresh() }
         }
+        viewModelScope.launch { regionStore.refreshAvailable() }
     }
 
     /** 현재 적용 중인 지역. 지도와 공유하므로 어느 쪽에서 바꿔도 같이 움직인다. */
     val region: StateFlow<Region> = regionStore.selected
+
+    /** 지역 선택 바텀시트에 띄울 목록. 지도와 같은 [RegionStore] 를 본다. */
+    val regions: StateFlow<List<Region>> = regionStore.available
 
     /**
      * 리스트 헤더의 지역 선택 바텀시트 [적용하기].

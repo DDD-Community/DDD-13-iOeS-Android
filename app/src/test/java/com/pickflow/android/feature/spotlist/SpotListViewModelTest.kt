@@ -2,7 +2,7 @@ package com.pickflow.android.feature.spotlist
 
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
-import com.pickflow.android.core.services.impl.InMemoryRegionStore
+import com.pickflow.android.core.services.impl.DefaultRegionStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.LocationService
@@ -68,7 +68,7 @@ class SpotListViewModelTest {
     }
 
     private fun viewModel() =
-        SpotListViewModel(listService, bookmarkService, authService, locationService, InMemoryMoodFilterStore(), InMemoryRegionStore())
+        SpotListViewModel(listService, bookmarkService, authService, locationService, InMemoryMoodFilterStore(), DefaultRegionStore(mockk(relaxed = true)))
 
     @Test
     fun `refresh loads page 0 and emits Loaded`() = runTest(testDispatcher) {

@@ -106,6 +106,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideRegionApi(retrofit: Retrofit): com.pickflow.android.core.network.api.RegionApi =
+        retrofit.create(com.pickflow.android.core.network.api.RegionApi::class.java)
+
+    @Provides
+    @Singleton
     fun provideAppVersionApi(retrofit: Retrofit): com.pickflow.android.core.network.api.AppVersionApi =
         retrofit.create(com.pickflow.android.core.network.api.AppVersionApi::class.java)
 

@@ -1,7 +1,7 @@
 package com.pickflow.android.feature.map
 
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
-import com.pickflow.android.core.services.impl.InMemoryRegionStore
+import com.pickflow.android.core.services.impl.DefaultRegionStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test
  *
  * 무드와 같은 구조([MoodFilterSharingTest])지만 이유가 하나 더 있다. `regionId` 는
  * 스팟 조회 API 의 **필수** 파라미터라, 지역이 바뀌면 두 화면 모두 새 regionId 로 다시
- * 받아야 한다. 공유의 실체는 `@Singleton` [InMemoryRegionStore] 하나다.
+ * 받아야 한다. 공유의 실체는 `@Singleton` [DefaultRegionStore] 하나다.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegionSharingTest {
@@ -41,7 +41,7 @@ class RegionSharingTest {
 
     /** 실제 앱에서 Hilt 가 @Singleton 으로 하나만 주입하는 것과 같은 조건. */
     private val moodStore = InMemoryMoodFilterStore()
-    private val regionStore = InMemoryRegionStore()
+    private val regionStore = DefaultRegionStore(mockk(relaxed = true))
 
     private lateinit var listService: SpotListService
     private lateinit var mapService: SpotMapService

@@ -75,6 +75,7 @@ fun HomeMapScreen(
     val focusTarget by viewModel.focusTarget.collectAsStateWithLifecycle()
     val regionTarget by viewModel.regionTarget.collectAsStateWithLifecycle()
     val region by viewModel.region.collectAsStateWithLifecycle()
+    val regions by viewModel.regions.collectAsStateWithLifecycle()
     val selectedPreview by viewModel.selectedPreview.collectAsStateWithLifecycle()
     val selectedBookmarked by viewModel.selectedBookmarked.collectAsStateWithLifecycle()
     val sheetLoginPrompt by viewModel.sheetLoginPrompt.collectAsStateWithLifecycle()
@@ -110,12 +111,11 @@ fun HomeMapScreen(
     }
 
     // 지도 화면 최초 진입 시 위치 권한 확인 → 미보유면 시스템 권한 요청을 띄운다.
-    // (거부 시 설정 이동 팝업은 "현재 위치" 버튼 재탭 흐름에서 처리.)
+    // 권한을 허용해도 카메라는 움직이지 않는다 — 현재 위치로 가는 건 "현재 위치" 버튼뿐이다.
+    // (거부 시 설정 이동 팝업은 그 버튼 재탭 흐름에서 처리.)
     val initialPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
-    ) { grants ->
-        if (grants.values.any { it }) viewModel.moveToCurrentLocation()
-    }
+    ) { }
     LaunchedEffect(Unit) {
         if (!hasLocationPermission()) {
             initialPermissionLauncher.launch(
@@ -247,6 +247,7 @@ fun HomeMapScreen(
     if (showRegionPicker) {
         RegionPickerSheet(
             applied = region,
+            regions = regions,
             onApply = {
                 viewModel.applyRegion(it)
                 showRegionPicker = false

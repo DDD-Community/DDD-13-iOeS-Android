@@ -46,6 +46,7 @@ import com.pickflow.android.core.services.protocols.Region
 @Composable
 fun RegionPickerSheet(
     applied: Region,
+    regions: List<Region>,
     onApply: (Region) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -55,7 +56,7 @@ fun RegionPickerSheet(
         containerColor = PickflowColors.gray95,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
     ) {
-        RegionPickerContent(applied = applied, onApply = onApply, onCancel = onDismiss)
+        RegionPickerContent(applied = applied, regions = regions, onApply = onApply, onCancel = onDismiss)
     }
 }
 
@@ -63,6 +64,7 @@ fun RegionPickerSheet(
 @Composable
 internal fun RegionPickerContent(
     applied: Region,
+    regions: List<Region>,
     onApply: (Region) -> Unit,
     onCancel: () -> Unit,
 ) {
@@ -92,7 +94,7 @@ internal fun RegionPickerContent(
         )
         Spacer(Modifier.height(24.dp))
 
-        Region.entries.forEach { region ->
+        regions.forEach { region ->
             RegionRow(
                 region = region,
                 selected = region == pending,

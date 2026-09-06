@@ -13,7 +13,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
-import com.pickflow.android.core.services.impl.InMemoryRegionStore
+import com.pickflow.android.core.services.impl.DefaultRegionStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.LocationService
@@ -51,7 +51,7 @@ class SpotListScreenUiTest {
             page = 0,
             hasNext = false,
         )
-        val vm = SpotListViewModel(listService, bookmarkService, authService(), mockk(relaxed = true), InMemoryMoodFilterStore(), InMemoryRegionStore())
+        val vm = SpotListViewModel(listService, bookmarkService, authService(), mockk(relaxed = true), InMemoryMoodFilterStore(), DefaultRegionStore(mockk(relaxed = true)))
 
         composeRule.setContent {
             PickflowTheme {
@@ -67,7 +67,7 @@ class SpotListScreenUiTest {
         val listService = mockk<SpotListService>()
         val bookmarkService = mockk<BookmarkService>(relaxed = true)
         coEvery { listService.fetch(any(), any(), any(), any(), any()) } returns SpotPage(items = emptyList(), page = 0, hasNext = false)
-        val vm = SpotListViewModel(listService, bookmarkService, authService(), mockk(relaxed = true), InMemoryMoodFilterStore(), InMemoryRegionStore())
+        val vm = SpotListViewModel(listService, bookmarkService, authService(), mockk(relaxed = true), InMemoryMoodFilterStore(), DefaultRegionStore(mockk(relaxed = true)))
 
         composeRule.setContent {
             PickflowTheme {
@@ -93,7 +93,7 @@ class SpotListScreenUiTest {
             authService(),
             mockk(relaxed = true),
             InMemoryMoodFilterStore(),
-            InMemoryRegionStore(),
+            DefaultRegionStore(mockk(relaxed = true)),
         )
 
         composeRule.setContent {
@@ -119,7 +119,7 @@ class SpotListScreenUiTest {
             authService(),
             mockk(relaxed = true),
             InMemoryMoodFilterStore(),
-            InMemoryRegionStore(),
+            DefaultRegionStore(mockk(relaxed = true)),
         )
 
         composeRule.setContent {
@@ -140,7 +140,7 @@ class SpotListScreenUiTest {
             authService(),
             mockk(relaxed = true),
             InMemoryMoodFilterStore(),
-            InMemoryRegionStore(),
+            DefaultRegionStore(mockk(relaxed = true)),
         )
 
         composeRule.setContent {
@@ -164,7 +164,7 @@ class SpotListScreenUiTest {
             authService(),
             mockk(relaxed = true),
             InMemoryMoodFilterStore(),
-            InMemoryRegionStore(),
+            DefaultRegionStore(mockk(relaxed = true)),
         )
     }
 

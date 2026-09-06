@@ -80,6 +80,7 @@ fun SpotListScreen(
     val showLoginPrompt by viewModel.showLoginPrompt.collectAsStateWithLifecycle()
     val toast by viewModel.toast.collectAsStateWithLifecycle()
     val region by viewModel.region.collectAsStateWithLifecycle()
+    val regions by viewModel.regions.collectAsStateWithLifecycle()
 
     var showRegionPicker by remember { mutableStateOf(false) }
 
@@ -139,6 +140,7 @@ fun SpotListScreen(
         if (showRegionPicker) {
             RegionPickerSheet(
                 applied = region,
+                regions = regions,
                 onApply = {
                     viewModel.applyRegion(it)
                     showRegionPicker = false

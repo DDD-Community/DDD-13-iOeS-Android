@@ -124,6 +124,9 @@ class HomeMapViewModel @Inject constructor(
      */
     val region: StateFlow<Region> = regionStore.selected
 
+    /** 지역 선택 바텀시트에 띄울 목록. 서버가 활성화한 지역만 남는다. */
+    val regions: StateFlow<List<Region>> = regionStore.available
+
     /** 지역 적용 시 지도가 이동할 좌표. 스팟 자체는 regionId 로 걸러지고, 카메라는 보기 좋게 따라간다. */
     private val _regionTarget = MutableStateFlow<Coordinates?>(null)
     val regionTarget: StateFlow<Coordinates?> = _regionTarget.asStateFlow()
@@ -139,6 +142,7 @@ class HomeMapViewModel @Inject constructor(
     private var lastViewport: ViewportBox? = null
 
     fun load() {
+        viewModelScope.launch { regionStore.refreshAvailable() }
         viewModelScope.launch {
             _curationSpots.value = LoadState.Loading
             _curationSpots.value = runCatching {
