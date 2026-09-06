@@ -84,7 +84,7 @@ Stub-first로 먼저 확정한 클라이언트 Service 계약을 실제 서버 �
 | 승인 완료 모달 확인 여부 | 저장 위치(서버 / 로컬) 미정 |
 | `GET /v1/users/me/my-spots` (내 스팟 목록) | 이번 브랜치 범위 밖. `MySpot.status`·`bookmarkCount`가 응답에 포함되는지 미확인 |
 | **목록 아이템의 `likeCount`** | 셀에 "추천 34"를 표기하려면 필요하다. `MySpotItemDto.likeCount` 로 옵셔널 파싱만 해둠 — 서버가 안 주면 추천 수는 숨는다 |
-| **상세·목록의 `released` (노출 플래그)** | 공개 토글의 현재 ON/OFF 를 그릴 근거. `POST/DELETE .../releases` 응답에만 있고 `GET /v1/spots/{id}`·`GET /v1/users/me/my-spots` 에는 없어서, 화면 재진입 시 토글이 항상 ON 으로 보인다 |
+| **상세·목록의 `released` (노출 플래그)** | 공개 토글의 현재 ON/OFF 를 그릴 근거. `POST/DELETE .../releases` 응답에만 있고 `GET /v1/spots/{id}`·`GET /v1/users/me/my-spots` 에는 없다. 임시로 `MySpotReleaseStore`(SharedPreferences)에 마지막으로 누른 값을 남겨 복원하지만, 기기 로컬이라 재설치·다른 기기에서는 ON 으로 보인다. 필드가 오면 저장소를 지운다 |
 | **목록 아이템의 공개 이력 플래그** | "비공개"(공개됐다가 해제) 배지를 "뱃지 없음"(오픈 신청 전 DRAFT)과 가르는 근거. 해제 후 상태는 둘 다 `DRAFT` 라 응답만으로는 구분 불가. `MySpotItemDto.wasPublished` 로 옵셔널 파싱해 뒀고, 필드가 오기 전까지 비공개 배지는 뜨지 않는다 |
 | `UpdateMySpotRequest` 필드 | 문서에 object로만 표기되어 개별 필드·validation 미노출. `SpotDraft`와 대조 필요 |
 | 탈퇴 후 보존 | 공개 스팟·추천 보존 및 재가입 복구 계약 없음 |

@@ -39,7 +39,7 @@ class SpotDetailScreenUiTest {
     val composeRule = createComposeRule()
 
     private fun openActionsViewModel() =
-        SpotOpenActionsViewModel(mockk(relaxed = true))
+        SpotOpenActionsViewModel(mockk(relaxed = true), mockk(relaxed = true))
 
     private fun actionsViewModel() =
         SpotDetailActionsViewModel(mockk<ExternalAppLauncher>(relaxed = true))

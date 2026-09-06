@@ -2,6 +2,7 @@ package com.pickflow.android.feature.spotdetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pickflow.android.core.services.protocols.MySpotReleaseStore
 import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.MySpotStatusChange
@@ -26,6 +27,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class SpotOpenActionsViewModel @Inject constructor(
     private val mySpotService: MySpotService,
+    private val releaseStore: MySpotReleaseStore,
 ) : ViewModel() {
 
     private val _isInFlight = MutableStateFlow(false)
@@ -38,9 +40,9 @@ class SpotOpenActionsViewModel @Inject constructor(
     private val _statusChanges = MutableSharedFlow<MySpotStatus>(extraBufferCapacity = 1)
     val statusChanges: SharedFlow<MySpotStatus> = _statusChanges.asSharedFlow()
 
-    /**
+/**
      * 지도/리스트 노출 여부. 서버가 상세·목록 응답에 노출 플래그를 주지 않아
-     * 진입 시점 값은 알 수 없다 — PUBLISHED 면 켜져 있다고 보고 시작한다.
+     * 이 기기에서 마지막으로 누른 값을 [MySpotReleaseStore] 에 남겨 두고 복원한다.
      */
     private val _isReleased = MutableStateFlow(true)
     val isReleased: StateFlow<Boolean> = _isReleased.asStateFlow()
@@ -67,6 +69,11 @@ class SpotOpenActionsViewModel @Inject constructor(
         }
     }
 
+    /** 화면 진입 시 마지막으로 알려진 노출 상태를 복원한다. */
+    fun loadReleased(spotId: Long) {
+        _isReleased.value = releaseStore.released(spotId)
+    }
+
     /**
      * 공개 토글. `POST/DELETE .../releases` 는 status 를 건드리지 않아 재검수 없이 되돌릴 수 있다.
      * 공개 해제([unpublish], DRAFT 전환)와 다른 동작이다.
@@ -77,7 +84,9 @@ class SpotOpenActionsViewModel @Inject constructor(
         _isReleased.value = released
         viewModelScope.launch {
             try {
-                _isReleased.value = mySpotService.setReleased(spotId, released)
+                val applied = mySpotService.setReleased(spotId, released)
+                _isReleased.value = applied
+                releaseStore.setReleased(spotId, applied)
                 _toast.value = if (released) RELEASED_TOAST else UNRELEASED_TOAST
             } catch (cancellation: CancellationException) {
                 throw cancellation

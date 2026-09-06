@@ -1,6 +1,7 @@
 package com.pickflow.android.feature.spotdetail
 
 import app.cash.turbine.test
+import com.pickflow.android.core.services.protocols.MySpotReleaseStore
 import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.MySpotTransitionResult
@@ -39,7 +40,42 @@ class SpotOpenActionsViewModelTest {
     @AfterEach
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun vm() = SpotOpenActionsViewModel(mySpotService)
+    private fun vm() = SpotOpenActionsViewModel(mySpotService, releaseStore)
+
+    /** 서버가 노출 플래그를 안 줘서 기기에 남기는 저장소. 테스트에서는 인메모리로 둔다. */
+    private val releaseStore = object : MySpotReleaseStore {
+        private val values = mutableMapOf<Long, Boolean>()
+        override fun released(spotId: Long): Boolean = values[spotId] ?: true
+        override fun setReleased(spotId: Long, released: Boolean) { values[spotId] = released }
+    }
+
+    @Test
+    fun `release toggle survives leaving and reopening the screen`() = runTest(testDispatcher) {
+        coEvery { mySpotService.setReleased(41L, false) } returns false
+        val viewModel = vm()
+
+        viewModel.setReleased(41L, false)
+        advanceUntilIdle()
+        assertFalse(viewModel.isReleased.value)
+
+        // 화면을 나갔다 다시 들어오면 ViewModel 이 새로 만들어진다.
+        val reopened = vm()
+        reopened.loadReleased(41L)
+
+        assertFalse(reopened.isReleased.value)
+    }
+
+    @Test
+    fun `release toggle rolls back when the server rejects it`() = runTest(testDispatcher) {
+        coEvery { mySpotService.setReleased(41L, false) } throws IllegalStateException("SP012")
+        val viewModel = vm()
+
+        viewModel.setReleased(41L, false)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.isReleased.value)
+        assertEquals("잠시 후 다시 시도해주세요.", viewModel.toast.value)
+    }
 
     @Test
     fun `requestOpen emits the new status and toasts`() = runTest(testDispatcher) {

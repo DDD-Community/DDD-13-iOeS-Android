@@ -17,6 +17,7 @@ import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
 import com.pickflow.android.core.services.impl.DefaultRegionCatalog
 import com.pickflow.android.core.services.impl.DefaultRegionStore
 import com.pickflow.android.core.services.impl.PrefsDevSettings
+import com.pickflow.android.core.services.impl.PrefsMySpotReleaseStore
 import com.pickflow.android.core.services.impl.StatusDiffReviewResultService
 import com.pickflow.android.core.services.impl.compat.MoodCompatSpotListService
 import com.pickflow.android.core.services.impl.FirebaseAnalyticsLogger
@@ -49,6 +50,7 @@ import com.pickflow.android.core.services.protocols.MoodFilterStore
 import com.pickflow.android.core.services.protocols.RegionCatalog
 import com.pickflow.android.core.services.protocols.RegionStore
 import com.pickflow.android.core.services.protocols.DevSettings
+import com.pickflow.android.core.services.protocols.MySpotReleaseStore
 import com.pickflow.android.core.services.protocols.ReviewResultService
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotMapService
@@ -127,6 +129,11 @@ abstract class ServiceModule {
 
     @Binds
     abstract fun bindLikeService(impl: DefaultLikeService): LikeService
+
+    @Binds
+    @Singleton
+    // 서버가 노출 플래그를 안 줘서 마지막으로 누른 값을 기기에 남긴다.
+    abstract fun bindMySpotReleaseStore(impl: PrefsMySpotReleaseStore): MySpotReleaseStore
 
     @Binds
     // 서버에 검수 결과 엔드포인트가 없어 내 스팟 목록의 status 변화를 기기에서 대조한다.

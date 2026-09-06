@@ -13,6 +13,7 @@ import com.pickflow.android.core.services.protocols.AnalyticsLogger
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.LikeService
+import com.pickflow.android.core.services.protocols.MySpotReleaseStore
 import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.MySpotTransitionResult
@@ -42,6 +43,13 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w411dp-h891dp-xxhdpi")
 class SpotDetailOpenFlowUiTest {
+
+    /** relaxed mock 은 released()=false 를 돌려줘 토글이 OFF 로 시작한다. 공개 직후 기본값은 ON 이다. */
+    private val releaseStore = object : MySpotReleaseStore {
+        private val values = mutableMapOf<Long, Boolean>()
+        override fun released(spotId: Long): Boolean = values[spotId] ?: true
+        override fun setReleased(spotId: Long, released: Boolean) { values[spotId] = released }
+    }
 
     @get:Rule
     val composeRule = createComposeRule()
@@ -104,7 +112,7 @@ class SpotDetailOpenFlowUiTest {
                     onReviseMySpot = { revisedSpotId = it },
                     viewModel = vm,
                     actionsViewModel = SpotDetailActionsViewModel(mockk(relaxed = true)),
-                    openActionsViewModel = SpotOpenActionsViewModel(mySpotService),
+                    openActionsViewModel = SpotOpenActionsViewModel(mySpotService, releaseStore),
                     reviewResultViewModel = ReviewResultViewModel(mockk(relaxed = true)),
                 )
             }

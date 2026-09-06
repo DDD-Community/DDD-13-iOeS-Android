@@ -130,6 +130,7 @@ fun SpotDetailScreen(
 
     LaunchedEffect(spotId) {
         viewModel.load(spotId)
+        spotId.toLongOrNull()?.let(openActionsViewModel::loadReleased)
         if (onReviseMySpot != null) reviewResultViewModel.load()
     }
     LaunchedEffect(Unit) {
