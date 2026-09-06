@@ -14,6 +14,7 @@ import com.pickflow.android.core.services.protocols.MySpotPage
 import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.SavedSpot
+import com.pickflow.android.core.services.protocols.SavedSpotAvailability
 import com.pickflow.android.core.services.protocols.SavedSpotPage
 import com.pickflow.android.core.services.protocols.SpotTheme
 import io.mockk.Runs
@@ -79,7 +80,11 @@ class ArchiveViewModelTest {
         bookmarkCount = 0,
     )
 
-    private fun savedSpot(id: Long, name: String = "spot$id") = SavedSpot(
+    private fun savedSpot(
+        id: Long,
+        name: String = "spot$id",
+        availability: SavedSpotAvailability = SavedSpotAvailability.AVAILABLE,
+    ) = SavedSpot(
         id = id,
         name = name,
         theme = SpotTheme.SUNSET,
@@ -89,6 +94,8 @@ class ArchiveViewModelTest {
         distanceKm = null,
         savedAt = "2026-01-01T00:00:00Z",
         deleted = false,
+        availability = availability,
+        isUserGenerated = availability == SavedSpotAvailability.AUTHOR_PRIVATE,
     )
 
     @Test
@@ -257,6 +264,32 @@ class ArchiveViewModelTest {
     }
 
     @Test
+    fun `author private bookmark removal failure restores its original index`() = runTest(testDispatcher) {
+        val authorPrivate = savedSpot(
+            id = 2L,
+            availability = SavedSpotAvailability.AUTHOR_PRIVATE,
+        )
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { bookmarkService.savedSpots(0, null) } returns SavedSpotPage(
+            items = listOf(savedSpot(1), authorPrivate, savedSpot(3)),
+            page = 0,
+            hasNext = true,
+        )
+        coEvery { bookmarkService.remove("2") } throws RuntimeException("network")
+        val viewModel = vm()
+        viewModel.onAppear()
+        advanceUntilIdle()
+
+        viewModel.bookmarkTapped(2L)
+        runCurrent()
+
+        val loaded = viewModel.state.value as ArchiveLoadState.Loaded
+        assertEquals(listOf(1L, 2L, 3L), loaded.items.map { it.id })
+        assertEquals(SavedSpotAvailability.AUTHOR_PRIVATE, loaded.items[1].availability)
+        assertTrue(loaded.hasNext)
+    }
+
+    @Test
     fun `loadNextPageIfNeeded appends next page when trigger item appears`() = runTest(testDispatcher) {
         coEvery { authService.isLoggedIn() } returns true
         val firstPage = (1L..5L).map { savedSpot(it) }
@@ -307,6 +340,30 @@ class ArchiveViewModelTest {
         viewModel.tabChanged(ArchiveTab.MySpots); advanceUntilIdle()
         coVerify(exactly = 1) { mySpotService.list(0, null) }
     }
+
+    @Test
+    fun `MySpots preserves all five server statuses without collapsing pending states`() =
+        runTest(testDispatcher) {
+            val statuses = listOf(
+                MySpotStatus.DRAFT,
+                MySpotStatus.PENDING,
+                MySpotStatus.RE_REVIEW_PENDING,
+                MySpotStatus.REJECTED,
+                MySpotStatus.PUBLISHED,
+            )
+            coEvery { mySpotService.list(0, null) } returns MySpotPage(
+                items = statuses.mapIndexed { index, status -> mySpot(index.toLong(), status) },
+                page = 0,
+                hasNext = false,
+            )
+            val viewModel = vm()
+
+            viewModel.tabChanged(ArchiveTab.MySpots)
+            advanceUntilIdle()
+
+            val loaded = viewModel.mySpots.value as LoadState.Loaded
+            assertEquals(statuses, loaded.value.map { it.status })
+        }
 
     @Test
     fun `MySpots Empty state when service returns empty list`() = runTest(testDispatcher) {

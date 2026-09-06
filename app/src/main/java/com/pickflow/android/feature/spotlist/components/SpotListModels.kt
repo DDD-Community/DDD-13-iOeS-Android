@@ -31,8 +31,8 @@ data class SpotListGridItem(
     val distanceKm: Double? = 1.2,
     /** 셀 썸네일 이미지 URL. null/blank 면 gray90 플레이스홀더만 표시. */
     val imageUrl: String? = null,
-    /** 서버 응답의 isBookmarked. */
-    val isBookmarked: Boolean = false,
+    /** 서버 응답의 isBookmarked. null 이면 메타 행에서 북마크 아이콘 자체를 생략한다. */
+    val isBookmarked: Boolean? = false,
     /** 서버 응답의 likeCount(추천 수). null 이면 메타 행에서 생략. */
     val likeCount: Long? = null,
 )

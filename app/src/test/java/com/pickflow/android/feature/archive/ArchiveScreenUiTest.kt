@@ -1,10 +1,13 @@
 package com.pickflow.android.feature.archive
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import com.pickflow.android.common.designsystem.PickflowTheme
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.MySpot
@@ -136,13 +139,15 @@ class ArchiveScreenUiTest {
         composeRule.onNodeWithTag("archive-my-cell-1").assertExists()
         composeRule.onNodeWithTag("archive-my-cell-2").assertExists()
         composeRule.onNodeWithTag("archive-my-cell-3").assertExists()
-        composeRule.onNodeWithTag("archive-my-badge-pending", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithTag("archive-my-badge-in-review", useUnmergedTree = true).assertExists()
         composeRule.onNodeWithTag("archive-my-badge-rejected", useUnmergedTree = true).assertExists()
     }
 
     @Test
-    fun my_spots_cell_click_invokes_onCellClick() {
+    fun my_spots_cell_click_invokes_onMyCellClick() {
+        // "나만의 스팟" 탭은 저장된 스팟과 다른 화면(오픈 관리)으로 간다 — 콜백이 분리돼 있다.
         var lastId: Long? = null
+        var savedTabId: Long? = null
         composeRule.setContent {
             PickflowTheme {
                 ArchiveScreenContent(
@@ -150,12 +155,14 @@ class ArchiveScreenUiTest {
                     selectedTab = ArchiveTab.MySpots,
                     archiveName = "나의 보관함",
                     mySpotState = LoadState.Loaded(listOf(my(7L, MySpotStatus.PUBLISHED))),
-                    onCellClick = { lastId = it },
+                    onCellClick = { savedTabId = it },
+                    onMyCellClick = { lastId = it },
                 )
             }
         }
         composeRule.onNodeWithTag("archive-my-cell-7").performClick()
         assert(lastId == 7L)
+        assert(savedTabId == null)
     }
 
     @Test
@@ -224,5 +231,31 @@ class ArchiveScreenUiTest {
         listOf("햇살", "윤슬", "노을", "야경").forEach {
             composeRule.onNodeWithText(it).assertExists()
         }
+    }
+
+    /**
+     * 스티키 탭바가 고정되는 경계(커버가 막 스크롤아웃되는 지점)에서 그리드 안의 탭바와
+     * 상단 고정 탭바가 겹쳐 "저장된 스팟"이 두 번 보이던 버그.
+     */
+    @Test
+    fun tabbar_is_not_duplicated_at_sticky_threshold() {
+        composeRule.setContent {
+            PickflowTheme {
+                ArchiveScreenContent(
+                    state = ArchiveLoadState.Loaded(
+                        items = (1L..20L).map { saved(it) },
+                        hasNext = false,
+                    ),
+                    selectedTab = ArchiveTab.SavedSpots,
+                    archiveName = "나의 보관함",
+                )
+            }
+        }
+
+        // index 1 = 탭바 아이템. 이게 그리드 최상단에 오는 순간이 고정 경계다.
+        composeRule.onNodeWithTag("archive-scroll").performScrollToIndex(1)
+
+        composeRule.onAllNodesWithTag("archive-tabbar").assertCountEquals(1)
+        composeRule.onNodeWithTag("archive-tabbar").assertIsDisplayed()
     }
 }

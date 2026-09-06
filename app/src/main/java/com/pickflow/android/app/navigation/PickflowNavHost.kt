@@ -81,6 +81,7 @@ fun PickflowNavHost(
         composable(PickflowRoute.HOME) {
             HomeScreen(
                 onOpenSpotDetail = { navController.navigate(PickflowRoute.spotDetail(it)) },
+                onOpenMySpot = { navController.navigate(PickflowRoute.spotDetail(it.toString())) },
                 onOpenRegistration = { navController.navigate(PickflowRoute.SPOT_REGISTRATION) },
                 onRequireLogin = {
                     navController.navigate(PickflowRoute.LOGIN) {
@@ -162,13 +163,20 @@ fun PickflowNavHost(
                 spotId = spotId,
                 onBack = navController::popBackStack,
                 onRequireLogin = { navController.navigate(PickflowRoute.LOGIN) },
+                // 반려 스팟의 "다시 신청하기" — 보완 폼으로. 이 콜백이 있어야
+                // 화면이 오픈 플로우(확인 시트·삭제)를 활성화한다.
+                onReviseMySpot = { navController.navigate(PickflowRoute.spotRevision(it)) },
+                onSpotDeleted = {
+                    HomeTabRequest.request(HomeTab.SAVED, ArchiveTab.MySpots)
+                    navController.popBackStack()
+                },
                 showRegisteredToast = registered,
             )
         }
 
         composable(PickflowRoute.SPOT_SEARCH) {
             // 등록 화면과 동일 ViewModel 인스턴스를 공유(선택 주소 전달).
-            val regEntry = navController.getBackStackEntry(PickflowRoute.SPOT_REGISTRATION)
+            val regEntry = navController.getBackStackEntry(PickflowRoute.SPOT_REGISTRATION_ROUTE)
             val regViewModel: SpotRegistrationViewModel = hiltViewModel(regEntry)
             SpotSearchScreen(
                 onBack = navController::popBackStack,
@@ -180,7 +188,7 @@ fun PickflowNavHost(
         }
 
         composable(PickflowRoute.SPOT_LOCATION_DETAIL) {
-            val regEntry = navController.getBackStackEntry(PickflowRoute.SPOT_REGISTRATION)
+            val regEntry = navController.getBackStackEntry(PickflowRoute.SPOT_REGISTRATION_ROUTE)
             val regViewModel: SpotRegistrationViewModel = hiltViewModel(regEntry)
             val pending by regViewModel.pendingAddress.collectAsStateWithLifecycle()
             pending?.let { candidate ->
@@ -196,16 +204,38 @@ fun PickflowNavHost(
             }
         }
 
-        composable(PickflowRoute.SPOT_REGISTRATION) {
+        composable(
+            route = PickflowRoute.SPOT_REGISTRATION_ROUTE,
+            arguments = listOf(navArgument(PickflowRoute.ARG_REVISE_SPOT_ID) {
+                type = NavType.LongType
+                defaultValue = -1L
+            }),
+        ) { entry ->
+            val reviseSpotId = entry.arguments
+                ?.getLong(PickflowRoute.ARG_REVISE_SPOT_ID)
+                ?.takeIf { it >= 0L }
+            val regViewModel: SpotRegistrationViewModel = hiltViewModel(entry)
+            LaunchedEffect(reviseSpotId) {
+                reviseSpotId?.let(regViewModel::loadRevision)
+            }
             SpotRegistrationScreen(
                 onBack = navController::popBackStack,
                 onOpenSearch = { navController.navigate(PickflowRoute.SPOT_SEARCH) },
+                // 등록·재신청 직후는 소유가 확정된 내 스팟이므로 오픈 관리 화면으로 보낸다.
                 onRegistered = { spotId ->
-                    // 등록 완료 → 보관함(마이 스팟 탭) 위에 등록 스팟 상세 + 완료 토스트.
                     HomeTabRequest.request(HomeTab.SAVED, ArchiveTab.MySpots)
-                    navController.popBackStack()
-                    navController.navigate(PickflowRoute.spotDetail(spotId, registered = true))
+                    if (reviseSpotId == null) {
+                        navController.popBackStack()
+                        navController.navigate(PickflowRoute.spotDetail(spotId, registered = true))
+                    } else {
+                        navController.navigate(
+                            PickflowRoute.spotDetail(spotId, registered = true),
+                        ) {
+                            popUpTo(PickflowRoute.SPOT_DETAIL) { inclusive = true }
+                        }
+                    }
                 },
+                viewModel = regViewModel,
             )
         }
 
