@@ -23,6 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
+import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.common.designsystem.PickflowTypography
 
 /**
@@ -36,6 +37,8 @@ fun SpotActionButtons(
     isMine: Boolean,
     isBookmarked: Boolean,
     modifier: Modifier = Modifier,
+    /** 내 스팟일 때 오픈 버튼 문구를 정한다. null 이면 오픈 신청 전으로 본다. */
+    mySpotStatus: MySpotStatus? = null,
     isLikeable: Boolean = false,
     isLiked: Boolean = false,
     onRoute: () -> Unit = {},
@@ -64,7 +67,7 @@ fun SpotActionButtons(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "내 스팟 오픈하기",
+                    text = mySpotStatus.openActionLabel(),
                     style = PickflowTypography.bodyLargeBold,
                     color = PickflowColors.gray80,
                 )
@@ -148,4 +151,15 @@ private fun RouteButton(
             )
         }
     }
+}
+
+/**
+ * 내 스팟 오픈 버튼 문구. 상태 전이표(`docs/PV-41/01-state-and-api.md` §3)를 그대로 따른다.
+ * DRAFT = 아직 신청 전, PUBLISHED = 공개 중이라 취소가 가능한 상태.
+ */
+internal fun MySpotStatus?.openActionLabel(): String = when (this) {
+    MySpotStatus.PENDING, MySpotStatus.RE_REVIEW_PENDING -> "스팟 오픈 철회"
+    MySpotStatus.REJECTED -> "다시 신청하기"
+    MySpotStatus.PUBLISHED -> "오픈 취소하기"
+    else -> "내 스팟 오픈하기"
 }

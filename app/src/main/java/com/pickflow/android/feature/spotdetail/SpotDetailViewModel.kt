@@ -10,6 +10,7 @@ import com.pickflow.android.core.network.ApiException
 import com.pickflow.android.core.services.protocols.AnalyticsLogger
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
+import com.pickflow.android.core.services.protocols.LikeService
 import com.pickflow.android.core.services.protocols.SharePayload
 import com.pickflow.android.core.services.protocols.ShareIntentService
 import com.pickflow.android.core.services.protocols.SpotDetail
@@ -17,6 +18,8 @@ import com.pickflow.android.core.services.protocols.SpotReportService
 import com.pickflow.android.core.services.protocols.SpotService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +29,7 @@ import kotlinx.coroutines.launch
 class SpotDetailViewModel @Inject constructor(
     private val spotService: SpotService,
     private val bookmarkService: BookmarkService,
+    private val likeService: LikeService,
     private val shareIntentService: ShareIntentService,
     private val spotReportService: SpotReportService,
     private val authService: AuthService,
@@ -80,6 +84,9 @@ class SpotDetailViewModel @Inject constructor(
     /** 스팟 등록 완료 직후 상세 진입 시 노출할 토스트. */
     fun showRegisteredToast() { _toast.value = "나만의 스팟이 등록되었어요!" }
 
+    /** 다른 ViewModel(오픈 상태 전이 등)이 만든 안내를 같은 토스트 자리로 흘려보낸다. */
+    fun showToast(message: String) { _toast.value = message }
+
     /**
      * iOS `SpotDetailViewModel.notifyUpdateRequested()` 1:1 fakedoor — "나만의 스팟 오픈" CTA 의
      * 업데이트 알림 신청. 현재 BE 연동 없이 토스트만 띄움 (양 플랫폼 동일).
@@ -103,26 +110,52 @@ class SpotDetailViewModel @Inject constructor(
         }
     }
 
+    // 연타 대응. 탭마다 하트는 즉시 뒤집고 서버 요청·토스트는 [LIKE_DEBOUNCE_MS] 뒤 한 번만 보낸다.
+    // 이전 요청은 취소되므로 "따다다닥" 눌러도 최종 상태 하나만 서버로 가고 토스트도 한 번 뜬다.
+    private var likeJob: Job? = null
+
+    /** 서버에 마지막으로 반영된 값. null 이면 로드 응답의 isLiked 가 기준. */
+    private var likeSyncedValue: Boolean? = null
+
+    /**
+     * debounce 창(ms). Robolectric UI 테스트는 viewModelScope 의 [delay] 를 진행시키지 못해
+     * 0 으로 낮춰 쓴다. 프로덕션에서는 [LIKE_DEBOUNCE_MS] 그대로다.
+     */
+    internal var likeDebounceMillis: Long = LIKE_DEBOUNCE_MS
+
     /**
      * 스팟 추천(좋아요) 토글. 북마크와 동일하게 낙관적 반영 + 실패 시 롤백.
      * 추천 등록에만 토스트를 띄운다(해제는 조용히).
      */
     fun toggleLike() {
         val current = (_spot.value as? LoadState.Loaded<SpotDetail>)?.value ?: return
-        viewModelScope.launch {
+
+        // 낙관 반영은 코루틴 밖에서 동기로. 연타해도 하트가 즉시 따라온다.
+        val previousValue = _liked.value
+        _liked.value = !previousValue
+
+        likeJob?.cancel()
+        likeJob = viewModelScope.launch {
             if (!authService.isLoggedIn()) {
+                _liked.value = previousValue
                 _isLoginRequired.value = true
                 return@launch
             }
-            val previousValue = _liked.value
-            _liked.value = !previousValue
+            if (likeDebounceMillis > 0L) delay(likeDebounceMillis)
+
+            val baseline = likeSyncedValue ?: current.isLiked
+            val target = _liked.value
+            // 연타로 원래 상태에 돌아왔으면 보낼 것도, 알릴 것도 없다.
+            if (target == baseline) return@launch
+
             runCatching {
                 val spotId = current.id.toString()
-                if (previousValue) spotService.unlike(spotId) else spotService.like(spotId)
+                if (target) likeService.add(spotId) else likeService.remove(spotId)
             }.onSuccess {
-                if (!previousValue) _toast.value = "이 스팟을 추천했어요."
+                likeSyncedValue = target
+                if (target) _toast.value = "이 스팟을 추천했어요."
             }.onFailure {
-                _liked.value = previousValue
+                _liked.value = baseline
                 _toast.value = "추천에 실패했어요."
             }
         }
@@ -202,5 +235,8 @@ class SpotDetailViewModel @Inject constructor(
     companion object {
         const val REPORT_MIN_LENGTH = 5
         const val REPORT_MAX_LENGTH = 200
+
+        /** 추천 연타를 하나로 접는 시간. 이 안에 다시 누르면 이전 요청은 취소된다. */
+        const val LIKE_DEBOUNCE_MS = 300L
     }
 }

@@ -1,8 +1,10 @@
 package com.pickflow.android.feature.spotdetail.components
 
 import com.pickflow.android.core.services.protocols.CongestionLevel
+import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.Precipitation
 import com.pickflow.android.core.services.protocols.SpotDetail
+import com.pickflow.android.core.services.protocols.SpotRejection
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.core.services.protocols.SpotWeather
 import com.pickflow.android.core.services.protocols.WeatherSky
@@ -18,6 +20,9 @@ enum class SpotDetailTheme(val displayName: String) {
     Sunset("노을"),
     Night("야경"),
 }
+
+/** 공공 API가 값을 주지 않을 때 실시간 정보 카드에 표시하는 문구. */
+const val NO_INFO = "정보 없음"
 
 /** iOS `SpotDetail.fixture()` 1:1 대응. */
 data class SpotDetailData(
@@ -50,6 +55,10 @@ data class SpotDetailData(
     val sunsetTime: String = "PM 6:40",
     val parking: String? = "무료 주차장",
     val congestion: String = "여유",
+    /** 유저 스팟의 공개 상태. 큐레이션 스팟·남의 스팟은 null. */
+    val mySpotStatus: MySpotStatus? = null,
+    /** 반려 상세. 작성자 본인에게만 내려온다. */
+    val rejection: SpotRejection? = null,
 )
 
 /**
@@ -74,11 +83,13 @@ fun SpotDetail.toDetailData(isBookmarked: Boolean, isLiked: Boolean = this.isLik
         hasImage = imageUrl?.isNotBlank() == true,
         imageUrl = imageUrl,
         recordedTime = recordedBadgeText(recordedDate, recordedTime),
-        weatherCondition = weather?.toDisplayName() ?: "-",
+        weatherCondition = weather?.toDisplayName() ?: NO_INFO,
         precipitationProbability = weather?.precipitationProbability ?: 0,
-        sunsetTime = sunsetTime?.let(::pickflowDisplayTime) ?: "-",
+        sunsetTime = sunsetTime?.let(::pickflowDisplayTime) ?: NO_INFO,
         parking = parkingInfo,
-        congestion = congestion?.level?.toDisplayName() ?: "-",
+        congestion = congestion?.level?.toDisplayName() ?: NO_INFO,
+        mySpotStatus = mySpotStatus,
+        rejection = rejection,
     )
 
 private fun SpotTheme.toDetailTheme(): SpotDetailTheme = when (this) {
