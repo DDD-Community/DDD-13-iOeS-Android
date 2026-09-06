@@ -22,8 +22,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
@@ -144,12 +146,13 @@ private fun ConfirmButton(
     background: Color,
     textColor: Color,
     modifier: Modifier = Modifier,
+    height: Dp = 56.dp,
     testTag: String? = null,
     onClick: () -> Unit,
 ) {
     Box(
         modifier = modifier
-            .height(56.dp)
+            .height(height)
             .clip(RoundedCornerShape(8.dp))
             .background(background)
             .clickable(onClick = onClick)
@@ -165,42 +168,64 @@ private fun ConfirmButton(
     }
 }
 
-/** 오픈 승인 직후 1회 노출되는 축하 모달. */
+/**
+ * Figma 733:13715 — 오픈 승인 후 상세 최초 진입 시 1회 노출되는 완료 모달.
+ * 카드 328dp / padding 24·16·16 / gap 20, 제목·본문 gap 12, 확인 버튼 52dp.
+ */
 @Composable
 fun SpotPublishedOverlay(onConfirm: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.55f))
+            .background(Color.Black.copy(alpha = 0.5f))
             .testTag("spot-published-modal"),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 32.dp)
+                .padding(horizontal = 31.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(PickflowColors.gray90)
-                .padding(24.dp),
+                .padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = "스팟이 오픈되었어요!",
-                style = PickflowTypography.headingSmall,
-                color = PickflowColors.gray0,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = "이제 다른 유저들도 지도에서 이 스팟을 볼 수 있어요.",
-                style = PickflowTypography.bodyMedium,
-                color = PickflowColors.gray30,
-                textAlign = TextAlign.Center,
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "MY 스팟 오픈 완료!",
+                    style = PickflowTypography.headingSmall,
+                    color = PickflowColors.gray0,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = buildAnnotatedString {
+                        append("이제 다른 사용자들도 이 스팟을 볼 수 있어요.\n화면 하단의 ‘")
+                        withStyle(
+                            SpanStyle(
+                                color = PickflowColors.gray0,
+                                fontWeight = FontWeight.SemiBold,
+                            ),
+                        ) {
+                            append("스팟 공개")
+                        }
+                        append("’에서\n언제든 공개 여부를 변경할 수 있어요.")
+                    },
+                    style = PickflowTypography.bodyMedium,
+                    color = PickflowColors.gray30,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             ConfirmButton(
-                text = "확인",
+                text = "확인했어요",
                 background = PickflowColors.sunsetOrange,
                 textColor = PickflowColors.gray0,
+                height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
                 testTag = "spot-published-modal-confirm",
                 onClick = onConfirm,
