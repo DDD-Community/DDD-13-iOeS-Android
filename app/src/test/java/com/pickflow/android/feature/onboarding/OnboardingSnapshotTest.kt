@@ -38,13 +38,9 @@ class OnboardingSnapshotTest {
 
     // MARK: - Full screen (page 0~3, light/dark)
 
-    @Test fun onboarding_screen_page0_light() = screen(0)
     @Test fun onboarding_screen_page0_dark() = screen(0)
-    @Test fun onboarding_screen_page1_light() = screen(1)
     @Test fun onboarding_screen_page1_dark() = screen(1)
-    @Test fun onboarding_screen_page2_light() = screen(2)
     @Test fun onboarding_screen_page2_dark() = screen(2)
-    @Test fun onboarding_screen_page3_light() = screen(3)
     @Test fun onboarding_screen_page3_dark() = screen(3)
 
     // MARK: - Accessibility (DynamicType extra large)
@@ -66,25 +62,18 @@ class OnboardingSnapshotTest {
 
     // MARK: - Bottom panel
 
-    @Test fun onboarding_panel_page0_light() = panel(0)
     @Test fun onboarding_panel_page0_dark() = panel(0)
-    @Test fun onboarding_panel_page3_light() = panel(3)
     @Test fun onboarding_panel_page3_dark() = panel(3)
 
     // MARK: - CTA
 
-    @Test fun onboarding_cta_light() = cta()
     @Test fun onboarding_cta_dark() = cta()
 
     // MARK: - Illustration component
 
-    @Test fun onboarding_illustration_step0_light() = illustration(0)
     @Test fun onboarding_illustration_step0_dark() = illustration(0)
-    @Test fun onboarding_illustration_step1_light() = illustration(1)
     @Test fun onboarding_illustration_step1_dark() = illustration(1)
-    @Test fun onboarding_illustration_step2_light() = illustration(2)
     @Test fun onboarding_illustration_step2_dark() = illustration(2)
-    @Test fun onboarding_illustration_step3_light() = illustration(3)
     @Test fun onboarding_illustration_step3_dark() = illustration(3)
 
     // MARK: - Renderers

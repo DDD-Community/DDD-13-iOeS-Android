@@ -2,10 +2,12 @@ package com.pickflow.android.feature.map
 
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
+import com.pickflow.android.core.services.impl.DefaultRegionStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.LocationService
+import com.pickflow.android.core.services.protocols.Region
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotMapService
@@ -62,12 +64,13 @@ class HomeMapViewModelTest {
         mockk<BookmarkService>(relaxed = true),
         mockk<ExternalAppLauncher>(relaxed = true),
         InMemoryMoodFilterStore(),
+        DefaultRegionStore(mockk(relaxed = true)),
     )
 
     @Test
     fun `load emits Loaded with raw spots`() = runTest(testDispatcher) {
         val spot = Spot("s1", "n", SpotTheme.SUNSET, 0.0, 0.0)
-        coEvery { spotListService.fetch(themes = emptySet(), page = 0) } returns
+        coEvery { spotListService.fetch(themes = emptySet(), page = 0, region = any()) } returns
             SpotPage(items = listOf(spot), page = 0, hasNext = false)
 
         val viewModel = vm()
@@ -78,7 +81,7 @@ class HomeMapViewModelTest {
 
     @Test
     fun `load emits Empty when no spots`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(themes = emptySet(), page = 0) } returns
+        coEvery { spotListService.fetch(themes = emptySet(), page = 0, region = any()) } returns
             SpotPage(items = emptyList(), page = 0, hasNext = false)
 
         val viewModel = vm()
@@ -88,7 +91,7 @@ class HomeMapViewModelTest {
 
     @Test
     fun `setZoom without prior viewport reloads via load`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(themes = emptySet(), page = 0) } returns
+        coEvery { spotListService.fetch(themes = emptySet(), page = 0, region = any()) } returns
             SpotPage(items = emptyList(), page = 0, hasNext = false)
 
         val viewModel = vm()
@@ -98,7 +101,7 @@ class HomeMapViewModelTest {
 
     @Test
     fun `selectMood accumulates multiple moods and unselects only the retapped one`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(themes = any(), page = 0) } returns
+        coEvery { spotListService.fetch(themes = any(), page = 0, region = any()) } returns
             SpotPage(items = emptyList(), page = 0, hasNext = false)
 
         val viewModel = vm()
@@ -120,7 +123,7 @@ class HomeMapViewModelTest {
 
     @Test
     fun `selectMood maps moods to domain themes when fetching`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(themes = any(), page = 0) } returns
+        coEvery { spotListService.fetch(themes = any(), page = 0, region = any()) } returns
             SpotPage(items = emptyList(), page = 0, hasNext = false)
 
         val viewModel = vm()
@@ -128,19 +131,67 @@ class HomeMapViewModelTest {
         viewModel.selectMood(MoodFilter.Reflection); advanceUntilIdle()
 
         coVerify {
-            spotListService.fetch(themes = setOf(SpotTheme.SUNLIGHT, SpotTheme.YUNSEUL), page = 0)
+            spotListService.fetch(themes = setOf(SpotTheme.SUNLIGHT, SpotTheme.YUNSEUL), page = 0, region = any())
         }
     }
 
     @Test
     fun `no mood selected fetches without theme filter`() = runTest(testDispatcher) {
-        coEvery { spotListService.fetch(themes = emptySet(), page = 0) } returns
+        coEvery { spotListService.fetch(themes = emptySet(), page = 0, region = any()) } returns
             SpotPage(items = emptyList(), page = 0, hasNext = false)
 
         val viewModel = vm()
         viewModel.load(); advanceUntilIdle()
 
-        coVerify { spotListService.fetch(themes = emptySet(), page = 0) }
+        coVerify { spotListService.fetch(themes = emptySet(), page = 0, region = any()) }
+    }
+
+    /** 지역 필터 — 초기값은 서울(지도 최초 카메라와 동일). */
+    @Test
+    fun `region defaults to Seoul`() = runTest(testDispatcher) {
+        assertEquals(Region.Seoul, vm().region.value)
+    }
+
+    /**
+     * [적용하기] 시에만 지역이 바뀌고, 지도는 그 지역 중심으로 이동한다.
+     * 카메라 이동은 store 구독을 거치므로 코루틴을 한 번 돌려야 관측된다.
+     */
+    @Test
+    fun `applyRegion updates region and emits camera target at region center`() = runTest(testDispatcher) {
+        coEvery { spotListService.fetch(themes = any(), page = 0, region = any()) } returns
+            SpotPage(items = emptyList(), page = 0, hasNext = false)
+
+        // vm() 직후 advance — init 의 store 구독이 붙기 전에 select 하면 drop(1) 이
+        // 그 값을 삼킨다(무드 필터 구독과 같은 관례).
+        val viewModel = vm(); advanceUntilIdle()
+        viewModel.applyRegion(Region.Daejeon); advanceUntilIdle()
+
+        assertEquals(Region.Daejeon, viewModel.region.value)
+        assertEquals(Region.Daejeon.center, viewModel.regionTarget.value)
+    }
+
+    /** 같은 지역 재적용은 카메라 이동(=재조회)을 트리거하지 않는다. */
+    @Test
+    fun `applyRegion with the applied region emits no camera target`() = runTest(testDispatcher) {
+        val viewModel = vm(); advanceUntilIdle()
+        viewModel.applyRegion(Region.Seoul); advanceUntilIdle()
+
+        assertEquals(Region.Seoul, viewModel.region.value)
+        assertEquals(null, viewModel.regionTarget.value)
+    }
+
+    /** 지도가 이동을 처리하면 target 을 비워 동일 좌표 재이동을 막는다. */
+    @Test
+    fun `consumeRegionTarget clears the target but keeps the region`() = runTest(testDispatcher) {
+        coEvery { spotListService.fetch(themes = any(), page = 0, region = any()) } returns
+            SpotPage(items = emptyList(), page = 0, hasNext = false)
+
+        val viewModel = vm(); advanceUntilIdle()
+        viewModel.applyRegion(Region.Daejeon); advanceUntilIdle()
+        viewModel.consumeRegionTarget()
+
+        assertEquals(null, viewModel.regionTarget.value)
+        assertEquals(Region.Daejeon, viewModel.region.value)
     }
 
     @Test

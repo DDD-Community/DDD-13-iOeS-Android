@@ -80,6 +80,8 @@ fun NaverMapView(
     selectedSpotId: Long? = null,
     focusTarget: Coordinates? = null,
     onFocusConsumed: () -> Unit = {},
+    regionTarget: Coordinates? = null,
+    onRegionTargetConsumed: () -> Unit = {},
     bottomInsetFraction: Float = 0f,
 ) {
     val context = LocalContext.current
@@ -184,6 +186,21 @@ fun NaverMapView(
             isVisible = true
         }
         onCameraTargetConsumed()
+    }
+
+    // 지역 필터 적용 — 해당 지역 중심으로 도시 단위(INITIAL_ZOOM) 카메라 이동.
+    // 내 위치 핀(locationOverlay)은 건드리지 않는다. cameraTarget 과 다른 점이 이것.
+    LaunchedEffect(regionTarget) {
+        val target = regionTarget ?: return@LaunchedEffect
+        val map = naverMap ?: return@LaunchedEffect
+        runCatching {
+            map.moveCamera(
+                CameraUpdate.toCameraPosition(
+                    CameraPosition(LatLng(target.latitude, target.longitude), INITIAL_ZOOM),
+                ).animate(CameraAnimation.Easing),
+            )
+        }
+        onRegionTargetConsumed()
     }
 
     // 바텀시트가 떠 있는 동안 지도 하단 영역을 패딩으로 확보 → 카메라 센터가 시트 위쪽으로 이동.

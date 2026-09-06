@@ -2,6 +2,7 @@ package com.pickflow.android.core.services.impl.compat
 
 import com.pickflow.android.core.services.impl.DefaultSpotListService
 import com.pickflow.android.core.services.protocols.Coordinates
+import com.pickflow.android.core.services.protocols.Region
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotPage
 import com.pickflow.android.core.services.protocols.SpotSort
@@ -21,6 +22,7 @@ class MoodCompatSpotListService @Inject constructor(
     override suspend fun fetch(
         themes: Set<SpotTheme>,
         page: Int,
+        region: Region,
         coordinates: Coordinates?,
         sort: SpotSort,
     ): SpotPage {
@@ -30,6 +32,7 @@ class MoodCompatSpotListService @Inject constructor(
             delegate.fetch(
                 themes = MoodBackendCompat.serverQueryThemes(themes),
                 page = page,
+                region = region,
                 coordinates = coordinates,
                 sort = sort,
             )

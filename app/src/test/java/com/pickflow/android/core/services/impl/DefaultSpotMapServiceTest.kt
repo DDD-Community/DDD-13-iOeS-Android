@@ -4,6 +4,7 @@ import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFact
 import com.pickflow.android.core.network.ApiException
 import com.pickflow.android.core.network.api.SpotApi
 import com.pickflow.android.core.services.protocols.Coordinates
+import com.pickflow.android.core.services.protocols.Region
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.core.services.protocols.ViewportBox
 import kotlinx.coroutines.runBlocking
@@ -53,7 +54,7 @@ class DefaultSpotMapServiceTest {
             )
         )
 
-        service.fetchInViewport(box, setOf(SpotTheme.SUNSET))
+        service.fetchInViewport(box, setOf(SpotTheme.SUNSET), Region.Seoul)
 
         val req = server.takeRequest()
         val url = req.requestUrl!!
@@ -77,7 +78,7 @@ class DefaultSpotMapServiceTest {
             )
         )
 
-        service.fetchInViewport(box, setOf(SpotTheme.NIGHT_VIEW, SpotTheme.SUNLIGHT))
+        service.fetchInViewport(box, setOf(SpotTheme.NIGHT_VIEW, SpotTheme.SUNLIGHT), Region.Seoul)
 
         val url = server.takeRequest().requestUrl!!
         assertEquals(listOf("SUNLIGHT", "NIGHT_VIEW"), url.queryParameterValues("theme"))
@@ -97,7 +98,7 @@ class DefaultSpotMapServiceTest {
             )
         )
 
-        val markers = service.fetchInViewport(box, themes = emptySet())
+        val markers = service.fetchInViewport(box, themes = emptySet(), region = Region.Seoul)
 
         val req = server.takeRequest()
         assertNull(req.requestUrl!!.queryParameter("theme"))
@@ -117,8 +118,22 @@ class DefaultSpotMapServiceTest {
             )
         )
         val ex = assertThrows(ApiException::class.java) {
-            runBlocking { service.fetchInViewport(box) }
+            runBlocking { service.fetchInViewport(box, region = Region.Seoul) }
         }
         assertEquals("VIEW_001", ex.code)
+    }
+
+    /** PV-65 — viewport 도 `regionId` 필수. 좌표만 보내면 서버가 C003 을 준다. */
+    @Test
+    fun `fetchInViewport always sends the selected regionId`() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """{"success":true,"code":"OK","message":"","data":{"spots":[]}}"""
+            )
+        )
+
+        service.fetchInViewport(box, emptySet(), Region.Daejeon)
+
+        assertEquals("2", server.takeRequest().requestUrl!!.queryParameter("regionId"))
     }
 }

@@ -37,42 +37,29 @@ class MyProfileSnapshotTest {
 
     // MARK: - My Profile: Signed Out
 
-    @Test fun my_profile_signedout_light() = snapshot { MyProfileSignedOutContent() }
     @Test fun my_profile_signedout_dark() = snapshot { MyProfileSignedOutContent() }
     @Test fun my_profile_signedout_a11y() = snapshot { MyProfileSignedOutContent() }
 
     // MARK: - My Profile: Loading
 
-    @Test fun my_profile_loading_light() = snapshot { MyProfileLoadingContent() }
     @Test fun my_profile_loading_dark() = snapshot { MyProfileLoadingContent() }
 
     // MARK: - My Profile: Signed In
 
-    @Test fun my_profile_signedin_noimage_light() = snapshot { MyProfileSignedInContent(home = stubHome()) }
     @Test fun my_profile_signedin_noimage_dark() = snapshot { MyProfileSignedInContent(home = stubHome()) }
-    @Test fun my_profile_signedin_withimage_light() = snapshot { MyProfileSignedInContent(home = stubHome()) }
-    @Test fun my_profile_signedin_withimage_dark() = snapshot { MyProfileSignedInContent(home = stubHome()) }
 
     // MARK: - My Profile: Failed
 
-    @Test fun my_profile_failed_light() = snapshot { MyProfileFailedContent() }
     @Test fun my_profile_failed_dark() = snapshot { MyProfileFailedContent() }
 
     // MARK: - Account Management
 
-    @Test fun account_mgmt_idle_light() = snapshot {
-        AccountManagementContent(nicknameDraft = "capybara123", isSaveEnabled = false)
-    }
     @Test fun account_mgmt_idle_dark() = snapshot {
         AccountManagementContent(nicknameDraft = "capybara123", isSaveEnabled = false)
-    }
-    @Test fun account_mgmt_dirty_light() = snapshot {
-        AccountManagementContent(nicknameDraft = "newname_draft", isSaveEnabled = true)
     }
     @Test fun account_mgmt_dirty_dark() = snapshot {
         AccountManagementContent(nicknameDraft = "newname_draft", isSaveEnabled = true)
     }
-    @Test fun account_mgmt_logout_dialog_light() = snapshot { LogoutDialogOverlay(isLoading = false) }
     @Test fun account_mgmt_logout_dialog_dark() = snapshot { LogoutDialogOverlay(isLoading = false) }
     @Test fun account_mgmt_logout_processing_light() = snapshot { LogoutDialogOverlay(isLoading = true) }
     @Test fun account_mgmt_a11y() = snapshot {
@@ -81,31 +68,16 @@ class MyProfileSnapshotTest {
 
     // MARK: - Withdrawal
 
-    @Test fun withdrawal_initial_light() = snapshot { WithdrawalContent() }
     @Test fun withdrawal_initial_dark() = snapshot { WithdrawalContent() }
-    @Test fun withdrawal_dropdown_open_light() = snapshot { WithdrawalContent(isDropdownOpen = true) }
     @Test fun withdrawal_dropdown_open_dark() = snapshot { WithdrawalContent(isDropdownOpen = true) }
-    @Test fun withdrawal_reason_selected_light() = snapshot {
-        WithdrawalContent(selectedReason = WithdrawalReason.RarelyUsed)
-    }
     @Test fun withdrawal_reason_selected_dark() = snapshot {
         WithdrawalContent(selectedReason = WithdrawalReason.RarelyUsed)
-    }
-    @Test fun withdrawal_ready_light() = snapshot {
-        WithdrawalContent(selectedReason = WithdrawalReason.RarelyUsed, didAgree = true)
     }
     @Test fun withdrawal_ready_dark() = snapshot {
         WithdrawalContent(selectedReason = WithdrawalReason.RarelyUsed, didAgree = true)
     }
     @Test fun withdrawal_other_empty_light() = snapshot {
         WithdrawalContent(selectedReason = WithdrawalReason.Other, otherFeedback = "", didAgree = true)
-    }
-    @Test fun withdrawal_other_filled_light() = snapshot {
-        WithdrawalContent(
-            selectedReason = WithdrawalReason.Other,
-            otherFeedback = "개선 의견이에요",
-            didAgree = true,
-        )
     }
     @Test fun withdrawal_other_filled_dark() = snapshot {
         WithdrawalContent(

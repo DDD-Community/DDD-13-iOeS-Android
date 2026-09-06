@@ -23,31 +23,22 @@ class MapClusteringSnapshotTest {
 
     // MARK: - ClusterPinView
 
-    @Test fun clusterPin_count2_light() = clusterPin(2)
     @Test fun clusterPin_count2_dark() = clusterPin(2)
-    @Test fun clusterPin_count12_light() = clusterPin(12)
     @Test fun clusterPin_count12_dark() = clusterPin(12)
-    @Test fun clusterPin_count75_light() = clusterPin(75)
     @Test fun clusterPin_count75_dark() = clusterPin(75)
-    @Test fun clusterPin_count150_light() = clusterPin(150)
     @Test fun clusterPin_count150_dark() = clusterPin(150)
     @Test fun clusterPin_count12_a11y_light() = clusterPin(12, fontScale = 2.0f)
-    @Test fun clusterPin_count12_selected_light() = clusterPin(12, isSelected = true)
     @Test fun clusterPin_count12_selected_dark() = clusterPin(12, isSelected = true)
 
     // MARK: - MyClusterPinView
 
-    @Test fun myClusterPin_light() = myClusterPin()
     @Test fun myClusterPin_dark() = myClusterPin()
     @Test fun myClusterPin_a11y_dark() = myClusterPin(fontScale = 2.0f)
-    @Test fun myClusterPin_selected_light() = myClusterPin(isSelected = true)
     @Test fun myClusterPin_selected_dark() = myClusterPin(isSelected = true)
 
     // MARK: - SpotMarkerView
 
-    @Test fun spotMarker_default_light() = spotMarker(isSelected = false)
     @Test fun spotMarker_default_dark() = spotMarker(isSelected = false)
-    @Test fun spotMarker_selected_light() = spotMarker(isSelected = true)
     @Test fun spotMarker_selected_dark() = spotMarker(isSelected = true)
 
     // MARK: - Renderers

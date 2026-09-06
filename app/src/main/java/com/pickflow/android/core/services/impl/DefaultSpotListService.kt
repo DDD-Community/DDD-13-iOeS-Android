@@ -4,6 +4,7 @@ import com.pickflow.android.core.network.api.SpotApi
 import com.pickflow.android.core.network.mapper.toSpotPage
 import com.pickflow.android.core.network.unwrap
 import com.pickflow.android.core.services.protocols.Coordinates
+import com.pickflow.android.core.services.protocols.Region
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotPage
 import com.pickflow.android.core.services.protocols.SpotSort
@@ -16,9 +17,11 @@ class DefaultSpotListService @Inject constructor(
     override suspend fun fetch(
         themes: Set<SpotTheme>,
         page: Int,
+        region: Region,
         coordinates: Coordinates?,
         sort: SpotSort,
     ): SpotPage = spotApi.getSpots(
+        regionId = region.id,
         page = page,
         theme = themes.toQueryValues(),
         // 서버 검증: 위/경도는 소수점 6자리까지 허용 → truncate.

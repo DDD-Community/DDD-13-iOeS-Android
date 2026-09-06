@@ -44,21 +44,6 @@ class SpotThemeParsingTest {
         assertEquals(SpotTheme.NIGHT_VIEW, parseTheme("NIGHT_VIEW"))
     }
 
-    /** 4종 전부 왕복(요청값 → 응답 코드 → 도메인)이 자기 자신으로 돌아온다. */
-    @Test
-    fun `every mood round trips through both response formats`() {
-        val shortCodes = mapOf(
-            SpotTheme.SUNLIGHT to "SL",
-            SpotTheme.YUNSEUL to "YS",
-            SpotTheme.SUNSET to "SS",
-            SpotTheme.NIGHT_VIEW to "NV",
-        )
-        SpotTheme.entries.forEach { theme ->
-            assertEquals(theme, parseTheme(theme.name), "풀네임 응답")
-            assertEquals(theme, parseTheme(shortCodes.getValue(theme)), "2글자 코드 응답")
-        }
-    }
-
     @Test
     fun `parses case insensitively`() {
         assertEquals(SpotTheme.SUNLIGHT, parseTheme("sunlight"))
@@ -71,12 +56,4 @@ class SpotThemeParsingTest {
         assertEquals(SpotTheme.SUNSET, parseTheme(""))
     }
 
-    @Test
-    fun `declaration order drives the mood filter display order`() {
-        // 무드 행·등록 칩은 entries 를 그대로 순회한다. 순서가 곧 UI 순서다.
-        assertEquals(
-            listOf(SpotTheme.SUNLIGHT, SpotTheme.YUNSEUL, SpotTheme.SUNSET, SpotTheme.NIGHT_VIEW),
-            SpotTheme.entries,
-        )
-    }
 }

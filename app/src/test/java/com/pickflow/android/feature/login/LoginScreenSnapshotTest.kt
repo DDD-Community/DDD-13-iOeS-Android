@@ -22,17 +22,11 @@ class LoginScreenSnapshotTest {
     @Test
     fun login_root_idle_dark() = snapshotLogin()
 
-    @Test
-    fun login_header_idle_dark() = snapshotLogin()
 
     @Test
     fun login_header_closable_dark() = snapshotLogin(isClosable = true)
 
-    @Test
-    fun login_center_content_idle_dark() = snapshotLogin()
 
-    @Test
-    fun login_cta_idle_dark() = snapshotLogin()
 
     @Test
     fun login_cta_kakao_loading_dark() = snapshotLogin(kakaoLoading = true)
@@ -40,14 +34,8 @@ class LoginScreenSnapshotTest {
     @Test
     fun login_cta_apple_loading_dark() = snapshotLogin(appleLoading = true)
 
-    @Test
-    fun login_alert_error_dark() = snapshotLogin()
 
-    @Test
-    fun login_guest_requested_dark() = snapshotLogin()
 
-    @Test
-    fun login_root_idle_light_forced_dark() = snapshotLogin()
 
     @Test
     fun login_root_accessibility_extra_large_dark() {

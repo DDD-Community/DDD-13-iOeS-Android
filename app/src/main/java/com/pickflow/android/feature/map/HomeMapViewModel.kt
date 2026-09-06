@@ -9,6 +9,8 @@ import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.MoodFilterStore
+import com.pickflow.android.core.services.protocols.Region
+import com.pickflow.android.core.services.protocols.RegionStore
 import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotMapMarker
@@ -45,6 +47,8 @@ class HomeMapViewModel @Inject constructor(
     private val externalAppLauncher: ExternalAppLauncher,
     /** 리스트와 공유하는 무드 선택. 어느 쪽에서 바꿔도 양쪽이 같이 움직인다. */
     private val moodFilterStore: MoodFilterStore,
+    /** 리스트와 공유하는 지역 선택. 스팟 조회 API 의 필수 파라미터 출처. */
+    private val regionStore: RegionStore,
 ) : ViewModel() {
 
     init {
@@ -53,6 +57,15 @@ class HomeMapViewModel @Inject constructor(
         viewModelScope.launch {
             moodFilterStore.selected.drop(1).collect {
                 lastViewport?.let { box -> onViewportChanged(box, _zoom.value) } ?: load()
+            }
+        }
+        // 지역 변경은 지도(바텀시트)와 리스트(헤더) 양쪽에서 일어나므로 store 구독 한 곳에서 받는다.
+        // MutableStateFlow 라 같은 지역 재적용은 emit 되지 않는다 = 카메라도 재조회도 없다.
+        viewModelScope.launch {
+            regionStore.selected.drop(1).collect { region ->
+                _regionTarget.value = region.center
+                lastViewport = null // 이전 지역의 뷰포트로 재조회하지 않도록 버린다.
+                load()
             }
         }
     }
@@ -105,6 +118,19 @@ class HomeMapViewModel @Inject constructor(
     private val _cameraTarget = MutableStateFlow<Coordinates?>(null)
     val cameraTarget: StateFlow<Coordinates?> = _cameraTarget.asStateFlow()
 
+    /**
+     * 현재 적용 중인 지역. 바텀시트에서 [적용하기] 를 눌러야 바뀐다.
+     * 실제 상태는 [RegionStore] 가 들고 있어 리스트 화면과 공유된다.
+     */
+    val region: StateFlow<Region> = regionStore.selected
+
+    /** 지역 선택 바텀시트에 띄울 목록. 서버가 활성화한 지역만 남는다. */
+    val regions: StateFlow<List<Region>> = regionStore.available
+
+    /** 지역 적용 시 지도가 이동할 좌표. 스팟 자체는 regionId 로 걸러지고, 카메라는 보기 좋게 따라간다. */
+    private val _regionTarget = MutableStateFlow<Coordinates?>(null)
+    val regionTarget: StateFlow<Coordinates?> = _regionTarget.asStateFlow()
+
     /** 마커 탭 시 바텀시트 위쪽 영역 중앙으로 정렬할 좌표(시트 높이만큼 하단 패딩 적용). */
     private val _focusTarget = MutableStateFlow<Coordinates?>(null)
     val focusTarget: StateFlow<Coordinates?> = _focusTarget.asStateFlow()
@@ -116,10 +142,15 @@ class HomeMapViewModel @Inject constructor(
     private var lastViewport: ViewportBox? = null
 
     fun load() {
+        viewModelScope.launch { regionStore.refreshAvailable() }
         viewModelScope.launch {
             _curationSpots.value = LoadState.Loading
             _curationSpots.value = runCatching {
-                val all = spotListService.fetch(themes = moodFilterStore.selected.value, page = 0).items
+                val all = spotListService.fetch(
+                    themes = moodFilterStore.selected.value,
+                    page = 0,
+                    region = regionStore.selected.value,
+                ).items
                 loadedSpots = all
                 _mySpots.value = emptyList() // 초기 fetch 는 isMySpot 정보 없음 → 전부 큐레이션 취급
                 all
@@ -142,7 +173,11 @@ class HomeMapViewModel @Inject constructor(
         viewModelScope.launch {
             _curationSpots.value = LoadState.Loading
             _curationSpots.value = runCatching {
-                val markers = spotMapService.fetchInViewport(box, moodFilterStore.selected.value)
+                val markers = spotMapService.fetchInViewport(
+                    box,
+                    moodFilterStore.selected.value,
+                    regionStore.selected.value,
+                )
                 val (mineMarkers, curationMarkers) = markers.partition { it.isMySpot }
                 _mySpots.value = mineMarkers.map(SpotMapMarker::toMySpotMarker)
                 val curationSpots = curationMarkers.map(SpotMapMarker::toSpot)
@@ -169,6 +204,19 @@ class HomeMapViewModel @Inject constructor(
      * 재조회는 [moodFilterStore] 구독(init)이 담당하므로 여기서 직접 부르지 않는다.
      */
     fun selectMood(mood: MoodFilter) = moodFilterStore.toggle(mood.toTheme())
+
+    /**
+     * 지역 선택 바텀시트의 [적용하기].
+     *
+     * 실제 반응(카메라 이동 + 재조회)은 init 의 [regionStore] 구독이 담당한다 —
+     * 리스트 헤더에서 바꿨을 때도 같은 경로를 타야 하기 때문이다.
+     */
+    fun applyRegion(region: Region) = regionStore.select(region)
+
+    /** NaverMapView 가 지역 카메라 이동을 처리한 뒤 호출. */
+    fun consumeRegionTarget() {
+        _regionTarget.value = null
+    }
 
     fun selectMapListMode(mode: MapListMode) {
         _mapListMode.value = mode

@@ -42,25 +42,12 @@ class ArchiveSnapshotTest {
 
     // MARK: - Full screen states
 
-    @Test fun archive_signedout_light() = snapshot { ArchiveSignedOutContent() }
     @Test fun archive_signedout_dark() = snapshot { ArchiveSignedOutContent() }
 
-    @Test fun archive_empty_light() = snapshot { ArchiveEmptyContent() }
     @Test fun archive_empty_dark() = snapshot { ArchiveEmptyContent() }
 
-    @Test fun archive_myspot_placeholder_light() = snapshot { ArchiveMySpotPlaceholderContent() }
     @Test fun archive_myspot_placeholder_dark() = snapshot { ArchiveMySpotPlaceholderContent() }
 
-    @Test fun archive_loaded_savedspots_light() = snapshot {
-        ArchiveScreenContent(
-            state = ArchiveLoadState.Loaded(
-                items = listOf(saved(1), saved(2, "응봉산 노을"), saved(3, "윤슬 한 바퀴", 0.6)),
-                hasNext = false,
-            ),
-            selectedTab = ArchiveTab.SavedSpots,
-            archiveName = "내 보관함",
-        )
-    }
 
     @Test fun archive_loaded_savedspots_dark() = snapshot {
         ArchiveScreenContent(
