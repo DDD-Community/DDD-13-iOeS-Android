@@ -114,7 +114,7 @@ class HomeMapViewportPartitionTest {
     @Test
     fun `viewport exposes only owned draft as MY and published user spots to public cluster`() =
         runTest(testDispatcher) {
-            coEvery { mapService.fetchInViewport(any(), any()) } returns listOf(
+            coEvery { mapService.fetchInViewport(any(), any(), any()) } returns listOf(
                 marker(1, isMine = false),
                 marker(
                     2,

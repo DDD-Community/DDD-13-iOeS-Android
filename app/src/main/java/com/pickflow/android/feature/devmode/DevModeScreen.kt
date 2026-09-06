@@ -31,6 +31,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pickflow.android.BuildConfig
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.common.designsystem.PickflowTypography
 import com.pickflow.android.core.services.protocols.ApiEnvironment
@@ -47,6 +50,7 @@ fun DevModeScreen(
     val environment by viewModel.apiEnvironment.collectAsStateWithLifecycle()
     val badgeEnabled by viewModel.badgeEnabled.collectAsStateWithLifecycle()
     val touchIndicator by viewModel.touchIndicatorEnabled.collectAsStateWithLifecycle()
+    val forcedStatus by viewModel.forcedMySpotStatus.collectAsStateWithLifecycle()
     val pendingEnvironment by viewModel.pendingEnvironment.collectAsStateWithLifecycle()
     val onboardingCompleted by viewModel.onboardingCompleted.collectAsStateWithLifecycle()
     val guestEntered by viewModel.guestEntered.collectAsStateWithLifecycle()
@@ -85,7 +89,7 @@ fun DevModeScreen(
             )
         }
 
-        SectionTitle("API 환경")
+        DevSectionTitle("API 환경")
         Text(
             text = "기본값은 ${ApiEnvironment.DEFAULT.label} 이에요.\n" +
                 "여기서 고른 환경은 앱을 껐다 켜도 그대로 유지돼요.",
@@ -114,7 +118,7 @@ fun DevModeScreen(
             modifier = Modifier.testTag("devmode-current-base-url"),
         )
 
-        SectionTitle("표시")
+        DevSectionTitle("표시")
         ToggleRow(
             title = "환경 배지 띄우기",
             description = "화면 위에 현재 환경을 항상 표시해요.",
@@ -131,7 +135,7 @@ fun DevModeScreen(
             tag = "devmode-touch-toggle",
         )
 
-        SectionTitle("진입")
+        DevSectionTitle("진입")
         ToggleRow(
             title = "온보딩 확인여부",
             description = "off 로 내리면 앱을 껐다 켤 때 온보딩이 다시 나와요.",
@@ -148,7 +152,21 @@ fun DevModeScreen(
             tag = "devmode-guest-toggle",
         )
 
-        SectionTitle("앱 정보")
+        DevSectionTitle("내 스팟 상태 강제")
+        Text(
+            text = "상세 화면에서 내 스팟의 상태를 덮어써요. 어드민 검수 API 가 관리자 전용이라 " +
+                "일반 계정으로는 반려·공개 상태를 만들 수 없어서 UI 확인용으로 둔 임시 기능이에요. " +
+                "서버 상태는 바뀌지 않아요.",
+            style = PickflowTypography.bodySmall,
+            color = PickflowColors.gray50,
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
+        ForcedStatusPicker(
+            selected = forcedStatus,
+            onSelect = viewModel::setForcedMySpotStatus,
+        )
+
+        DevSectionTitle("앱 정보")
         InfoRow("버전", BuildConfig.VERSION_NAME)
         InfoRow("빌드", BuildConfig.VERSION_CODE.toString())
         InfoRow("패키지", BuildConfig.APPLICATION_ID)
@@ -163,7 +181,7 @@ fun DevModeScreen(
 }
 
 @Composable
-private fun SectionTitle(text: String) {
+internal fun DevSectionTitle(text: String) {
     Spacer(Modifier.height(28.dp))
     Text(
         text = text,
@@ -284,6 +302,44 @@ private fun InfoRow(label: String, value: String) {
                 text = value,
                 style = PickflowTypography.bodyMedium,
                 color = PickflowColors.gray0,
+            )
+        }
+    }
+}
+
+/** 내 스팟 상태 강제 선택지. 첫 칸(없음)이 서버 값 그대로다. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ForcedStatusPicker(
+    selected: MySpotStatus?,
+    onSelect: (MySpotStatus?) -> Unit,
+) {
+    val options: List<Pair<String, MySpotStatus?>> = listOf(
+        "없음" to null,
+        "나만보기" to MySpotStatus.DRAFT,
+        "검수 중" to MySpotStatus.PENDING,
+        "재검수 중" to MySpotStatus.RE_REVIEW_PENDING,
+        "오픈 반려" to MySpotStatus.REJECTED,
+        "공개됨" to MySpotStatus.PUBLISHED,
+    )
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        options.forEach { (label, status) ->
+            val isSelected = selected == status
+            Text(
+                text = label,
+                style = PickflowTypography.bodySmallBold,
+                color = if (isSelected) PickflowColors.gray95 else PickflowColors.gray30,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        if (isSelected) PickflowColors.sunsetOrange else PickflowColors.gray90,
+                    )
+                    .clickable { onSelect(status) }
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .testTag("devmode-forced-status-${status?.name ?: "none"}"),
             )
         }
     }
