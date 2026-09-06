@@ -76,10 +76,7 @@ fun LoginScreen(
             isClosable = false,
             onKakaoClick = viewModel::loginWithKakao,
             onAppleClick = viewModel::loginWithKakao,
-            onGuestClick = {
-                viewModel.enterAsGuest()
-                onLoggedIn()
-            },
+            onGuestClick = { viewModel.enterAsGuest(onLoggedIn) },
             onCloseClick = {},
         )
 
