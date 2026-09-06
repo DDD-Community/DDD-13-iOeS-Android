@@ -3,16 +3,17 @@
 Firebase Remote Config `new_feature_flags` 로 노출을 제어하는 기능의 QA 시나리오.
 계약(키·스키마·판정 규칙)은 iOS(PV-80)와 공유하므로 여기서 임의로 바꾸지 않는다.
 
-## 0. 확인 대상은 3개 중 2개다
+## 0. 확인 대상 3개
 
-| feature 키 | UI | 상태 |
+| feature 키 | UI | 노출 조건 |
 |---|---|---|
-| `v2_update_modal` | 탐색 탭 전체화면 팝업 (`V2NoticePopup`) | ✅ 확인 가능 |
-| `home_new_badge` | 무드 필터 칩 햇살·야경의 주황 dot | ✅ 확인 가능 |
-| `spot_open_guide` | 보관함 > 나만의 스팟 바텀시트 | ❌ **미구현 — 확인할 화면이 없다** |
+| `v2_update_modal` | 탐색 탭 전체화면 팝업 (`V2NoticePopup`) | 원격 && !봤음(**기기**) — 로그인 무관 |
+| `home_new_badge` | 무드 필터 칩 햇살·야경의 주황 dot | 원격 |
+| `spot_open_guide` | 보관함 > 나만의 스팟 바텀시트 | 원격 && !봤음(**계정**) && **로그인** |
 
-`spot_open_guide` 는 안드로이드에 대응 바텀시트가 없어 **키만 예약**했다. 화면이 생기기 전까지
-이 키를 켜도 앱에서 일어나는 일은 없다(§4 C3 에서 그것만 확인한다).
+**"봤음" 의 단위가 팝업과 시트가 다르다.** 팝업은 기기 하나에 한 번, 시트는 계정 하나에 한 번이다.
+같은 기기를 두 사람이 쓰면 팝업은 한 명만 보고 시트는 둘 다 본다 — 의도된 차이다.
+로그인 게이팅도 정반대다(§4 P10 / S5 가 각각의 방어선이다).
 
 ## 1. 전제
 
@@ -31,13 +32,15 @@ Firebase Remote Config `new_feature_flags` 로 노출을 제어하는 기능의 
 
 | 무엇 | SharedPreferences 파일 | 키 |
 |---|---|---|
-| "봤음" 플래그 | `v2_notice` | `seen` |
+| 팝업 "봤음"(기기) | `v2_notice` | `seen` |
+| 시트 "봤음"(계정) | `spot_open_guide` | `spotOpenGuideSeen.<userId>.<versionName>` |
 | 원격 설정 캐시 | `new_feature_guide` | `newFeatureGuide.v2.remoteConfig.<versionName>` (현재 `1.1.0`) |
 | 최초 판정 시각 | `new_feature_guide` | `newFeatureGuide.firstSeenAt.<feature 키>` |
 
 ```sh
 adb shell run-as com.pickflow.app rm shared_prefs/new_feature_guide.xml
 adb shell run-as com.pickflow.app rm shared_prefs/v2_notice.xml
+adb shell run-as com.pickflow.app rm shared_prefs/spot_open_guide.xml
 ```
 
 - "봤음" 플래그는 **Dev Mode 스위치로도 되돌릴 수 있다** — 환경 배지 탭 → 패스코드 → "V2 안내 팝업".
@@ -83,6 +86,11 @@ adb shell run-as com.pickflow.app rm shared_prefs/v2_notice.xml
 {"features":[]}
 ```
 
+**(F) 바텀시트 활성** — 계정 기준
+```json
+{"features":[{"key":"spot_open_guide","durationDays":30}]}
+```
+
 ## 4. 시나리오
 
 ### 팝업 (`v2_update_modal`)
@@ -121,13 +129,36 @@ adb shell run-as com.pickflow.app rm shared_prefs/v2_notice.xml
 > ⚠️ **B3 이 정상 동작이다.** Console 에 `home_new_badge` 를 게시하지 않으면 지금까지 늘 보이던
 > 햇살·야경 dot 이 사라진다. "파라미터 부재 = 꺼짐" 이 계약이다. 릴리스 전에 게시 여부를 확인한다.
 
+### 바텀시트 (`spot_open_guide`)
+
+보관함(SAVED 탭) > **나만의 스팟** 탭에서만 뜬다.
+
+| # | 상황 | 절차 | 기대 |
+|---|---|---|---|
+| S1 | 최초 노출 | 앱 삭제·재설치 → (F) 게시 → 로그인 → 보관함 > 나만의 스팟 | 시트가 올라온다 |
+| S2 | 탭이 다르면 안 뜸 | S1 직전 상태에서 "저장된 스팟" 탭 | 안 뜬다 |
+| S3 | 확인 후 | S1 에서 "확인했어요" → 탭 이동 후 복귀 | 다시 뜨지 않는다 |
+| S4 | 스와이프로 닫기 | S1 에서 시트를 아래로 스와이프 | 닫히고, **다시 뜨지 않는다**(봤음 처리) |
+| **S5** | **비로그인** | 로그아웃 상태로 보관함 > 나만의 스팟 | **안 뜬다** |
+| **S6** | **계정별 분리** | A 로 보고 확인 → 로그아웃 → **B 로 로그인** → 나만의 스팟 | **B 에게는 다시 뜬다** |
+| S7 | 재로그인 | S3 후 로그아웃 → **같은 A** 로 로그인 | 안 뜬다(A 는 이미 봤다) |
+| S8 | 화면에서 바로 로그인 | 로그아웃 상태로 나만의 스팟 진입 → 그 화면에서 로그인 | **화면을 다시 열지 않아도** 뜬다 |
+| S9 | 원격 OFF | (E) 게시 → 앱 재시작 → 나만의 스팟 | 안 뜬다 |
+| S10 | 버튼 2개 | 시트에서 "내 스팟 오픈하러 가기" | 시트가 닫히고 나만의 스팟 목록이 보인다 |
+
+> **S5·S6 이 이 기능의 핵심이다.** 팝업과 반대로 여기는 로그인 게이팅이 맞고, "봤음" 도
+> 기기가 아니라 계정으로 갈려야 한다. 기기 단위로 잘못 구현하면 같은 기기를 쓰는 두 번째
+> 사람이 안내를 영영 못 받는다.
+>
+> S10 의 "내 스팟 오픈하러 가기" 는 현재 **시트만 닫는다** — 목적지가 이미 시트 뒤에 있어서다.
+> 닫으면 나만의 스팟 목록이고 거기서 스팟을 누르면 상세의 "내 스팟 오픈하기" 로 이어진다.
+
 ### 공통
 
 | # | 상황 | 절차 | 기대 |
 |---|---|---|---|
 | C1 | 앱 버전 업 시 캐시 초기화 | (A) 로 한 번 받은 뒤 `versionName` 을 올려 재설치 | 캐시 키가 바뀌어 새로 fetch |
 | C2 | 깨진 JSON | `new_feature_flags` 에 `{{{` 게시 → 재실행 | 크래시 없음, 전부 꺼짐, 로그에 파싱 실패 |
-| C3 | `spot_open_guide` | 키를 활성 구간으로 게시 | 앱에서 아무 일도 안 일어남(대응 화면 없음) |
 | C4 | Firebase 미설정 | `google-services.json` 없는 빌드 | 크래시 없음, 전부 꺼짐 |
 
 ## 5. 안 뜰 때 원인 3분법
@@ -154,6 +185,10 @@ NewFeatureGuide: v2_update_modal isActive=false hasSeen=true visible=false
 아래는 이미 유닛 테스트가 잡고 있어 수동 확인이 필수는 아니다(회귀 확인용으로만).
 
 - 판정 규칙 전체(경계 포함): `PrefsNewFeatureGuideTest` 11개 — P4·P5·P6·P7·B4·P11·P12 대응
-- 노출 합성과 Dev Mode 복귀: `V2NoticeViewModelTest` 8개 — P2·P8·P9·**P10** 대응
+- 팝업 노출 합성과 Dev Mode 복귀: `V2NoticeViewModelTest` 8개 — P2·P8·P9·**P10** 대응
+- 계정별 "봤음": `PrefsSpotOpenGuideStoreTest` 7개 — **S6**·S7 대응
+- 시트 노출 합성: `SpotOpenGuideViewModelTest` 7개 — S3·**S5**·S8·S9 대응
+- 시트 렌더와 버튼: `SpotOpenGuideSheetUiTest` 3개 + `SpotOpenGuideSnapshotTest` 1개
 
-수동으로만 확인 가능한 것: **P1·P3·B1·B2·B3·C1·C2·C4**, 그리고 실제 Console 게시 반영 여부.
+수동으로만 확인 가능한 것: **P1·P3·B1·B2·B3·S1·S2·S4·S10·C1·C2·C4**,
+그리고 실제 Console 게시 반영 여부.
