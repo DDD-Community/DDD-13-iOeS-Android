@@ -34,7 +34,18 @@ data class SpotDetail(
     val isLiked: Boolean = false,
     /** 추천 버튼 노출 여부. 서버가 내려주는 값을 그대로 따른다. */
     val isLikeable: Boolean = false,
+    val source: SpotSource = SpotSource.Curated(displayName = ""),
+    val mySpotStatus: MySpotStatus? = null,
+    val rejection: SpotRejection? = null,
+    val recommendationCount: Long = 0,
+    val isRecommended: Boolean = false,
 )
+
+sealed interface SpotSource {
+    data object User : SpotSource
+
+    data class Curated(val displayName: String) : SpotSource
+}
 
 data class SpotWeather(
     val sky: WeatherSky,

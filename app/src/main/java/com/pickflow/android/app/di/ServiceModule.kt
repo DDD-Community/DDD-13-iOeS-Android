@@ -3,6 +3,7 @@ package com.pickflow.android.app.di
 import com.pickflow.android.core.services.impl.DefaultArchiveService
 import com.pickflow.android.core.services.impl.DefaultAuthService
 import com.pickflow.android.core.services.impl.DefaultBoardService
+import com.pickflow.android.core.services.impl.DefaultLikeService
 import com.pickflow.android.core.services.impl.DefaultBookmarkService
 import com.pickflow.android.core.services.impl.DefaultMySpotAlarmService
 import com.pickflow.android.core.services.impl.DefaultMySpotService
@@ -16,6 +17,7 @@ import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
 import com.pickflow.android.core.services.impl.DefaultRegionCatalog
 import com.pickflow.android.core.services.impl.DefaultRegionStore
 import com.pickflow.android.core.services.impl.PrefsDevSettings
+import com.pickflow.android.core.services.impl.StatusDiffReviewResultService
 import com.pickflow.android.core.services.impl.compat.MoodCompatSpotListService
 import com.pickflow.android.core.services.impl.FirebaseAnalyticsLogger
 import com.pickflow.android.core.services.impl.AndroidExternalAppLauncher
@@ -35,6 +37,7 @@ import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
 import com.pickflow.android.core.services.protocols.KakaoAuthProvider
 import com.pickflow.android.core.services.protocols.BoardService
+import com.pickflow.android.core.services.protocols.LikeService
 import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.MySpotAlarmService
 import com.pickflow.android.core.services.protocols.MySpotService
@@ -46,6 +49,7 @@ import com.pickflow.android.core.services.protocols.MoodFilterStore
 import com.pickflow.android.core.services.protocols.RegionCatalog
 import com.pickflow.android.core.services.protocols.RegionStore
 import com.pickflow.android.core.services.protocols.DevSettings
+import com.pickflow.android.core.services.protocols.ReviewResultService
 import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotMapService
 import com.pickflow.android.core.services.protocols.SpotService
@@ -120,6 +124,14 @@ abstract class ServiceModule {
 
     @Binds
     abstract fun bindMySpotService(impl: DefaultMySpotService): MySpotService
+
+    @Binds
+    abstract fun bindLikeService(impl: DefaultLikeService): LikeService
+
+    @Binds
+    // 서버에 검수 결과 엔드포인트가 없어 내 스팟 목록의 status 변화를 기기에서 대조한다.
+    // `docs/PV-41/09-api-mapping.md` C 표. 계약이 나오면 Default 로 교체한다.
+    abstract fun bindReviewResultService(impl: StatusDiffReviewResultService): ReviewResultService
 
     @Binds
     abstract fun bindBoardService(impl: DefaultBoardService): BoardService

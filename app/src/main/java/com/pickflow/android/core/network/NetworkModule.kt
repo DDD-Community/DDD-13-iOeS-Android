@@ -6,6 +6,7 @@ import com.pickflow.android.core.network.api.ArchiveApi
 import com.pickflow.android.core.network.api.AuthApi
 import com.pickflow.android.core.network.api.BoardApi
 import com.pickflow.android.core.network.api.BookmarkApi
+import com.pickflow.android.core.network.api.LikeApi
 import com.pickflow.android.core.network.api.MySpotApi
 import com.pickflow.android.core.network.api.MySpotAlarmApi
 import com.pickflow.android.core.network.api.SpotReportApi
@@ -87,6 +88,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideBookmarkApi(retrofit: Retrofit): BookmarkApi = retrofit.create(BookmarkApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideLikeApi(retrofit: Retrofit): LikeApi = retrofit.create(LikeApi::class.java)
 
     @Provides
     @Singleton

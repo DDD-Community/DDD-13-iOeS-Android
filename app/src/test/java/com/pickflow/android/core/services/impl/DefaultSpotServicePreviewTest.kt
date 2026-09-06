@@ -3,6 +3,10 @@ package com.pickflow.android.core.services.impl
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.pickflow.android.core.network.ApiException
 import com.pickflow.android.core.network.api.SpotApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import com.pickflow.android.core.services.protocols.MySpotStatus
+import com.pickflow.android.core.services.protocols.DevSettings
+import com.pickflow.android.core.services.protocols.ApiEnvironment
 import com.pickflow.android.core.services.protocols.Coordinates
 import com.pickflow.android.core.services.protocols.SpotTheme
 import kotlinx.coroutines.runBlocking
@@ -31,7 +35,7 @@ class DefaultSpotServicePreviewTest {
             .baseUrl(server.url("/"))
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
-        service = DefaultSpotService(retrofit.create(SpotApi::class.java))
+        service = DefaultSpotService(retrofit.create(SpotApi::class.java), NoForcedStatusDevSettings())
     }
 
     @AfterEach
@@ -113,3 +117,4 @@ class DefaultSpotServicePreviewTest {
         assertEquals("PREV_404", ex.code)
     }
 }
+

@@ -106,6 +106,7 @@ git tag v1.0.1-2 && git push origin v1.0.1-2
 | v1.0.3 | 1.0.3 | 1000301 | **Play 배포됨** | **핫픽스.** v1.0.2 태그 기준(1.1.0 무드 필터 확장은 미포함). 비회원 스팟 신고 차단·나의 스팟 신고 진입점 제거, 북마크 연타 동시성 가드, 공지사항 하단 내비게이션 바 가림 수정, 탐색 리스트 무한 스크롤 복구, 탐색 리스트·지도 바텀시트 북마크 서버 상태 미반영 수정, 북마크 아이콘 교체 |
 | (없음) | 1.1.0 | 1010001 | Firebase QA 배포 | 무드 필터 확장(햇살/야경 추가, 지도·리스트 다중선택·선택 공유), debug/release API 엔드포인트 분리, Firebase App Distribution 도입. Play 미업로드 — App Distribution `pickflow-qa` 그룹 전용 debug 빌드 |
 | (없음) | 1.0.4 | 1000401 | Firebase QA 배포 | Dev Mode 화면(런타임 dev/prod 전환, 환경 배지, 터치 표시). debug 빌드 전용. Play 미업로드 — App Distribution `pickflow-qa` 그룹 전용 |
+| (없음) | 1.1.0 | 1010002 | 실기기 QA | 유저 스팟 오픈(PV-41) Stub-first 구현. Dev Mode 에 Stub 시나리오 섹션 추가. **1.0.4/1000401 은 1.1.0/1010001 뒤에 기록돼 단조증가를 어겼다** — 실기기 설치가 `INSTALL_FAILED_VERSION_DOWNGRADE` 로 막혀 1.1.0 라인 위 `1010002` 로 정정했다 |
 
 > versionCode 는 **단조증가**가 최우선 제약이다(Play 는 직전 업로드보다 큰 값만 받는다).
 > 1.0.2 부터는 그 안에서 `XYZNN` 형태(versionName 각 자리 + 빌드 차수 2자리)로 읽는다.

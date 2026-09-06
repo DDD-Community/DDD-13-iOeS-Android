@@ -35,6 +35,16 @@ data class SpotDetailResponseDto(
     val isLiked: Boolean = false,
     /** 추천 버튼 노출 여부. 내 스팟 등 추천 불가 대상은 false. */
     val isLikeable: Boolean = false,
-    // NOTE: 응답에 rejection 필드가 있으나 항상 null 로만 관측돼 형태를 알 수 없다.
-    // 잘못 선언하면 파싱이 깨지므로 스펙 확인 전까지 ignoreUnknownKeys 로 흘려보낸다.
+    /** 반려 상세. 작성자 본인 응답에만 채워지고 그 외에는 null 이다. */
+    val rejection: RejectionInfoDto? = null,
+)
+
+/** 서버 `RejectionInfo` (2026-08-26 OpenAPI 확인). 전부 string. */
+@Serializable
+data class RejectionInfoDto(
+    val reason: String = "",
+    val reasonLabel: String = "",
+    val guideMessage: String? = null,
+    val detail: String? = null,
+    val rejectedAt: String = "",
 )
