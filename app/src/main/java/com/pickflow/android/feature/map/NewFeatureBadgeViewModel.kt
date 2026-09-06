@@ -16,8 +16,8 @@ import javax.inject.Inject
  * 무드 필터 칩의 신규 dot 노출 여부 — Remote Config `home_new_badge` 가 정한다.
  * 어느 무드에 붙는지는 여전히 클라이언트가 안다([MoodFilter.isNew]). 여기서 정하는 건 켜고 끄기뿐이다.
  *
- * 지도와 리스트가 같은 `MoodFilterRow` 를 쓰므로 두 화면이 이 ViewModel 을 각자 하나씩 갖는다
- * (판정 근거인 [NewFeatureGuide] 가 @Singleton 이라 결과는 같다).
+ * 지도와 리스트가 같은 `MoodFilterRow` 를 쓴다. 리스트는 지도 안(`MapListMode.LIST`)에서 그려져
+ * 두 화면의 ViewModelStoreOwner 가 같으므로 이 ViewModel 인스턴스도 하나를 공유한다 — fetch 도 한 번만 돈다.
  */
 @HiltViewModel
 class NewFeatureBadgeViewModel @Inject constructor(
