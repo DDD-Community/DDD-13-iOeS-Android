@@ -63,6 +63,16 @@ class EncryptedTokenStore @Inject constructor(
         mutex.withLock { prefs.getString(KEY_REFRESH, null) }
     }
 
+    override suspend fun saveUserId(userId: String) {
+        withContext(Dispatchers.IO) {
+            mutex.withLock { prefs.edit().putString(KEY_USER_ID, userId).apply() }
+        }
+    }
+
+    override suspend fun userId(): String? = withContext(Dispatchers.IO) {
+        mutex.withLock { prefs.getString(KEY_USER_ID, null) }
+    }
+
     override suspend fun clear() {
         withContext(Dispatchers.IO) {
             mutex.withLock {
@@ -75,5 +85,6 @@ class EncryptedTokenStore @Inject constructor(
         const val PREF_NAME = "pickflow_token_store"
         const val KEY_ACCESS = "access_token"
         const val KEY_REFRESH = "refresh_token"
+        const val KEY_USER_ID = "user_id"
     }
 }

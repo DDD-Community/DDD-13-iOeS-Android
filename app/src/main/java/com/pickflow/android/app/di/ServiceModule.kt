@@ -16,6 +16,7 @@ import com.pickflow.android.core.services.impl.PrefsV2NoticeStore
 import com.pickflow.android.core.services.impl.EncryptedTokenStore
 import com.pickflow.android.core.services.impl.FirebaseNewFeatureConfigProvider
 import com.pickflow.android.core.services.impl.PrefsNewFeatureGuide
+import com.pickflow.android.core.services.impl.PrefsSpotOpenGuideStore
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
 import com.pickflow.android.core.services.impl.DefaultRegionCatalog
 import com.pickflow.android.core.services.impl.DefaultRegionStore
@@ -50,6 +51,7 @@ import com.pickflow.android.core.services.protocols.GuestEntryStore
 import com.pickflow.android.core.services.protocols.NewFeatureConfigProvider
 import com.pickflow.android.core.services.protocols.NewFeatureGuide
 import com.pickflow.android.core.services.protocols.OnboardingCompletionStore
+import com.pickflow.android.core.services.protocols.SpotOpenGuideStore
 import com.pickflow.android.core.services.protocols.V2NoticeStore
 import com.pickflow.android.core.services.protocols.ShareIntentService
 import com.pickflow.android.core.services.protocols.MoodFilterStore
@@ -118,6 +120,10 @@ abstract class ServiceModule {
     @Binds
     @Singleton
     abstract fun bindNewFeatureGuide(impl: PrefsNewFeatureGuide): NewFeatureGuide
+
+    @Binds
+    @Singleton
+    abstract fun bindSpotOpenGuideStore(impl: PrefsSpotOpenGuideStore): SpotOpenGuideStore
 
     // 탐색 탭(지도·리스트)이 공유하는 무드 선택 상태. 반드시 @Singleton 이어야 공유된다.
     @Binds
