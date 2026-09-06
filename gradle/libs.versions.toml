@@ -89,9 +89,10 @@ androidx-browser = { group = "androidx.browser", name = "browser", version.ref =
 # Security (EncryptedSharedPreferences for TokenStore)
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "androidxSecurityCrypto" }
 
-# Firebase (GA — Analytics)
+# Firebase (GA — Analytics, 신규 기능 안내 — Remote Config)
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+firebase-config = { group = "com.google.firebase", name = "firebase-config" }
 
 # Test
 junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitJupiter" }

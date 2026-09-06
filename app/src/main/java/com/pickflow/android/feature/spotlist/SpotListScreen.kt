@@ -61,6 +61,7 @@ import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.SpotSort
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.feature.map.MoodFilter
+import com.pickflow.android.feature.map.NewFeatureBadgeViewModel
 import com.pickflow.android.feature.map.components.MoodFilterRow
 import com.pickflow.android.feature.map.components.RegionHeader
 import com.pickflow.android.feature.map.components.RegionPickerSheet
@@ -72,6 +73,7 @@ fun SpotListScreen(
     onOpenSpotDetail: (String) -> Unit,
     onRequireLogin: () -> Unit,
     viewModel: SpotListViewModel = hiltViewModel(),
+    newFeatureBadgeViewModel: NewFeatureBadgeViewModel = hiltViewModel(),
 ) {
     val spots by viewModel.spots.collectAsStateWithLifecycle()
     val themes by viewModel.themes.collectAsStateWithLifecycle()
@@ -81,6 +83,7 @@ fun SpotListScreen(
     val toast by viewModel.toast.collectAsStateWithLifecycle()
     val region by viewModel.region.collectAsStateWithLifecycle()
     val regions by viewModel.regions.collectAsStateWithLifecycle()
+    val showNewBadge by newFeatureBadgeViewModel.newBadgeVisible.collectAsStateWithLifecycle()
 
     var showRegionPicker by remember { mutableStateOf(false) }
 
@@ -121,6 +124,7 @@ fun SpotListScreen(
             selected = themes.mapTo(mutableSetOf()) { it.toMood() },
             onSelect = { mood -> viewModel.toggleTheme(mood.toTheme()) },
             testTag = "spotlist-mood",
+            showNewBadge = showNewBadge,
         )
         LoadStateContent(
             state = spots,

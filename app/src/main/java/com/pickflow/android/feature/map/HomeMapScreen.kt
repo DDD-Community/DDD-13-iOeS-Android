@@ -65,6 +65,7 @@ fun HomeMapScreen(
     onRequireLogin: () -> Unit = {},
     viewModel: HomeMapViewModel = hiltViewModel(),
     v2NoticeViewModel: V2NoticeViewModel = hiltViewModel(),
+    newFeatureBadgeViewModel: NewFeatureBadgeViewModel = hiltViewModel(),
 ) {
     val curationSpots by viewModel.curationSpots.collectAsStateWithLifecycle()
     val mySpots by viewModel.mySpots.collectAsStateWithLifecycle()
@@ -81,6 +82,7 @@ fun HomeMapScreen(
     val selectedBookmarked by viewModel.selectedBookmarked.collectAsStateWithLifecycle()
     val sheetLoginPrompt by viewModel.sheetLoginPrompt.collectAsStateWithLifecycle()
     val showV2Notice by v2NoticeViewModel.visible.collectAsStateWithLifecycle()
+    val showNewBadge by newFeatureBadgeViewModel.newBadgeVisible.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.load() }
 
@@ -181,6 +183,7 @@ fun HomeMapScreen(
                     selected = selectedMoods,
                     onSelect = viewModel::selectMood,
                     testTag = "homemap-moodfilter",
+                    showNewBadge = showNewBadge,
                 )
             }
         }

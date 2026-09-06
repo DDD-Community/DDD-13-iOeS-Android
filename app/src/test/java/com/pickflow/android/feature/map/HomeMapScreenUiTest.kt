@@ -6,8 +6,11 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.pickflow.android.common.designsystem.PickflowTheme
+import androidx.test.core.app.ApplicationProvider
+import com.pickflow.android.core.services.impl.FakeNewFeatureGuide
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
 import com.pickflow.android.core.services.impl.DefaultRegionStore
+import com.pickflow.android.core.services.impl.PrefsV2NoticeStore
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.ExternalAppLauncher
@@ -54,6 +57,17 @@ class HomeMapScreenUiTest {
         )
     }
 
+    /**
+     * 화면 기본값이 `hiltViewModel()` 이라 Hilt 없는 Robolectric 에서는 터진다 — 직접 넣어준다.
+     * 안내 팝업/신규 dot 은 꺼진 상태로 둔다(지도 자체를 보는 테스트다).
+     */
+    private fun noticeViewModel() = V2NoticeViewModel(
+        PrefsV2NoticeStore(ApplicationProvider.getApplicationContext()),
+        FakeNewFeatureGuide(active = false),
+    )
+
+    private fun badgeViewModel() = NewFeatureBadgeViewModel(FakeNewFeatureGuide(active = false))
+
     @Test
     fun renders_map_with_action_buttons() {
         composeRule.setContent {
@@ -62,6 +76,8 @@ class HomeMapScreenUiTest {
                     onOpenSpotDetail = {},
                     onOpenRegistration = {},
                     viewModel = viewModel(),
+                    v2NoticeViewModel = noticeViewModel(),
+                    newFeatureBadgeViewModel = badgeViewModel(),
                 )
             }
         }
@@ -79,6 +95,8 @@ class HomeMapScreenUiTest {
                     onOpenSpotDetail = {},
                     onOpenRegistration = {},
                     viewModel = viewModel(),
+                    v2NoticeViewModel = noticeViewModel(),
+                    newFeatureBadgeViewModel = badgeViewModel(),
                 )
             }
         }
@@ -92,7 +110,12 @@ class HomeMapScreenUiTest {
         val vm = viewModel()
         composeRule.setContent {
             PickflowTheme {
-                HomeMapScreen(onOpenSpotDetail = {}, onOpenRegistration = {}, viewModel = vm)
+                HomeMapScreen(onOpenSpotDetail = {},
+                    onOpenRegistration = {},
+                    viewModel = vm,
+                    v2NoticeViewModel = noticeViewModel(),
+                    newFeatureBadgeViewModel = badgeViewModel(),
+                )
             }
         }
         composeRule.waitForIdle()
@@ -105,7 +128,12 @@ class HomeMapScreenUiTest {
         val vm = viewModel()
         composeRule.setContent {
             PickflowTheme {
-                HomeMapScreen(onOpenSpotDetail = {}, onOpenRegistration = {}, viewModel = vm)
+                HomeMapScreen(onOpenSpotDetail = {},
+                    onOpenRegistration = {},
+                    viewModel = vm,
+                    v2NoticeViewModel = noticeViewModel(),
+                    newFeatureBadgeViewModel = badgeViewModel(),
+                )
             }
         }
         composeRule.onNodeWithText("햇살").performClick()
@@ -120,7 +148,12 @@ class HomeMapScreenUiTest {
         val vm = viewModel()
         composeRule.setContent {
             PickflowTheme {
-                HomeMapScreen(onOpenSpotDetail = {}, onOpenRegistration = {}, viewModel = vm)
+                HomeMapScreen(onOpenSpotDetail = {},
+                    onOpenRegistration = {},
+                    viewModel = vm,
+                    v2NoticeViewModel = noticeViewModel(),
+                    newFeatureBadgeViewModel = badgeViewModel(),
+                )
             }
         }
         composeRule.onNodeWithText("햇살").performClick()
@@ -216,6 +249,8 @@ class HomeMapScreenUiTest {
                     onOpenSpotDetail = {},
                     onOpenRegistration = {},
                     viewModel = vm,
+                    v2NoticeViewModel = noticeViewModel(),
+                    newFeatureBadgeViewModel = badgeViewModel(),
                 )
             }
         }
