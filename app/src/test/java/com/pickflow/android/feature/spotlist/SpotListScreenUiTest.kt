@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.pickflow.android.common.designsystem.PickflowTheme
+import com.pickflow.android.core.services.impl.FakeNewFeatureGuide
 import com.pickflow.android.core.services.impl.InMemoryMoodFilterStore
 import com.pickflow.android.core.services.impl.DefaultRegionStore
 import com.pickflow.android.core.services.protocols.AuthService
@@ -22,6 +23,7 @@ import com.pickflow.android.core.services.protocols.SpotListService
 import com.pickflow.android.core.services.protocols.SpotPage
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.feature.map.MoodFilter
+import com.pickflow.android.feature.map.NewFeatureBadgeViewModel
 import io.mockk.coEvery
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
@@ -55,7 +57,13 @@ class SpotListScreenUiTest {
 
         composeRule.setContent {
             PickflowTheme {
-                SpotListScreen(onOpenSpotDetail = {}, onRequireLogin = {}, viewModel = vm)
+                SpotListScreen(
+                    onOpenSpotDetail = {},
+                    onRequireLogin = {},
+                    viewModel = vm,
+                    // 화면 기본값이 hiltViewModel() 이라 Hilt 없는 Robolectric 에서는 터진다.
+                    newFeatureBadgeViewModel = NewFeatureBadgeViewModel(FakeNewFeatureGuide()),
+                )
             }
         }
         composeRule.onNodeWithTag("spotlist-screen").assertIsDisplayed()
@@ -71,7 +79,13 @@ class SpotListScreenUiTest {
 
         composeRule.setContent {
             PickflowTheme {
-                SpotListScreen(onOpenSpotDetail = {}, onRequireLogin = {}, viewModel = vm)
+                SpotListScreen(
+                    onOpenSpotDetail = {},
+                    onRequireLogin = {},
+                    viewModel = vm,
+                    // 화면 기본값이 hiltViewModel() 이라 Hilt 없는 Robolectric 에서는 터진다.
+                    newFeatureBadgeViewModel = NewFeatureBadgeViewModel(FakeNewFeatureGuide()),
+                )
             }
         }
         composeRule.onNodeWithTag("state-empty").assertIsDisplayed()
@@ -98,7 +112,13 @@ class SpotListScreenUiTest {
 
         composeRule.setContent {
             PickflowTheme {
-                SpotListScreen(onOpenSpotDetail = {}, onRequireLogin = {}, viewModel = vm)
+                SpotListScreen(
+                    onOpenSpotDetail = {},
+                    onRequireLogin = {},
+                    viewModel = vm,
+                    // 화면 기본값이 hiltViewModel() 이라 Hilt 없는 Robolectric 에서는 터진다.
+                    newFeatureBadgeViewModel = NewFeatureBadgeViewModel(FakeNewFeatureGuide()),
+                )
             }
         }
         composeRule.onNodeWithText("추천 34").assertIsDisplayed()
@@ -124,7 +144,13 @@ class SpotListScreenUiTest {
 
         composeRule.setContent {
             PickflowTheme {
-                SpotListScreen(onOpenSpotDetail = {}, onRequireLogin = {}, viewModel = vm)
+                SpotListScreen(
+                    onOpenSpotDetail = {},
+                    onRequireLogin = {},
+                    viewModel = vm,
+                    // 화면 기본값이 hiltViewModel() 이라 Hilt 없는 Robolectric 에서는 터진다.
+                    newFeatureBadgeViewModel = NewFeatureBadgeViewModel(FakeNewFeatureGuide()),
+                )
             }
         }
         composeRule.onNodeWithContentDescription("북마크 해제").assertIsDisplayed()
@@ -145,7 +171,13 @@ class SpotListScreenUiTest {
 
         composeRule.setContent {
             PickflowTheme {
-                SpotListScreen(onOpenSpotDetail = {}, onRequireLogin = {}, viewModel = vm)
+                SpotListScreen(
+                    onOpenSpotDetail = {},
+                    onRequireLogin = {},
+                    viewModel = vm,
+                    // 화면 기본값이 hiltViewModel() 이라 Hilt 없는 Robolectric 에서는 터진다.
+                    newFeatureBadgeViewModel = NewFeatureBadgeViewModel(FakeNewFeatureGuide()),
+                )
             }
         }
         composeRule.onNodeWithText("추천 순").assertIsDisplayed()
@@ -173,7 +205,12 @@ class SpotListScreenUiTest {
     fun mood_filter_renders_four_moods_in_order() {
         composeRule.setContent {
             PickflowTheme {
-                SpotListScreen(onOpenSpotDetail = {}, onRequireLogin = {}, viewModel = loadedViewModel())
+                SpotListScreen(
+                    onOpenSpotDetail = {},
+                    onRequireLogin = {},
+                    viewModel = loadedViewModel(),
+                    newFeatureBadgeViewModel = NewFeatureBadgeViewModel(FakeNewFeatureGuide()),
+                )
             }
         }
         composeRule.onNodeWithTag("spotlist-mood").assertIsDisplayed()
@@ -188,7 +225,13 @@ class SpotListScreenUiTest {
         val vm = loadedViewModel()
         composeRule.setContent {
             PickflowTheme {
-                SpotListScreen(onOpenSpotDetail = {}, onRequireLogin = {}, viewModel = vm)
+                SpotListScreen(
+                    onOpenSpotDetail = {},
+                    onRequireLogin = {},
+                    viewModel = vm,
+                    // 화면 기본값이 hiltViewModel() 이라 Hilt 없는 Robolectric 에서는 터진다.
+                    newFeatureBadgeViewModel = NewFeatureBadgeViewModel(FakeNewFeatureGuide()),
+                )
             }
         }
         composeRule.waitForIdle()
@@ -201,7 +244,13 @@ class SpotListScreenUiTest {
         val vm = loadedViewModel()
         composeRule.setContent {
             PickflowTheme {
-                SpotListScreen(onOpenSpotDetail = {}, onRequireLogin = {}, viewModel = vm)
+                SpotListScreen(
+                    onOpenSpotDetail = {},
+                    onRequireLogin = {},
+                    viewModel = vm,
+                    // 화면 기본값이 hiltViewModel() 이라 Hilt 없는 Robolectric 에서는 터진다.
+                    newFeatureBadgeViewModel = NewFeatureBadgeViewModel(FakeNewFeatureGuide()),
+                )
             }
         }
         composeRule.moodCapsule("햇살").performClick()
@@ -216,7 +265,13 @@ class SpotListScreenUiTest {
         val vm = loadedViewModel()
         composeRule.setContent {
             PickflowTheme {
-                SpotListScreen(onOpenSpotDetail = {}, onRequireLogin = {}, viewModel = vm)
+                SpotListScreen(
+                    onOpenSpotDetail = {},
+                    onRequireLogin = {},
+                    viewModel = vm,
+                    // 화면 기본값이 hiltViewModel() 이라 Hilt 없는 Robolectric 에서는 터진다.
+                    newFeatureBadgeViewModel = NewFeatureBadgeViewModel(FakeNewFeatureGuide()),
+                )
             }
         }
         composeRule.moodCapsule("햇살").performClick()

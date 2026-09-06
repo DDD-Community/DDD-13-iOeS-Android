@@ -10,6 +10,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.pickflow.android.common.designsystem.PickflowTheme
+import com.pickflow.android.core.services.impl.FakeNewFeatureGuide
+import com.pickflow.android.core.services.protocols.SpotOpenGuideStore
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.Archive
 import com.pickflow.android.core.services.protocols.ArchiveService
@@ -241,6 +243,12 @@ class ArchiveSpotOpenScreenUiTest {
                     onOpenMySpot = {},
                     onRequireLogin = {},
                     viewModel = viewModel,
+                    // 화면 기본값이 hiltViewModel() 이라 Hilt 없는 Robolectric 에서는 터진다.
+                    // 안내 시트는 꺼둔다 — 비공개 스팟 삭제 흐름을 보는 테스트다.
+                    spotOpenGuideViewModel = SpotOpenGuideViewModel(
+                        FakeNewFeatureGuide(active = false),
+                        SeenSpotOpenGuideStore,
+                    ),
                 )
             }
         }
@@ -262,4 +270,10 @@ class ArchiveSpotOpenScreenUiTest {
     private companion object {
         const val PRIVATE_SPOT_ID = 41L
     }
+}
+
+/** 안내 시트를 끄기 위한 최소 스토어 — 이미 본 계정으로 취급한다. */
+private object SeenSpotOpenGuideStore : SpotOpenGuideStore {
+    override suspend fun hasSeen(): Boolean = true
+    override suspend fun markSeen() = Unit
 }

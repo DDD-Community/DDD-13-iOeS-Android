@@ -36,6 +36,8 @@ class DefaultSocialLoginService @Inject constructor(
                 .toAuthenticatedSession()
         }
         tokenStore.save(session.tokens.accessToken, session.tokens.refreshToken)
+        // 계정 단위 로컬 플래그(SpotOpenGuideStore)가 가를 기준. 로그인 응답에만 들어 있다.
+        session.profile.userId.takeIf { it.isNotBlank() }?.let { tokenStore.saveUserId(it) }
         return session
     }
 }

@@ -49,6 +49,11 @@ fun MoodFilterRow(
     onSelect: (MoodFilter) -> Unit,
     testTag: String,
     modifier: Modifier = Modifier,
+    /**
+     * 신규 dot 전체 스위치 — Remote Config `home_new_badge` 가 정한다(PV-79).
+     * 어느 무드에 붙는지는 여전히 [MoodFilter.isNew] 다. 기본값은 스냅샷/프리뷰용.
+     */
+    showNewBadge: Boolean = true,
 ) {
     Row(
         modifier = modifier
@@ -62,6 +67,7 @@ fun MoodFilterRow(
             MoodCapsule(
                 mood = mood,
                 selected = mood in selected,
+                showNewBadge = showNewBadge,
                 onClick = { onSelect(mood) },
             )
         }
@@ -69,7 +75,12 @@ fun MoodFilterRow(
 }
 
 @Composable
-private fun RowScope.MoodCapsule(mood: MoodFilter, selected: Boolean, onClick: () -> Unit) {
+private fun RowScope.MoodCapsule(
+    mood: MoodFilter,
+    selected: Boolean,
+    showNewBadge: Boolean,
+    onClick: () -> Unit,
+) {
     // 캡슐 자체는 코너로 clip 되므로, 신규 dot 은 clip 밖(형제)에 그려 모서리에 걸치게 둔다.
     // 폭은 weight 로 가용 공간을 4등분하되 84dp 를 상한으로 둔다. 넓은 기기에선 Figma 그대로
     // 84dp 고, 360dp 처럼 좁은 기기에선 네 칩이 함께 76dp 로 줄어 마지막 칩이 잘리지 않는다.
@@ -110,7 +121,7 @@ private fun RowScope.MoodCapsule(mood: MoodFilter, selected: Boolean, onClick: (
             )
         }
 
-        if (mood.isNew) {
+        if (mood.isNew && showNewBadge) {
             // Figma: 4×4, color/Dark/Primary/normal(#FA6133). 캡슐 안쪽 우상단.
             Box(
                 modifier = Modifier

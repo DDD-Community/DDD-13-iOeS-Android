@@ -237,9 +237,10 @@ dependencies {
     implementation(libs.androidx.browser)
     implementation(libs.androidx.security.crypto)
 
-    // Firebase (GA)
+    // Firebase (GA + Remote Config)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.config)
 
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly(libs.junit.jupiter.engine)

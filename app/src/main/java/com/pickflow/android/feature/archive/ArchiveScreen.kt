@@ -66,6 +66,7 @@ import com.pickflow.android.feature.archive.components.ArchiveHeader
 import com.pickflow.android.feature.archive.components.ArchiveMySpotPlaceholderContent
 import com.pickflow.android.feature.archive.components.ArchiveRenameDialog
 import com.pickflow.android.feature.archive.components.ArchiveSignedOutContent
+import com.pickflow.android.feature.archive.components.SpotOpenGuideSheet
 import com.pickflow.android.feature.archive.components.ArchiveTabBar
 import com.pickflow.android.feature.archive.components.rememberCoverImagePickerLauncher
 import com.pickflow.android.feature.spotlist.components.SpotListCell
@@ -91,6 +92,7 @@ fun ArchiveScreen(
     initialTab: ArchiveTab? = null,
     onInitialTabConsumed: () -> Unit = {},
     viewModel: ArchiveViewModel = hiltViewModel(),
+    spotOpenGuideViewModel: SpotOpenGuideViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
@@ -99,8 +101,12 @@ fun ArchiveScreen(
     val coverImageBytes by viewModel.coverImageBytes.collectAsStateWithLifecycle()
     val toast by viewModel.toast.collectAsStateWithLifecycle()
     val mySpotState by viewModel.mySpots.collectAsStateWithLifecycle()
+    val showSpotOpenGuide by spotOpenGuideViewModel.visible.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.onAppear() }
+    // 탭을 옮길 때마다 다시 본다 — 저장된 스팟 탭에 있다 넘어온 경우와,
+    // 이 화면에서 바로 로그인한 경우를 모두 잡는다.
+    LaunchedEffect(selectedTab) { spotOpenGuideViewModel.onAppear() }
     // 마이페이지 카드에서 특정 탭으로 진입 요청 시 1회 적용.
     LaunchedEffect(initialTab) {
         initialTab?.let {
@@ -133,6 +139,16 @@ fun ArchiveScreen(
         onRenameClick = { showRenameDialog = true },
         onCoverImageClick = pickCover,
     )
+
+    // "나만의 스팟" 탭에서만 뜬다. 저장된 스팟 탭에서는 안내할 대상이 없다.
+    if (selectedTab == ArchiveTab.MySpots && showSpotOpenGuide) {
+        SpotOpenGuideSheet(
+            // 목적지가 이미 시트 뒤에 있다 — 닫으면 나만의 스팟 목록이고, 거기서 스팟을 눌러
+            // 상세로 들어가면 "내 스팟 오픈하기" 가 있다. 전용 오픈 화면이 생기면 여기를 바꾼다.
+            onGoToOpen = spotOpenGuideViewModel::confirm,
+            onConfirm = spotOpenGuideViewModel::confirm,
+        )
+    }
 
     if (showRenameDialog) {
         ArchiveRenameDialog(
