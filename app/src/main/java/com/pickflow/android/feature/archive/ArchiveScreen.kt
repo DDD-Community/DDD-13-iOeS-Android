@@ -142,7 +142,12 @@ fun ArchiveScreen(
 
     // "나만의 스팟" 탭에서만 뜬다. 저장된 스팟 탭에서는 안내할 대상이 없다.
     if (selectedTab == ArchiveTab.MySpots && showSpotOpenGuide) {
-        SpotOpenGuideSheet(onConfirm = spotOpenGuideViewModel::confirm)
+        SpotOpenGuideSheet(
+            // 목적지가 이미 시트 뒤에 있다 — 닫으면 나만의 스팟 목록이고, 거기서 스팟을 눌러
+            // 상세로 들어가면 "내 스팟 오픈하기" 가 있다. 전용 오픈 화면이 생기면 여기를 바꾼다.
+            onGoToOpen = spotOpenGuideViewModel::confirm,
+            onConfirm = spotOpenGuideViewModel::confirm,
+        )
     }
 
     if (showRenameDialog) {
