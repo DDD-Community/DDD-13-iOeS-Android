@@ -204,6 +204,21 @@ class SpotDetailOpenFlowUiTest {
     }
 
     @Test
+    fun published_owner_has_no_bookmark_button() {
+        // 공개 상태는 하단 오픈 버튼을 숨기지만, 그렇다고 남의 스팟이 되는 건 아니다.
+        render(fixture(MySpotStatus.PUBLISHED))
+
+        composeRule.onNodeWithTag("detail-bookmark").assertDoesNotExist()
+    }
+
+    @Test
+    fun rejected_owner_has_no_bookmark_button() {
+        render(fixture(MySpotStatus.REJECTED))
+
+        composeRule.onNodeWithTag("detail-bookmark").assertDoesNotExist()
+    }
+
+    @Test
     fun published_owner_can_toggle_release_and_delete() {
         // 노출 off/on 왕복 + 삭제까지. 노출 토글은 status 를 바꾸지 않아 확인 시트가 없다.
         coEvery { mySpotService.setReleased(41L, false) } returns false

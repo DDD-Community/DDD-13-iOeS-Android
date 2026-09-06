@@ -37,6 +37,11 @@ fun SpotActionButtons(
     isMine: Boolean,
     isBookmarked: Boolean,
     modifier: Modifier = Modifier,
+    /**
+     * 오픈 버튼 노출 여부. 반려·공개 상태는 배너와 공개 토글이 다음 행동을 맡아 버튼을 숨기는데,
+     * 그렇다고 남의 스팟이 되는 건 아니라서 [isMine] 과 따로 받는다.
+     */
+    showOpenAction: Boolean = isMine,
     /** 내 스팟일 때 오픈 버튼 문구를 정한다. null 이면 오픈 신청 전으로 본다. */
     mySpotStatus: MySpotStatus? = null,
     isLikeable: Boolean = false,
@@ -50,10 +55,10 @@ fun SpotActionButtons(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        val routeHeight = if (isMine) 52.dp else 56.dp
+        val routeHeight = if (showOpenAction) 52.dp else 56.dp
         RouteButton(height = routeHeight, modifier = Modifier.weight(1f), onClick = onRoute)
 
-        if (isMine) {
+        if (showOpenAction) {
             // iOS `SpotActionButtons` 1:1 — gray0 배경 + gray80 텍스트/보더.
             Box(
                 modifier = Modifier
@@ -72,7 +77,8 @@ fun SpotActionButtons(
                     color = PickflowColors.gray80,
                 )
             }
-        } else {
+        } else if (!isMine) {
+            // 내 스팟은 내가 저장할 대상이 아니다 — 오픈 버튼을 숨긴 상태여도 북마크는 안 단다.
             SquareIconButton(
                 iconRes = if (isBookmarked) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark_border,
                 contentDescription = if (isBookmarked) "북마크 해제" else "북마크 추가",

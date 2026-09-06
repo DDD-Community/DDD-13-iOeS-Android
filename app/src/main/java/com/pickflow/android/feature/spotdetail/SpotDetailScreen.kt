@@ -421,9 +421,10 @@ private fun LoadedBody(
         SpotHeaderSection(spot = data)
         SpotPhotoSection(spot = data, onImageClick = onImageClick)
         SpotActionButtons(
+            isMine = data.isMine,
             // 반려는 배너 안 두 버튼이, 공개는 아래 공개 토글이 다음 행동을 맡는다.
             // 둘 다 하단 오픈 버튼과 중복이라 숨긴다.
-            isMine = data.isMine && data.mySpotStatus !in BANNER_DRIVEN_STATUSES,
+            showOpenAction = data.isMine && data.mySpotStatus !in BANNER_DRIVEN_STATUSES,
             mySpotStatus = data.mySpotStatus,
             isBookmarked = isBookmarked,
             isLikeable = data.isLikeable,
