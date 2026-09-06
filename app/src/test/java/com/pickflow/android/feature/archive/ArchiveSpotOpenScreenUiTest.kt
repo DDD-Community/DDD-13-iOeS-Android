@@ -196,6 +196,21 @@ class ArchiveSpotOpenScreenUiTest {
     }
 
     @Test
+    fun private_delete_dialog_can_be_cancelled() {
+        setContent(
+            state = ArchiveLoadState.Loaded(items = listOf(privateSavedSpot()), hasNext = false),
+        )
+        composeRule.onNodeWithTag("archive-private-$PRIVATE_SPOT_ID").performClick()
+
+        composeRule.onNodeWithText("저장 목록에서 삭제할까요?").assertIsDisplayed()
+        composeRule.onNodeWithTag("archive-private-delete-cancel").performClick()
+
+        composeRule.onNodeWithTag("archive-private-modal").assertDoesNotExist()
+        // 취소해도 셀은 그대로 남는다.
+        composeRule.onNodeWithTag("archive-private-$PRIVATE_SPOT_ID").assertExists()
+    }
+
+    @Test
     fun private_delete_confirms_once() {
         val archiveService = mockk<ArchiveService>()
         val bookmarkService = mockk<BookmarkService>()

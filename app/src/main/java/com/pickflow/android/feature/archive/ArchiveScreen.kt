@@ -563,51 +563,95 @@ private fun ArchivePrivateDeleteDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        ArchivePrivateDeleteDialogContent(onConfirm = onConfirm)
+        ArchivePrivateDeleteDialogContent(onCancel = onDismiss, onConfirm = onConfirm)
     }
 }
 
+/** Figma 740:8463 — 작성자가 비공개로 돌린 저장 스팟을 목록에서 지울지 묻는다. */
 @Composable
 fun ArchivePrivateDeleteDialogContent(
+    onCancel: () -> Unit = {},
     onConfirm: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .padding(horizontal = 31.dp)
+            .clip(RoundedCornerShape(16.dp))
             .background(PickflowColors.gray90)
-            .padding(24.dp)
+            .padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 16.dp)
             .testTag("archive-private-modal"),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = "비공개로 전환된 스팟이에요",
-            style = PickflowTypography.headingSmall,
-            color = PickflowColors.gray0,
-        )
-        Text(
-            text = "작성자가 스팟을 비공개로 전환했어요.\n목록에서 삭제할 수 있어요.",
-            style = PickflowTypography.bodyMedium,
-            color = PickflowColors.gray30,
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(PickflowColors.sunsetOrange)
-                .clickable(onClick = onConfirm)
-                .testTag("archive-private-delete-confirm"),
-            contentAlignment = Alignment.Center,
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "목록에서 삭제",
-                style = PickflowTypography.bodyLargeBold,
+                text = "저장 목록에서 삭제할까요?",
+                style = PickflowTypography.headingSmall,
                 color = PickflowColors.gray0,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = "삭제하면 저장 목록에서\n더 이상 표시되지 않아요.",
+                style = PickflowTypography.bodyMedium,
+                color = PickflowColors.gray30,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
+        // 취소 100 : 삭제 188 (Figma 296dp 행) — 가중치로 같은 비율을 유지한다.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            PrivateDialogButton(
+                text = "취소",
+                background = PickflowColors.gray0,
+                textColor = PickflowColors.gray80,
+                testTag = "archive-private-delete-cancel",
+                modifier = Modifier.weight(100f),
+                onClick = onCancel,
+            )
+            PrivateDialogButton(
+                text = "저장 목록에서 삭제",
+                background = PickflowColors.sunsetOrange,
+                textColor = PickflowColors.gray0,
+                testTag = "archive-private-delete-confirm",
+                modifier = Modifier.weight(188f),
+                onClick = onConfirm,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PrivateDialogButton(
+    text: String,
+    background: Color,
+    textColor: Color,
+    testTag: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .height(52.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(background)
+            .clickable(onClick = onClick)
+            .testTag(testTag),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = PickflowTypography.bodyLargeBold,
+            color = textColor,
+            maxLines = 1,
+        )
     }
 }
 
