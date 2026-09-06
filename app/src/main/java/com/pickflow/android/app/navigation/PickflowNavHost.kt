@@ -3,6 +3,7 @@ package com.pickflow.android.app.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
@@ -174,9 +175,12 @@ fun PickflowNavHost(
             )
         }
 
-        composable(PickflowRoute.SPOT_SEARCH) {
+        composable(PickflowRoute.SPOT_SEARCH) { entry ->
             // 등록 화면과 동일 ViewModel 인스턴스를 공유(선택 주소 전달).
-            val regEntry = navController.getBackStackEntry(PickflowRoute.SPOT_REGISTRATION_ROUTE)
+            // 컴포지션마다 새로 찾으면 lint(UnrememberedGetBackStackEntry) — 이 화면 entry 를 키로 기억한다.
+            val regEntry = remember(entry) {
+                navController.getBackStackEntry(PickflowRoute.SPOT_REGISTRATION_ROUTE)
+            }
             val regViewModel: SpotRegistrationViewModel = hiltViewModel(regEntry)
             SpotSearchScreen(
                 onBack = navController::popBackStack,
@@ -187,8 +191,10 @@ fun PickflowNavHost(
             )
         }
 
-        composable(PickflowRoute.SPOT_LOCATION_DETAIL) {
-            val regEntry = navController.getBackStackEntry(PickflowRoute.SPOT_REGISTRATION_ROUTE)
+        composable(PickflowRoute.SPOT_LOCATION_DETAIL) { entry ->
+            val regEntry = remember(entry) {
+                navController.getBackStackEntry(PickflowRoute.SPOT_REGISTRATION_ROUTE)
+            }
             val regViewModel: SpotRegistrationViewModel = hiltViewModel(regEntry)
             val pending by regViewModel.pendingAddress.collectAsStateWithLifecycle()
             pending?.let { candidate ->
