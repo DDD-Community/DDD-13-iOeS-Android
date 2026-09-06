@@ -86,6 +86,29 @@ class DefaultSpotServiceTest {
     }
 
     @Test
+    fun `spot() treats a dash parkingInfo as no information`() = runBlocking {
+        // 서버는 값 없음을 빈 문자열이 아니라 "-" 로 내려준다(2026-09-07 dev 실측).
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {"success":true,"code":"OK","message":"","data":{
+                  "spotId":98,"name":"테스트 오픈용","comment":"","theme":"NIGHT_VIEW",
+                  "latitude":0,"longitude":0,"address":"",
+                  "imageUrl":null,"recordedDate":"","recordedTime":"",
+                  "parkingInfo":"-",
+                  "bookmarkCount":0,"isBookmarked":false,"isMySpot":true
+                }}
+                """.trimIndent()
+            )
+        )
+
+        val detail = service.spot("98")
+
+        assertEquals(null, detail.parkingInfo)
+        server.takeRequest()
+    }
+
+    @Test
     fun `spot() with missing weather and congestion yields null sections`() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(

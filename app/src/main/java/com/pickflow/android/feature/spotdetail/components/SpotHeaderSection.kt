@@ -3,6 +3,7 @@ package com.pickflow.android.feature.spotdetail.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,7 +40,11 @@ fun SpotHeaderSection(spot: SpotDetailData, modifier: Modifier = Modifier) {
                 style = PickflowTypography.headingLarge,
                 color = PickflowColors.gray0,
             )
-            if (spot.isMine) MySpotBadge(status = spot.mySpotStatus)
+            if (spot.isMine) {
+                MySpotBadge(status = spot.mySpotStatus)
+            } else if (spot.isUserRegistered) {
+                UserRegisteredBadge()
+            }
         }
 
         Text(
@@ -59,6 +64,24 @@ fun SpotHeaderSection(spot: SpotDetailData, modifier: Modifier = Modifier) {
                 .clip(RoundedCornerShape(12.dp))
                 .background(PickflowColors.gray90)
                 .padding(16.dp),
+        )
+    }
+}
+
+/** Figma 1014:18974 — 남이 등록한 유저 스팟임을 알리는 보더 배지. */
+@Composable
+private fun UserRegisteredBadge() {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .border(1.dp, PickflowColors.userSpotAmber, RoundedCornerShape(4.dp))
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .testTag("detail-user-spot-badge"),
+    ) {
+        Text(
+            text = "유저 등록",
+            style = PickflowTypography.bodySmallBold,
+            color = PickflowColors.userSpotAmber,
         )
     }
 }

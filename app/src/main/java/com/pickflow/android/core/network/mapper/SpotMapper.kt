@@ -96,7 +96,8 @@ fun SpotDetailResponseDto.toSpotDetail(): SpotDetail = SpotDetail(
     astronomyDate = astronomyDate?.takeIf { it.isNotBlank() },
     weatherUpdatedAt = weatherUpdatedAt?.takeIf { it.isNotBlank() },
     congestionUpdatedAt = congestionUpdatedAt?.takeIf { it.isNotBlank() },
-    parkingInfo = parkingInfo?.takeIf { it.isNotBlank() },
+    // 서버가 값 없음을 빈 문자열이 아니라 "-" 로 내려준다(2026-09-07 실측). 화면은 "정보 없음" 을 쓴다.
+    parkingInfo = parkingInfo?.trim()?.takeIf { it.isNotEmpty() && it.trimStart('-').isNotEmpty() },
     bookmarkCount = bookmarkCount,
     isBookmarked = isBookmarked,
     isMySpot = isMySpot,

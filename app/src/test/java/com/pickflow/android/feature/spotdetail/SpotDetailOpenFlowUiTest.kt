@@ -60,6 +60,7 @@ class SpotDetailOpenFlowUiTest {
         status: MySpotStatus?,
         rejection: SpotRejection? = null,
         isMySpot: Boolean = true,
+        source: SpotSource = if (isMySpot) SpotSource.User else SpotSource.Curated("한국관광공사"),
     ) = SpotDetail(
         id = 41L,
         name = "석촌호수 산책길",
@@ -83,7 +84,7 @@ class SpotDetailOpenFlowUiTest {
         bookmarkCount = 0L,
         isBookmarked = false,
         isMySpot = isMySpot,
-        source = if (isMySpot) SpotSource.User else SpotSource.Curated("한국관광공사"),
+        source = source,
         mySpotStatus = status,
         rejection = rejection,
     )
@@ -201,6 +202,14 @@ class SpotDetailOpenFlowUiTest {
         // 확인 시트를 거치지 않는다 — 서버 상태를 바꾸지 않는 세션 한정 동작이다.
         composeRule.onNodeWithTag("spot-withdraw-request-sheet").assertDoesNotExist()
         composeRule.onNodeWithTag("spot-cancel-open-sheet").assertDoesNotExist()
+    }
+
+    @Test
+    fun other_user_spot_shows_the_user_registered_badge() {
+        render(fixture(status = null, isMySpot = false, source = SpotSource.User))
+
+        composeRule.onNodeWithTag("detail-user-spot-badge", useUnmergedTree = true)
+            .assertExists()
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.pickflow.android.core.services.protocols.CongestionLevel
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.Precipitation
 import com.pickflow.android.core.services.protocols.SpotDetail
+import com.pickflow.android.core.services.protocols.SpotSource
 import com.pickflow.android.core.services.protocols.SpotRejection
 import com.pickflow.android.core.services.protocols.SpotTheme
 import com.pickflow.android.core.services.protocols.SpotWeather
@@ -33,6 +34,8 @@ data class SpotDetailData(
     /** 서버 `likeCount` — 상세 헤더의 "추천 N" 표기에 쓴다. */
     val likeCount: Int = 34,
     val isMine: Boolean = false,
+    /** 유저가 등록한 스팟(운영 큐레이션 아님). 남의 스팟일 때 "유저 등록" 배지를 단다. */
+    val isUserRegistered: Boolean = false,
     val isBookmarked: Boolean = false,
     val isLiked: Boolean = false,
     /** 추천 버튼 노출 여부. 서버 `isLikeable` 그대로. */
@@ -75,6 +78,7 @@ fun SpotDetail.toDetailData(isBookmarked: Boolean, isLiked: Boolean = this.isLik
         bookmarkCount = bookmarkCount.toInt(),
         likeCount = likeCount.toInt(),
         isMine = isMySpot,
+        isUserRegistered = source is SpotSource.User,
         isBookmarked = isBookmarked,
         isLiked = isLiked,
         isLikeable = isLikeable,
