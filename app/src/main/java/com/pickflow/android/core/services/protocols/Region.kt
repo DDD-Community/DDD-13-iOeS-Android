@@ -16,8 +16,8 @@ data class Region(val id: Long, val displayName: String) {
 
     companion object {
         /**
-         * 지역별 지도 중심. 서울은 지도 최초 카메라(`NaverMapView.INITIAL_CAMERA`, 성수)와
-         * 같은 좌표라 첫 화면과 "서울" 라벨이 어긋나지 않는다.
+         * 지역별 지도 중심. 대전은 지도 최초 카메라(`NaverMapView.INITIAL_CAMERA`)와
+         * 같은 좌표라 첫 화면과 "대전" 라벨이 어긋나지 않는다.
          *
          * ponytail: 서버 `RegionItem` 에 위경도가 실리면 이 표를 지우고 응답을 그대로 쓴다.
          */
@@ -29,6 +29,8 @@ data class Region(val id: Long, val displayName: String) {
         /** 서버·캐시 응답이 오기 전(그리고 둘 다 실패했을 때) 쓰는 부트스트랩 값. */
         val Seoul = Region(1, "서울")
         val Daejeon = Region(2, "대전")
-        val FALLBACK = listOf(Seoul, Daejeon)
+
+        /** 노출 순서와 같은 내림차순. 첫 항목이 기본 선택 지역이다. */
+        val FALLBACK = listOf(Daejeon, Seoul)
     }
 }

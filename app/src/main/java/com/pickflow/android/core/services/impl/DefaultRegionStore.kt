@@ -13,14 +13,14 @@ import kotlinx.coroutines.flow.asStateFlow
  * [RegionStore] 구현 — 지도·리스트가 같은 인스턴스를 본다.
  *
  * `@Singleton` 이 본질이다(프로세스 하나). 선택 상태는 무드 필터와 마찬가지로 세션 단위라
- * 영속화하지 않는다 — 앱을 다시 켜면 첫 지역으로 돌아간다. 목록만 [RegionCatalog] 가 캐시한다.
+ * 영속화하지 않는다 — 앱을 다시 켜면 첫 지역(대전)으로 돌아간다. 목록만 [RegionCatalog] 가 캐시한다.
  */
 @Singleton
 class DefaultRegionStore @Inject constructor(
     private val regionCatalog: RegionCatalog,
 ) : RegionStore {
 
-    private val _selected = MutableStateFlow(Region.Seoul)
+    private val _selected = MutableStateFlow(Region.Daejeon)
     override val selected: StateFlow<Region> = _selected.asStateFlow()
 
     private val _available = MutableStateFlow(Region.FALLBACK)

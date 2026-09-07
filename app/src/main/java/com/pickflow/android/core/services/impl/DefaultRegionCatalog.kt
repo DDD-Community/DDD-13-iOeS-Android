@@ -33,6 +33,9 @@ private val CACHE_FORMAT = ListSerializer(CachedRegion.serializer())
  *
  * 지역은 거의 바뀌지 않아, 콜드 스타트나 오프라인에서도 마지막으로 본 목록을 바로 띄운다.
  * 같은 이유로 서버 조회는 **프로세스당 한 번**이다 — 지도·리스트를 오갈 때마다 부르지 않는다.
+ *
+ * 노출 순서는 서버 응답 순서를 믿지 않고 [Region.id] **내림차순**으로 앱이 정규화한다(2 대전 → 1 서울).
+ * 최근 오픈한 지역을 먼저 보여주는 기획이라, 서버가 오름차순으로 주더라도 앱이 뒤집는다.
  */
 @Singleton
 class DefaultRegionCatalog @Inject constructor(
@@ -43,7 +46,7 @@ class DefaultRegionCatalog @Inject constructor(
     override suspend fun cached(): List<Region> {
         val raw = context.regionDataStore.data.first()[KEY_REGIONS] ?: return emptyList()
         return runCatching {
-            Json.decodeFromString(CACHE_FORMAT, raw).map { Region(it.id, it.displayName) }
+            Json.decodeFromString(CACHE_FORMAT, raw).map { Region(it.id, it.displayName) }.sortedById()
         }.getOrDefault(emptyList())
     }
 
@@ -62,10 +65,13 @@ class DefaultRegionCatalog @Inject constructor(
             ?: return@withLock null
         if (items.isEmpty()) return@withLock null
 
-        val regions = items.map { Region(it.regionId, it.regionName) }
+        val regions = items.map { Region(it.regionId, it.regionName) }.sortedById()
         val encoded = Json.encodeToString(CACHE_FORMAT, regions.map { CachedRegion(it.id, it.displayName) })
         context.regionDataStore.edit { prefs -> prefs[KEY_REGIONS] = encoded }
         refreshed = true
         regions
     }
 }
+
+/** 지역 노출 순서 — 서버·캐시 순서와 무관하게 항상 `regionId` 내림차순(대전 → 서울). */
+private fun List<Region>.sortedById(): List<Region> = sortedByDescending { it.id }

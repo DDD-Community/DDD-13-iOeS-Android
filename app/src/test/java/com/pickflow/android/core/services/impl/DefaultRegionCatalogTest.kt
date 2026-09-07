@@ -32,12 +32,29 @@ class DefaultRegionCatalogTest {
         )
     }
 
-    /** 서버 응답을 그대로 도메인으로 옮긴다. */
+    /** 서버 응답을 도메인으로 옮기고, 노출 순서(내림차순)로 정렬한다. */
     @Test
     fun `refresh maps the server response`() = runTest {
         respond(1L to "서울", 2L to "대전")
 
-        assertEquals(listOf(Region.Seoul, Region.Daejeon), catalog().refresh())
+        assertEquals(listOf(Region.Daejeon, Region.Seoul), catalog().refresh())
+    }
+
+    /** 서버가 오름차순으로 줘도 노출 순서는 regionId 내림차순(대전 → 서울)이다. */
+    @Test
+    fun `refresh normalizes the order by region id`() = runTest {
+        respond(1L to "서울", 2L to "대전")
+
+        assertEquals(listOf(Region.Daejeon, Region.Seoul), catalog().refresh())
+    }
+
+    /** 예전 순서로 남은 캐시도 읽을 때 내림차순으로 되돌린다. */
+    @Test
+    fun `cached normalizes a stale cache order`() = runTest {
+        respond(1L to "서울", 2L to "대전")
+        catalog().refresh()
+
+        assertEquals(listOf(Region.Daejeon, Region.Seoul), catalog().cached())
     }
 
     /** refresh 가 캐시에 남아 새 인스턴스(= 앱 재시작)에서도 읽힌다. */

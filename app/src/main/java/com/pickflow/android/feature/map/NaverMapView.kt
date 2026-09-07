@@ -56,7 +56,8 @@ import com.pickflow.android.core.services.protocols.Spot
 import com.pickflow.android.core.services.protocols.ViewportBox
 import com.pickflow.android.feature.map.clustering.MapSpotClusterKey
 
-private val INITIAL_CAMERA = LatLng(37.538, 127.038)
+// 기본 지역(대전, `Region.Daejeon`)의 중심. 헤더 라벨과 첫 화면이 어긋나지 않게 맞춘다.
+private val INITIAL_CAMERA = LatLng(36.3504, 127.3845)
 private const val INITIAL_ZOOM = 12.5
 
 /**
