@@ -70,24 +70,24 @@ class DefaultRegionStoreTest {
         store.refreshAvailable()
 
         assertEquals(Region.FALLBACK, store.available.value)
-        assertEquals(Region.Seoul, store.selected.value)
+        assertEquals(Region.Daejeon, store.selected.value)
     }
 
     /** 적용 중이던 지역이 목록에서 빠지면 죽은 regionId 로 조회하지 않도록 옮긴다. */
     @Test
     fun `refreshAvailable moves the selection off a region that disappeared`() = runTest {
-        val store = DefaultRegionStore(FakeCatalog(fetched = listOf(Region.Daejeon)))
+        val store = DefaultRegionStore(FakeCatalog(fetched = listOf(Region.Seoul)))
         store.refreshAvailable()
 
-        assertEquals(Region.Daejeon, store.selected.value)
+        assertEquals(Region.Seoul, store.selected.value)
     }
 
     /** 같은 지역이 이름만 바뀌어 와도 선택은 유지된다(비교 기준은 regionId). */
     @Test
     fun `refreshAvailable keeps the selection when only the name changed`() = runTest {
-        val store = DefaultRegionStore(FakeCatalog(fetched = listOf(Region(1, "서울특별시"))))
+        val store = DefaultRegionStore(FakeCatalog(fetched = listOf(Region(2, "대전광역시"))))
         store.refreshAvailable()
 
-        assertEquals(1L, store.selected.value.id)
+        assertEquals(2L, store.selected.value.id)
     }
 }

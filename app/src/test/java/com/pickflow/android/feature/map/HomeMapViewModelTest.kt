@@ -146,10 +146,10 @@ class HomeMapViewModelTest {
         coVerify { spotListService.fetch(themes = emptySet(), page = 0, region = any()) }
     }
 
-    /** 지역 필터 — 초기값은 서울(지도 최초 카메라와 동일). */
+    /** 지역 필터 — 초기값은 대전(지도 최초 카메라와 동일). */
     @Test
-    fun `region defaults to Seoul`() = runTest(testDispatcher) {
-        assertEquals(Region.Seoul, vm().region.value)
+    fun `region defaults to Daejeon`() = runTest(testDispatcher) {
+        assertEquals(Region.Daejeon, vm().region.value)
     }
 
     /**
@@ -164,19 +164,19 @@ class HomeMapViewModelTest {
         // vm() 직후 advance — init 의 store 구독이 붙기 전에 select 하면 drop(1) 이
         // 그 값을 삼킨다(무드 필터 구독과 같은 관례).
         val viewModel = vm(); advanceUntilIdle()
-        viewModel.applyRegion(Region.Daejeon); advanceUntilIdle()
+        viewModel.applyRegion(Region.Seoul); advanceUntilIdle()
 
-        assertEquals(Region.Daejeon, viewModel.region.value)
-        assertEquals(Region.Daejeon.center, viewModel.regionTarget.value)
+        assertEquals(Region.Seoul, viewModel.region.value)
+        assertEquals(Region.Seoul.center, viewModel.regionTarget.value)
     }
 
     /** 같은 지역 재적용은 카메라 이동(=재조회)을 트리거하지 않는다. */
     @Test
     fun `applyRegion with the applied region emits no camera target`() = runTest(testDispatcher) {
         val viewModel = vm(); advanceUntilIdle()
-        viewModel.applyRegion(Region.Seoul); advanceUntilIdle()
+        viewModel.applyRegion(Region.Daejeon); advanceUntilIdle()
 
-        assertEquals(Region.Seoul, viewModel.region.value)
+        assertEquals(Region.Daejeon, viewModel.region.value)
         assertEquals(null, viewModel.regionTarget.value)
     }
 
@@ -187,11 +187,11 @@ class HomeMapViewModelTest {
             SpotPage(items = emptyList(), page = 0, hasNext = false)
 
         val viewModel = vm(); advanceUntilIdle()
-        viewModel.applyRegion(Region.Daejeon); advanceUntilIdle()
+        viewModel.applyRegion(Region.Seoul); advanceUntilIdle()
         viewModel.consumeRegionTarget()
 
         assertEquals(null, viewModel.regionTarget.value)
-        assertEquals(Region.Daejeon, viewModel.region.value)
+        assertEquals(Region.Seoul, viewModel.region.value)
     }
 
     @Test

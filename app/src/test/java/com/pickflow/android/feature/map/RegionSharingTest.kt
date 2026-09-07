@@ -80,9 +80,9 @@ class RegionSharingTest {
     )
 
     @Test
-    fun `both screens start on Seoul`() = runTest(testDispatcher) {
-        assertEquals(Region.Seoul, mapVm().region.value)
-        assertEquals(Region.Seoul, listVm().region.value)
+    fun `both screens start on Daejeon`() = runTest(testDispatcher) {
+        assertEquals(Region.Daejeon, mapVm().region.value)
+        assertEquals(Region.Daejeon, listVm().region.value)
     }
 
     @Test
@@ -91,10 +91,10 @@ class RegionSharingTest {
         val list = listVm()
         advanceUntilIdle()
 
-        map.applyRegion(Region.Daejeon)
+        map.applyRegion(Region.Seoul)
         advanceUntilIdle()
 
-        assertEquals(Region.Daejeon, list.region.value)
+        assertEquals(Region.Seoul, list.region.value)
     }
 
     @Test
@@ -103,14 +103,14 @@ class RegionSharingTest {
         listVm()
         advanceUntilIdle()
 
-        map.applyRegion(Region.Daejeon)
+        map.applyRegion(Region.Seoul)
         advanceUntilIdle()
 
         coVerify(atLeast = 1) {
             listService.fetch(
                 themes = any(),
                 page = 0,
-                region = Region.Daejeon,
+                region = Region.Seoul,
                 coordinates = any(),
                 sort = any(),
             )
@@ -123,10 +123,10 @@ class RegionSharingTest {
         val map = mapVm()
         advanceUntilIdle()
 
-        map.applyRegion(Region.Daejeon)
+        map.applyRegion(Region.Seoul)
         advanceUntilIdle()
 
-        coVerify(atLeast = 1) { listService.fetch(themes = any(), page = 0, region = Region.Daejeon) }
+        coVerify(atLeast = 1) { listService.fetch(themes = any(), page = 0, region = Region.Seoul) }
     }
 
     /**
@@ -139,12 +139,12 @@ class RegionSharingTest {
         val list = listVm()
         advanceUntilIdle()
 
-        list.applyRegion(Region.Daejeon)
+        list.applyRegion(Region.Seoul)
         advanceUntilIdle()
 
-        assertEquals(Region.Daejeon, map.region.value)
-        assertEquals(Region.Daejeon.center, map.regionTarget.value)
-        coVerify(atLeast = 1) { listService.fetch(themes = any(), page = 0, region = Region.Daejeon) }
+        assertEquals(Region.Seoul, map.region.value)
+        assertEquals(Region.Seoul.center, map.regionTarget.value)
+        coVerify(atLeast = 1) { listService.fetch(themes = any(), page = 0, region = Region.Seoul) }
     }
 
     /** 같은 지역 재적용은 카메라 이동도 재조회도 만들지 않는다. */
@@ -153,7 +153,7 @@ class RegionSharingTest {
         val map = mapVm()
         advanceUntilIdle()
 
-        map.applyRegion(Region.Seoul)
+        map.applyRegion(Region.Daejeon)
         advanceUntilIdle()
 
         assertEquals(null, map.regionTarget.value)

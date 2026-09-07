@@ -170,7 +170,7 @@ class HomeMapScreenUiTest {
     fun header_shows_applied_region_name() {
         setScreen(viewModel())
         composeRule.onNodeWithTag("homemap-region").assertIsDisplayed()
-        composeRule.onNodeWithText("서울").assertIsDisplayed()
+        composeRule.onNodeWithText("대전").assertIsDisplayed()
     }
 
     /** 지역명 탭 → 지역 선택 바텀시트 노출. */
@@ -188,12 +188,12 @@ class HomeMapScreenUiTest {
         val vm = viewModel()
         setScreen(vm)
         composeRule.onNodeWithTag("homemap-region").performClick()
-        composeRule.onNodeWithText("대전").performClick()
+        composeRule.onNodeWithText("서울").performClick()
         composeRule.onNodeWithTag("region-picker-apply").performClick()
         composeRule.waitForIdle()
 
-        assertEquals(com.pickflow.android.core.services.protocols.Region.Daejeon, vm.region.value)
-        assertEquals(com.pickflow.android.core.services.protocols.Region.Daejeon.center, vm.regionTarget.value)
+        assertEquals(com.pickflow.android.core.services.protocols.Region.Seoul, vm.region.value)
+        assertEquals(com.pickflow.android.core.services.protocols.Region.Seoul.center, vm.regionTarget.value)
     }
 
     /** 다른 지역을 골라도 [취소] 면 기존 지역이 유지된다. */
@@ -202,11 +202,11 @@ class HomeMapScreenUiTest {
         val vm = viewModel()
         setScreen(vm)
         composeRule.onNodeWithTag("homemap-region").performClick()
-        composeRule.onNodeWithText("대전").performClick()
+        composeRule.onNodeWithText("서울").performClick()
         composeRule.onNodeWithTag("region-picker-cancel").performClick()
         composeRule.waitForIdle()
 
-        assertEquals(com.pickflow.android.core.services.protocols.Region.Seoul, vm.region.value)
+        assertEquals(com.pickflow.android.core.services.protocols.Region.Daejeon, vm.region.value)
         assertEquals(null, vm.regionTarget.value)
     }
 
@@ -216,16 +216,16 @@ class HomeMapScreenUiTest {
         val vm = viewModel()
         setScreen(vm)
         composeRule.onNodeWithTag("homemap-region").performClick()
-        composeRule.onNodeWithText("대전").performClick()
+        composeRule.onNodeWithText("서울").performClick()
         composeRule.onNodeWithTag("region-picker-cancel").performClick()
         composeRule.waitForIdle()
 
-        // 다시 열어 그대로 [적용하기] → 버려진 대전이 아니라 서울이 유지돼야 한다.
+        // 다시 열어 그대로 [적용하기] → 버려진 서울이 아니라 대전이 유지돼야 한다.
         composeRule.onNodeWithTag("homemap-region").performClick()
         composeRule.onNodeWithTag("region-picker-apply").performClick()
         composeRule.waitForIdle()
 
-        assertEquals(com.pickflow.android.core.services.protocols.Region.Seoul, vm.region.value)
+        assertEquals(com.pickflow.android.core.services.protocols.Region.Daejeon, vm.region.value)
     }
 
     private fun setScreen(vm: HomeMapViewModel) {
