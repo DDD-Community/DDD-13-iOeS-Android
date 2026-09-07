@@ -14,12 +14,14 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,6 +41,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -107,25 +111,58 @@ fun SpotListScreen(
         }
     }
 
+    // 헤더 3층은 그리드 위에 겹쳐 그린다(collapsing). 각 층 높이는 폰트 배율·기기 폭에 따라
+    // 달라지므로 하드코딩하지 않고 실제 측정값(px)을 쓴다.
+    var regionHeightPx by remember { mutableStateOf(0) }
+    var moodHeightPx by remember { mutableStateOf(0) }
+    var sortHeightPx by remember { mutableStateOf(0) }
+    val headerHeightPx = regionHeightPx + moodHeightPx + sortHeightPx
+    val density = LocalDensity.current
+    val gridState = rememberLazyStaggeredGridState()
+
+    // 접히는 건 무드 행 위(로고)와 아래(정렬) 두 층뿐 — 무드 행은 끝까지 상단에 남는다.
+    // 스크롤량은 firstVisibleItemScrollOffset 으로 읽는다. contentPadding 을 포함해 세는 값이라
+    // 헤더가 측정되며 패딩이 커져도 0 에서 시작한다(offset.y 로 계산하면 첫 프레임에
+    // 접힌 상태로 시작해버린다). 첫 행이 화면을 벗어나면 이미 다 접힌 것이므로 상한 고정.
+    val collapseRangePx = regionHeightPx + sortHeightPx
+    val measuredCollapsePx by remember(collapseRangePx) {
+        derivedStateOf {
+            when {
+                // 재조회 중(LoadState.Loading)에는 그리드가 컴포지션에서 빠져 스크롤을 읽을 수
+                // 없다. 이때 0 으로 떨어뜨리면 헤더가 펼쳐졌다 접히며 튄다.
+                gridState.layoutInfo.totalItemsCount == 0 -> null
+                gridState.firstVisibleItemIndex > 1 -> collapseRangePx
+                else -> gridState.firstVisibleItemScrollOffset.coerceAtMost(collapseRangePx)
+            }
+        }
+    }
+    // 마지막으로 확인된 접힘량 — 그리드가 잠시 사라진 동안 헤더 위치를 붙잡아 둔다.
+    var keptCollapsePx by remember { mutableStateOf(0) }
+    LaunchedEffect(measuredCollapsePx) {
+        measuredCollapsePx?.let { keptCollapsePx = it }
+    }
+    val collapsedPx = measuredCollapsePx ?: keptCollapsePx
+
+    // 무드/정렬/지역을 바꾸면 목록이 새로 로드되면서 스크롤이 0 으로 돌아간다. 목록 자체는
+    // 처음부터 보여주되, 접혀 있던 헤더까지 같이 펼쳐지지는 않게 접힘 지점으로 되돌린다.
+    // 다음 페이지 append 때는 첫 아이템 오프셋이 이미 접힘량 이상이라 발동하지 않는다.
+    LaunchedEffect(spots) {
+        if (spots is com.pickflow.android.common.ui.LoadState.Loaded &&
+            keptCollapsePx > 0 &&
+            gridState.firstVisibleItemIndex == 0 &&
+            gridState.firstVisibleItemScrollOffset < keptCollapsePx
+        ) {
+            gridState.scrollToItem(0, keptCollapsePx)
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(PickflowColors.gray95)
             .testTag("spotlist-screen"),
     ) {
-        SpotListHeader(
-            region = region,
-            onRegionClick = { showRegionPicker = true },
-            sort = sort,
-            onSelectSort = onSelectSort,
-        )
-        MoodFilterRow(
-            selected = themes.mapTo(mutableSetOf()) { it.toMood() },
-            onSelect = { mood -> viewModel.toggleTheme(mood.toTheme()) },
-            testTag = "spotlist-mood",
-            showNewBadge = showNewBadge,
-        )
         LoadStateContent(
             state = spots,
             emptyMessage = "아직 저장한 스팟이 없어요.",
@@ -137,6 +174,46 @@ fun SpotListScreen(
                 onClick = onOpenSpotDetail,
                 onBookmark = viewModel::toggleBookmark,
                 onReachEnd = viewModel::loadNextPage,
+                gridState = gridState,
+                topPadding = with(density) { headerHeightPx.toDp() },
+            )
+        }
+
+        // 로고 행 — 스크롤과 함께 위로 사라진다.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(0, -collapsedPx) }
+                .background(PickflowColors.gray95)
+                .onSizeChanged { regionHeightPx = it.height },
+        ) {
+            SpotListRegionBar(region = region, onRegionClick = { showRegionPicker = true })
+        }
+
+        // 정렬 바 — 무드 행 아래에 놓이고, 스크롤하면 무드 행 뒤로 밀려 들어간다.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(0, regionHeightPx + moodHeightPx - collapsedPx) }
+                .background(PickflowColors.gray95)
+                .onSizeChanged { sortHeightPx = it.height },
+        ) {
+            SpotListSortSelector(sort = sort, onSelectSort = onSelectSort)
+        }
+
+        // 무드 행 — 유일한 sticky 요소. 정렬 바를 가려야 하므로 마지막에(=위에) 그린다.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(0, (regionHeightPx - collapsedPx).coerceAtLeast(0)) }
+                .background(PickflowColors.gray95)
+                .onSizeChanged { moodHeightPx = it.height },
+        ) {
+            MoodFilterRow(
+                selected = themes.mapTo(mutableSetOf()) { it.toMood() },
+                onSelect = { mood -> viewModel.toggleTheme(mood.toTheme()) },
+                testTag = "spotlist-mood",
+                showNewBadge = showNewBadge,
             )
         }
     }
@@ -216,27 +293,47 @@ private fun android.content.Context.hasLocationPermission(): Boolean =
             this, android.Manifest.permission.ACCESS_COARSE_LOCATION,
         ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
-/** iOS `HomeMapView.headerBar` + `SpotListSortDropdownHeader` 1:1 — 로고 + 정렬 드롭다운. */
+/** 로고 + 지역 선택 행 — 지도 모드 헤더와 같은 높이/타이포를 쓴다. */
 @Composable
-private fun SpotListHeader(
+private fun SpotListRegionBar(
     region: Region,
     onRegionClick: () -> Unit,
-    sort: SpotSort,
-    onSelectSort: (SpotSort) -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 12.dp),
     ) {
-        // 지도 헤더와 같은 컴포넌트 — 로고 높이와 지역명 타이포가 두 모드에서 동일해야 한다.
         RegionHeader(
             region = region,
             onClick = onRegionClick,
             modifier = Modifier.align(Alignment.CenterStart),
             testTag = "spotlist-region",
         )
+    }
+}
+
+/**
+ * 정렬 드롭다운 — 무드 필터 **아래**, 그리드 바로 위 우측에 놓인다(PV-86).
+ *
+ * 예전에는 로고 행 우측에 있었으나, 스크롤 시 무드 행만 상단에 고정되고 정렬은 목록과 함께
+ * 밀려 올라가야 해서 두 요소를 분리했다.
+ */
+@Composable
+private fun SpotListSortSelector(
+    sort: SpotSort,
+    onSelectSort: (SpotSort) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    // 드롭다운을 정렬 바 '아래'에 띄우려면 바 높이를 알아야 한다(Popup 은 부모 bounds 기준).
+    var barHeightPx by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .onSizeChanged { barHeightPx = it.height },
+    ) {
         Row(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
@@ -261,7 +358,7 @@ private fun SpotListHeader(
             )
         }
         if (expanded) {
-            // Popup 으로 띄워 헤더 레이아웃에 영향을 주지 않도록 한다.
+            // Popup 으로 띄워 정렬 바 높이가 그리드 위치에 영향을 주지 않게 한다.
             Popup(
                 alignment = Alignment.TopEnd,
                 offset = IntOffset(0, 0),
@@ -270,7 +367,7 @@ private fun SpotListHeader(
             ) {
                 Column(
                     modifier = Modifier
-                        .padding(top = 44.dp, end = 20.dp)
+                        .padding(top = with(density) { barHeightPx.toDp() }, end = 16.dp)
                         .width(180.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(PickflowColors.gray90)
@@ -299,6 +396,9 @@ private fun SpotListHeader(
         }
     }
 }
+
+/** 그리드 콘텐츠 위/아래 여백 — 겹쳐 그리는 헤더 높이에 이 값이 더해진다. */
+private val GRID_VERTICAL_PADDING = 8.dp
 
 // iOS 매핑: "추천 순" 의 서버 코드는 RECOMMENDED. 서버 정렬 기준은 like_count 다.
 private val SORT_OPTIONS = listOf(SpotSort.DISTANCE, SpotSort.RECOMMENDED)
@@ -339,8 +439,9 @@ private fun SpotMasonryGrid(
     onClick: (String) -> Unit,
     onBookmark: (String) -> Unit,
     onReachEnd: () -> Unit,
+    gridState: LazyStaggeredGridState,
+    topPadding: androidx.compose.ui.unit.Dp,
 ) {
-    val gridState = rememberLazyStaggeredGridState()
     // 키 없는 remember 는 첫 컴포지션의 `spots` 를 그대로 붙잡는다. 그래서 목록이 늘어나도
     // spots.size 는 1페이지 크기에 멈춰 있고, 한 번 true 가 된 reachedEnd 가 계속 true 라
     // LaunchedEffect 가 다시 뜨지 않아 2페이지 이후로 로드가 끊겼다(= 무한 스크롤 없음).
@@ -357,7 +458,13 @@ private fun SpotMasonryGrid(
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(2),
         state = gridState,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        // 상단 패딩만큼 헤더가 겹쳐 있다 — 스크롤하면 콘텐츠가 그 아래로 지나간다.
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = topPadding + GRID_VERTICAL_PADDING,
+            bottom = GRID_VERTICAL_PADDING,
+        ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalItemSpacing = 12.dp,
         modifier = Modifier
