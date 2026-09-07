@@ -2,6 +2,7 @@ package com.pickflow.android.core.network
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.pickflow.android.BuildConfig
+import com.pickflow.android.core.network.api.AddressApi
 import com.pickflow.android.core.network.api.ArchiveApi
 import com.pickflow.android.core.network.api.AuthApi
 import com.pickflow.android.core.network.api.BoardApi
@@ -116,6 +117,10 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideAddressApi(retrofit: Retrofit): AddressApi = retrofit.create(AddressApi::class.java)
+
+    @Provides
+    @Singleton
     fun provideAppVersionApi(retrofit: Retrofit): com.pickflow.android.core.network.api.AppVersionApi =
         retrofit.create(com.pickflow.android.core.network.api.AppVersionApi::class.java)
 
@@ -150,7 +155,7 @@ object NetworkModule {
         retrofit.create(RefreshApi::class.java)
 
     // --- Kakao Local API 전용 (별도 base URL, AuthInterceptor 미부착) ---
-    // iOS `AddressService` 가 직접 호출하는 https://dapi.kakao.com/ 정합.
+    // 역지오코딩(coord2address)만 남았다. 키워드 검색은 서버 /v1/address/search 로 옮겼다.
 
     @Provides
     @Singleton

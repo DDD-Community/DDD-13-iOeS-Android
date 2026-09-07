@@ -2,15 +2,18 @@ package com.pickflow.android.feature.map
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -94,11 +97,10 @@ fun SpotDetailBottomSheet(
         }
     }
 
-    ModalBottomSheet(
+    SpotDetailBottomSheetSurface(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = PickflowColors.gray95,
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        isFullDetail = isFullDetail,
     ) {
         val dismiss = {
             scope.launch { sheetState.hide() }.invokeOnCompletion {
@@ -145,6 +147,38 @@ fun SpotDetailBottomSheet(
         }
     }
 }
+
+/**
+ * full 상세에서는 시트 핸들과 Material 이 핸들에 제공하는 전용 상단 영역을 함께 제거한다.
+ * `ModalBottomSheet` 의 드래그 제스처는 핸들이 아닌 시트 Surface 에 연결되므로 그대로 유지된다.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun SpotDetailBottomSheetSurface(
+    sheetState: SheetState,
+    isFullDetail: Boolean,
+    onDismissRequest: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        sheetState = sheetState,
+        containerColor = PickflowColors.gray95,
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        dragHandle = if (isFullDetail) {
+            null
+        } else {
+            {
+                BottomSheetDefaults.DragHandle(
+                    modifier = Modifier.testTag(SPOT_DETAIL_SHEET_DRAG_HANDLE_TAG),
+                )
+            }
+        },
+        content = content,
+    )
+}
+
+internal const val SPOT_DETAIL_SHEET_DRAG_HANDLE_TAG = "spotdetail-bottomsheet-drag-handle"
 
 @Composable
 private fun SheetLoading() {

@@ -3,22 +3,6 @@ package com.pickflow.android.core.network.dto.kakao
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** iOS `KakaoLocalSearchResponse` 1:1. */
-@Serializable
-data class KakaoLocalSearchResponse(
-    val documents: List<KakaoLocalDocument> = emptyList(),
-)
-
-@Serializable
-data class KakaoLocalDocument(
-    val id: String = "",
-    @SerialName("place_name") val placeName: String = "",
-    @SerialName("address_name") val addressName: String = "",
-    @SerialName("road_address_name") val roadAddressName: String? = null,
-    val x: String = "",
-    val y: String = "",
-)
-
 /** iOS `KakaoCoord2AddressResponse` 1:1. */
 @Serializable
 data class KakaoCoord2AddressResponse(
