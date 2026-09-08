@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -119,6 +120,9 @@ fun LoginScreenContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
+                // 그라데이션 배경은 바깥 Box 라 full-bleed 유지, 헤더(닫기 버튼)만 내린다.
+                // 하단 66dp 는 3버튼 내비바(48dp)보다 커서 CTA 는 별도 처리가 필요 없다.
+                .statusBarsPadding()
                 .padding(top = 8.dp, bottom = 66.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

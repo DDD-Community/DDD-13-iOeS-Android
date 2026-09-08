@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -220,7 +221,8 @@ private fun OnboardingWordmark(modifier: Modifier = Modifier) {
     Image(
         painter = painterResource(R.drawable.logo),
         contentDescription = "PICKFLOW",
-        modifier = modifier,
+        // 뒤 일러스트는 상태바까지 full-bleed 로 두고 워드마크만 내린다.
+        modifier = modifier.statusBarsPadding(),
     )
 }
 
