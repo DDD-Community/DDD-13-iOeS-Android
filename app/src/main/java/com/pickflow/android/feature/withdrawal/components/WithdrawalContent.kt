@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -71,6 +73,7 @@ fun WithdrawalContent(
             .fillMaxSize()
             .background(PickflowColors.gray95)
             .statusBarsPadding()
+            .navigationBarsPadding()
             .testTag("withdrawal-content"),
     ) {
         NavBar(onBack = onBack)
@@ -79,6 +82,7 @@ fun WithdrawalContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
                 .padding(top = 8.dp, bottom = 16.dp),
