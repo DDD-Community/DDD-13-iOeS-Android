@@ -1,6 +1,7 @@
 package com.pickflow.android.feature.spotdetail
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.semantics.SemanticsActions
@@ -13,7 +14,6 @@ import com.pickflow.android.core.services.protocols.AnalyticsLogger
 import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.LikeService
-import com.pickflow.android.core.services.protocols.MySpotReleaseStore
 import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.MySpotTransitionResult
@@ -44,13 +44,6 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34], qualifiers = "w411dp-h891dp-xxhdpi")
 class SpotDetailOpenFlowUiTest {
 
-    /** relaxed mock 은 released()=false 를 돌려줘 토글이 OFF 로 시작한다. 공개 직후 기본값은 ON 이다. */
-    private val releaseStore = object : MySpotReleaseStore {
-        private val values = mutableMapOf<Long, Boolean>()
-        override fun released(spotId: Long): Boolean = values[spotId] ?: true
-        override fun setReleased(spotId: Long, released: Boolean) { values[spotId] = released }
-    }
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -60,6 +53,7 @@ class SpotDetailOpenFlowUiTest {
         status: MySpotStatus?,
         rejection: SpotRejection? = null,
         isMySpot: Boolean = true,
+        isReleased: Boolean = true,
         source: SpotSource = if (isMySpot) SpotSource.User else SpotSource.Curated("한국관광공사"),
     ) = SpotDetail(
         id = 41L,
@@ -86,6 +80,7 @@ class SpotDetailOpenFlowUiTest {
         isMySpot = isMySpot,
         source = source,
         mySpotStatus = status,
+        isReleased = isReleased,
         rejection = rejection,
     )
 
@@ -113,7 +108,7 @@ class SpotDetailOpenFlowUiTest {
                     onReviseMySpot = { revisedSpotId = it },
                     viewModel = vm,
                     actionsViewModel = SpotDetailActionsViewModel(mockk(relaxed = true)),
-                    openActionsViewModel = SpotOpenActionsViewModel(mySpotService, releaseStore),
+                    openActionsViewModel = SpotOpenActionsViewModel(mySpotService),
                     reviewResultViewModel = ReviewResultViewModel(mockk(relaxed = true)),
                 )
             }
@@ -253,6 +248,15 @@ class SpotDetailOpenFlowUiTest {
             .performSemanticsAction(SemanticsActions.OnClick)
         composeRule.waitForIdle()
         coVerify(timeout = 3_000, exactly = 1) { mySpotService.delete(41L) }
+    }
+
+    @Test
+    fun release_toggle_starts_off_when_the_detail_says_it_is_not_released() {
+        // 노출 상태는 상세 응답의 isReleased 가 유일한 출처다 — 기기 로컬 기억 없음.
+        render(fixture(MySpotStatus.PUBLISHED, isReleased = false))
+
+        composeRule.onNodeWithTag("detail-publish-switch").performScrollTo().assertIsOff()
+        composeRule.onNodeWithText("스팟 공개 OFF").assertIsDisplayed()
     }
 
     @Test

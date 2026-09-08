@@ -117,4 +117,23 @@ class SpotMapperTest {
         assertTrue(detail.isLiked)
         assertTrue(detail.isLikeable)
     }
+
+    @Test
+    fun `toSpotDetail carries the release flag`() {
+        val released = SpotDetailResponseDto(
+            spotId = 41,
+            status = "PUBLISHED",
+            isMySpot = true,
+            isReleased = true,
+        ).toSpotDetail()
+        val unreleased = SpotDetailResponseDto(
+            spotId = 41,
+            status = "PUBLISHED",
+            isMySpot = true,
+            isReleased = false,
+        ).toSpotDetail()
+
+        assertTrue(released.isReleased)
+        assertFalse(unreleased.isReleased)
+    }
 }

@@ -25,8 +25,8 @@ import com.pickflow.android.common.designsystem.PickflowTypography
 /**
  * 공개된 MY 스팟의 공개 여부 스위치.
  *
- * 끄면 오픈 취소(공개 해제)다 — 서버 상태를 바꾸는 동작이라 화면이 확인 시트를 먼저 띄운다.
- * 그래서 이 컴포넌트는 상태를 스스로 갖지 않고 [isPublished] 를 그대로 그린다.
+ * 끄면 지도/리스트 노출만 꺼진다(`DELETE .../releases`) — 검수 상태는 그대로라 확인 시트가 없다.
+ * 상태를 스스로 갖지 않고 상세 응답의 `isReleased` 를 따르는 [isPublished] 를 그대로 그린다.
  */
 @Composable
 fun SpotPublishToggle(

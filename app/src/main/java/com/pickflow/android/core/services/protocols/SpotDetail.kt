@@ -36,6 +36,8 @@ data class SpotDetail(
     val isLikeable: Boolean = false,
     val source: SpotSource = SpotSource.Curated(displayName = ""),
     val mySpotStatus: MySpotStatus? = null,
+    /** 지도/리스트 노출 여부. `PUBLISHED` 인 내 스팟의 공개 토글 초기값이다. */
+    val isReleased: Boolean = false,
     val rejection: SpotRejection? = null,
     val recommendationCount: Long = 0,
     val isRecommended: Boolean = false,
