@@ -130,11 +130,16 @@ fun SpotDetailScreen(
 
     LaunchedEffect(spotId) {
         viewModel.load(spotId)
-        spotId.toLongOrNull()?.let(openActionsViewModel::loadReleased)
         if (onReviseMySpot != null) reviewResultViewModel.load()
     }
     LaunchedEffect(Unit) {
         if (showRegisteredToast) viewModel.showRegisteredToast()
+    }
+    // 공개 토글은 상세 응답의 `isReleased` 를 따라간다(전송 중이면 VM 이 무시한다).
+    LaunchedEffect(spotState) {
+        (spotState as? LoadState.Loaded)?.value?.let {
+            openActionsViewModel.syncReleased(it.isReleased)
+        }
     }
     LaunchedEffect(isReportSheetOpen, isComingSoonSheetOpen) {
         onOverlaySheetVisible(isReportSheetOpen || isComingSoonSheetOpen)

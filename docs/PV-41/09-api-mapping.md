@@ -84,7 +84,7 @@ Stub-first로 먼저 확정한 클라이언트 Service 계약을 실제 서버 �
 | 승인 완료 모달 확인 여부 | 저장 위치(서버 / 로컬) 미정 |
 | `GET /v1/users/me/my-spots` (내 스팟 목록) | 이번 브랜치 범위 밖. `MySpot.status`·`bookmarkCount`가 응답에 포함되는지 미확인 |
 | **목록 아이템의 `likeCount`** | 셀에 "추천 34"를 표기하려면 필요하다. `MySpotItemDto.likeCount` 로 옵셔널 파싱만 해둠 — 서버가 안 주면 추천 수는 숨는다 |
-| **상세·목록의 `released` (노출 플래그)** | 공개 토글의 현재 ON/OFF 를 그릴 근거. `POST/DELETE .../releases` 응답에만 있고 `GET /v1/spots/{id}`·`GET /v1/users/me/my-spots` 에는 없다. 임시로 `MySpotReleaseStore`(SharedPreferences)에 마지막으로 누른 값을 남겨 복원하지만, 기기 로컬이라 재설치·다른 기기에서는 ON 으로 보인다. 필드가 오면 저장소를 지운다 |
+| **목록의 `isReleased` (노출 플래그)** | `GET /v1/spots/{id}` 에는 2026-09-08 추가돼 상세 토글이 서버 값을 그대로 쓴다(아래). `GET /v1/users/me/my-spots` 에는 아직 없어 목록 셀에서는 노출 여부를 표기하지 못한다 |
 | **목록 아이템의 공개 이력 플래그** | "비공개"(공개됐다가 해제) 배지를 "뱃지 없음"(오픈 신청 전 DRAFT)과 가르는 근거. 해제 후 상태는 둘 다 `DRAFT` 라 응답만으로는 구분 불가. `MySpotItemDto.wasPublished` 로 옵셔널 파싱해 뒀고, 필드가 오기 전까지 비공개 배지는 뜨지 않는다 |
 | `UpdateMySpotRequest` 필드 | 문서에 object로만 표기되어 개별 필드·validation 미노출. `SpotDraft`와 대조 필요 |
 | 탈퇴 후 보존 | 공개 스팟·추천 보존 및 재가입 복구 계약 없음 |
@@ -103,7 +103,15 @@ dev 서버 OpenAPI 실측(`https://dev-api.pickflow-api.us/api/api-docs`) 결과
 - 상세의 공개 ON/OFF 토글은 `/releases` 를 쓴다. 검수 flow 와 독립이라 **재검수 없이 왕복**한다.
   응답 `{ spotId, released }`. PUBLISHED 가 아니면 `SP012`.
 - `/publications` 는 검수중 오픈 신청 철회에 그대로 남는다(상세 하단 "스팟 오픈 철회" 시트).
-- 남은 것: 위 C 표의 `released` 필드. 현재는 진입 시 ON 으로 가정하고 응답값으로만 갱신한다.
+### `isReleased` 상세 응답 추가 (2026-09-08)
+
+`SpotDetailResponse.isReleased` 가 생겨(`검수완료 후 지도뷰/리스트 노출 on/off, 비공개 시 false`)
+토글의 단일 출처가 됐다. 기기 로컬 기억(`MySpotReleaseStore` / `PrefsMySpotReleaseStore`)은 제거했다
+— 재설치·다른 기기에서 OFF 가 ON 으로 보이던 문제가 함께 사라진다.
+
+- 상세 진입/재조회 시 `SpotDetail.isReleased` → `SpotOpenActionsViewModel.syncReleased()`.
+- 토글 전송 중(`isInFlight`)에는 `syncReleased` 를 무시한다 — 늦게 도착한 예전 응답이 낙관적 값을 되돌리지 않게.
+- 남은 것: `GET /v1/users/me/my-spots` 의 노출 플래그(목록 배지용).
 
 ## Integration Status
 

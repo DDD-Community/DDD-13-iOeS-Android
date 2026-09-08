@@ -30,6 +30,8 @@ data class SpotDetailResponseDto(
     val isMySpot: Boolean = false,
     /** 유저스팟 공개 상태(PUBLISHED 등). 현재 화면에서 쓰지 않고 수신만 한다. */
     val status: String = "",
+    /** 지도/리스트 노출 여부. 검수완료(PUBLISHED) 후의 on/off 플래그이며 비공개면 false. */
+    val isReleased: Boolean = false,
     val isCurated: Boolean = false,
     val likeCount: Long = 0L,
     val isLiked: Boolean = false,

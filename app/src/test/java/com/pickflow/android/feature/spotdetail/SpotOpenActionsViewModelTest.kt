@@ -1,7 +1,6 @@
 package com.pickflow.android.feature.spotdetail
 
 import app.cash.turbine.test
-import com.pickflow.android.core.services.protocols.MySpotReleaseStore
 import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.MySpotTransitionResult
@@ -40,35 +39,46 @@ class SpotOpenActionsViewModelTest {
     @AfterEach
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun vm() = SpotOpenActionsViewModel(mySpotService, releaseStore)
-
-    /** 서버가 노출 플래그를 안 줘서 기기에 남기는 저장소. 테스트에서는 인메모리로 둔다. */
-    private val releaseStore = object : MySpotReleaseStore {
-        private val values = mutableMapOf<Long, Boolean>()
-        override fun released(spotId: Long): Boolean = values[spotId] ?: true
-        override fun setReleased(spotId: Long, released: Boolean) { values[spotId] = released }
-    }
+    private fun vm() = SpotOpenActionsViewModel(mySpotService)
 
     @Test
-    fun `release toggle survives leaving and reopening the screen`() = runTest(testDispatcher) {
-        coEvery { mySpotService.setReleased(41L, false) } returns false
+    fun `release toggle follows the detail response`() = runTest(testDispatcher) {
         val viewModel = vm()
 
-        viewModel.setReleased(41L, false)
-        advanceUntilIdle()
-        assertFalse(viewModel.isReleased.value)
+        viewModel.syncReleased(true)
+        assertTrue(viewModel.isReleased.value)
 
-        // 화면을 나갔다 다시 들어오면 ViewModel 이 새로 만들어진다.
+        // 화면을 나갔다 다시 들어와도 서버가 준 값이 그대로 그려진다.
         val reopened = vm()
-        reopened.loadReleased(41L)
+        reopened.syncReleased(false)
 
         assertFalse(reopened.isReleased.value)
     }
 
     @Test
+    fun `release toggle keeps the optimistic value while the request is in flight`() =
+        runTest(testDispatcher) {
+            val pending = CompletableDeferred<Boolean>()
+            coEvery { mySpotService.setReleased(41L, false) } coAnswers { pending.await() }
+            val viewModel = vm()
+            viewModel.syncReleased(true)
+
+            viewModel.setReleased(41L, false)
+            runCurrent()
+            // 전송 중 도착한 예전 상세 응답이 낙관적 OFF 를 되돌리면 안 된다.
+            viewModel.syncReleased(true)
+            assertFalse(viewModel.isReleased.value)
+
+            pending.complete(false)
+            advanceUntilIdle()
+            assertFalse(viewModel.isReleased.value)
+        }
+
+    @Test
     fun `release toggle rolls back when the server rejects it`() = runTest(testDispatcher) {
         coEvery { mySpotService.setReleased(41L, false) } throws IllegalStateException("SP012")
         val viewModel = vm()
+        viewModel.syncReleased(true)
 
         viewModel.setReleased(41L, false)
         advanceUntilIdle()

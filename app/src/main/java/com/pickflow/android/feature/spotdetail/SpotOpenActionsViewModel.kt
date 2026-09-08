@@ -2,7 +2,6 @@ package com.pickflow.android.feature.spotdetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.pickflow.android.core.services.protocols.MySpotReleaseStore
 import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.MySpotStatusChange
@@ -27,7 +26,6 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class SpotOpenActionsViewModel @Inject constructor(
     private val mySpotService: MySpotService,
-    private val releaseStore: MySpotReleaseStore,
 ) : ViewModel() {
 
     private val _isInFlight = MutableStateFlow(false)
@@ -40,11 +38,10 @@ class SpotOpenActionsViewModel @Inject constructor(
     private val _statusChanges = MutableSharedFlow<MySpotStatus>(extraBufferCapacity = 1)
     val statusChanges: SharedFlow<MySpotStatus> = _statusChanges.asSharedFlow()
 
-/**
-     * 지도/리스트 노출 여부. 서버가 상세·목록 응답에 노출 플래그를 주지 않아
-     * 이 기기에서 마지막으로 누른 값을 [MySpotReleaseStore] 에 남겨 두고 복원한다.
+    /**
+     * 지도/리스트 노출 여부. 상세 응답의 `isReleased` 를 [syncReleased] 로 받아 그린다.
      */
-    private val _isReleased = MutableStateFlow(true)
+    private val _isReleased = MutableStateFlow(false)
     val isReleased: StateFlow<Boolean> = _isReleased.asStateFlow()
 
     /** 삭제 완료. 화면이 받아 뒤로 나간다. */
@@ -69,9 +66,13 @@ class SpotOpenActionsViewModel @Inject constructor(
         }
     }
 
-    /** 화면 진입 시 마지막으로 알려진 노출 상태를 복원한다. */
-    fun loadReleased(spotId: Long) {
-        _isReleased.value = releaseStore.released(spotId)
+    /**
+     * 상세 응답의 `isReleased` 를 토글에 반영한다.
+     * 전송 중에는 무시한다 — 낙관적으로 그려둔 값을 예전 응답이 되돌리지 않게 한다.
+     */
+    fun syncReleased(released: Boolean) {
+        if (_isInFlight.value) return
+        _isReleased.value = released
     }
 
     /**
@@ -84,9 +85,7 @@ class SpotOpenActionsViewModel @Inject constructor(
         _isReleased.value = released
         viewModelScope.launch {
             try {
-                val applied = mySpotService.setReleased(spotId, released)
-                _isReleased.value = applied
-                releaseStore.setReleased(spotId, applied)
+                _isReleased.value = mySpotService.setReleased(spotId, released)
                 _toast.value = if (released) RELEASED_TOAST else UNRELEASED_TOAST
             } catch (cancellation: CancellationException) {
                 throw cancellation

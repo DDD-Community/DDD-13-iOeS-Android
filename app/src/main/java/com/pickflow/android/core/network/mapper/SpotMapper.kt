@@ -108,6 +108,7 @@ fun SpotDetailResponseDto.toSpotDetail(): SpotDetail = SpotDetail(
     source = if (isCurated) SpotSource.Curated(displayName = "") else SpotSource.User,
     // 유저 스팟의 공개 상태. 큐레이션 스팟은 상태 개념이 없어 null 이다.
     mySpotStatus = status.takeIf { it.isNotBlank() && !isCurated }?.let(::parseMySpotStatus),
+    isReleased = isReleased,
     rejection = rejection?.toSpotRejection(),
     recommendationCount = likeCount,
     isRecommended = isLiked,
