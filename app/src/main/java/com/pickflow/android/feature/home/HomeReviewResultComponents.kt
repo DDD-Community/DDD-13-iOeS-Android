@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -50,7 +51,6 @@ fun HomeBottomNavigation(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp)
             .background(PickflowColors.gray95)
             .drawBehind {
                 drawLine(
@@ -59,7 +59,11 @@ fun HomeBottomNavigation(
                     end = Offset(size.width, 0f),
                     strokeWidth = 1.dp.toPx(),
                 )
-            },
+            }
+            // targetSdk 35(edge-to-edge 강제)에서 탭 라벨이 시스템 내비게이션 바에 가려지지 않도록.
+            // 배경·구분선은 padding 앞이라 내비바 뒤까지 칠해지고, 탭 콘텐츠만 inset 만큼 올라간다.
+            .navigationBarsPadding()
+            .height(64.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(modifier = Modifier.width(342.dp)) {

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
@@ -77,6 +78,8 @@ fun SpotOpenConfirmOverlay(
                 .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
                 .background(PickflowColors.gray95)
                 .clickable(enabled = false) {}
+                // ModalBottomSheet 이 아니라 직접 만든 시트라 inset 을 스스로 소비한다.
+                .navigationBarsPadding()
                 // 좌우 20dp — `SpotDetailSheetContent`/`ReportSheetBody` 와 같은 시트 여백.
                 .padding(horizontal = 20.dp)
                 .padding(top = 10.dp, bottom = 26.dp),

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,6 +46,9 @@ fun ForceUpdateScreen(storeUrl: String) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                // 배경은 바깥 Box 가 칠하므로 여기선 콘텐츠만 올린다.
+                // (edge-to-edge 강제 기기에서 "업데이트하기" 버튼이 내비바에 가리면 앱이 잠긴다)
+                .navigationBarsPadding()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

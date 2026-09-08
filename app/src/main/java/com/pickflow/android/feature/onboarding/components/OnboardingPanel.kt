@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +35,8 @@ fun OnboardingPanel(
         modifier = modifier
             .fillMaxWidth()
             .background(OnboardingPalette.panelBackground)
+            // 패널 배경은 내비바 뒤까지, 콘텐츠(CTA)만 inset 만큼 위로.
+            .navigationBarsPadding()
             .padding(top = 36.dp, bottom = 28.dp)
             .padding(horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
