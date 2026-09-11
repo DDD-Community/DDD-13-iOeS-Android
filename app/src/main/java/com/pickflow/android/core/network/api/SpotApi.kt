@@ -16,7 +16,6 @@ interface SpotApi {
      *   타입은 서버상 List 라 `?regionId=1&regionId=2` 다중 지정도 되지만, 앱은 단일 선택만 쓴다.
      * @param theme 다중 필터 — Retrofit 이 `?theme=A&theme=B` 반복 파라미터로 직렬화한다.
      *   null/빈 리스트면 파라미터 자체가 붙지 않는다(= 전체 조회).
-     *   반복 파라미터 형식은 PV-59 백엔드 확정시 변경 가능성 있음(CSV 가능성).
      */
     @GET("v1/spots")
     suspend fun getSpots(
