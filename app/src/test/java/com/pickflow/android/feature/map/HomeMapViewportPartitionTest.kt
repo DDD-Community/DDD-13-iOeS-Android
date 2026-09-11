@@ -112,54 +112,14 @@ class HomeMapViewportPartitionTest {
     }
 
     @Test
-    fun `viewport exposes only owned draft as MY and published user spots to public cluster`() =
+    fun `viewport partitions by isMySpot only regardless of status or source`() =
         runTest(testDispatcher) {
+            // 실제 viewport 응답(SpotSummary)에는 status/source 가 없다 — 어떤 값이 와도 isMySpot 만 본다.
             coEvery { mapService.fetchInViewport(any(), any(), any()) } returns listOf(
                 marker(1, isMine = false),
-                marker(
-                    2,
-                    isMine = true,
-                    source = SpotSource.User,
-                    status = MySpotStatus.DRAFT,
-                ),
-                marker(
-                    3,
-                    isMine = false,
-                    source = SpotSource.User,
-                    status = MySpotStatus.DRAFT,
-                    isOwnedByCurrentUser = false,
-                ),
-                marker(
-                    4,
-                    isMine = true,
-                    source = SpotSource.User,
-                    status = MySpotStatus.PENDING,
-                ),
-                marker(
-                    5,
-                    isMine = true,
-                    source = SpotSource.User,
-                    status = MySpotStatus.RE_REVIEW_PENDING,
-                ),
-                marker(
-                    6,
-                    isMine = true,
-                    source = SpotSource.User,
-                    status = MySpotStatus.REJECTED,
-                ),
-                marker(
-                    7,
-                    isMine = true,
-                    source = SpotSource.User,
-                    status = MySpotStatus.PUBLISHED,
-                ),
-                marker(
-                    8,
-                    isMine = false,
-                    source = SpotSource.User,
-                    status = MySpotStatus.PUBLISHED,
-                    isOwnedByCurrentUser = false,
-                ),
+                marker(2, isMine = true, source = SpotSource.Curated("Pickflow"), status = null),
+                marker(3, isMine = true, source = SpotSource.User, status = MySpotStatus.PUBLISHED),
+                marker(4, isMine = false, source = SpotSource.User, status = MySpotStatus.DRAFT),
             )
 
             val viewModel = vm()
@@ -167,12 +127,8 @@ class HomeMapViewportPartitionTest {
             advanceUntilIdle()
 
             val publicSpots = viewModel.curationSpots.value as LoadState.Loaded<List<Spot>>
-            assertEquals(listOf("1", "7", "8"), publicSpots.value.map { it.id })
-            assertEquals(listOf(2L), viewModel.mySpots.value.map { it.spotId })
-            assertEquals(null, viewModel.spotById("3"))
-            assertEquals(null, viewModel.spotById("4"))
-            assertEquals(null, viewModel.spotById("5"))
-            assertEquals(null, viewModel.spotById("6"))
+            assertEquals(listOf("1", "4"), publicSpots.value.map { it.id })
+            assertEquals(listOf(2L, 3L), viewModel.mySpots.value.map { it.spotId })
         }
 
     @Test

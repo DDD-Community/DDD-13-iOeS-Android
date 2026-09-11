@@ -162,7 +162,16 @@ fun NaverMapView(
                         bitmapCache = markerBitmapCache,
                         scope = markerScope,
                     )
-                    renderMySpotMarkers(map, mySpotMarkers, mySpots, context, selectedSpotId, onSpotTap)
+                    renderMySpotMarkers(
+                        naverMap = map,
+                        markers = mySpotMarkers,
+                        mySpots = mySpots,
+                        context = context,
+                        selectedSpotId = selectedSpotId,
+                        onTap = onSpotTap,
+                        bitmapCache = markerBitmapCache,
+                        scope = markerScope,
+                    )
                 }.onFailure { Log.e("NaverMapView", "마커 렌더 실패", it) }
             }
         },
@@ -389,6 +398,7 @@ private fun updateCurationClusterer(
 
 /**
  * 마이스팟 마커 렌더 — 클러스터링 미참여 별도 [Marker] 리스트. zIndex 250.
+ * 사진은 큐레이션 leaf 와 같은 [bitmapCache]/[loadBitmap] 경로로 받아 "MY" 오버레이 아래에 깐다.
  */
 private fun renderMySpotMarkers(
     naverMap: NaverMap,
@@ -397,15 +407,19 @@ private fun renderMySpotMarkers(
     context: Context,
     selectedSpotId: Long?,
     onTap: (Long) -> Unit,
+    bitmapCache: MutableMap<String, Bitmap>,
+    scope: kotlinx.coroutines.CoroutineScope,
 ) {
     markers.forEach { it.map = null }
     markers.clear()
 
     mySpots.forEach { spot ->
         val isSelected = spot.spotId == selectedSpotId
+        val url = spot.imageUrl
+        val cached = url?.let { bitmapCache[it] }
         val marker = Marker().apply {
             position = LatLng(spot.coordinates.latitude, spot.coordinates.longitude)
-            icon = MapMarkerIcons.mySpotIcon(context, isSelected)
+            icon = MapMarkerIcons.mySpotIcon(context, isSelected, cached)
             width = Marker.SIZE_AUTO
             height = Marker.SIZE_AUTO
             anchor = PointF(0.5f, 0.5f)
@@ -417,6 +431,14 @@ private fun renderMySpotMarkers(
             map = naverMap
         }
         markers.add(marker)
+        // 미캐시 사진은 비동기 로드 후 (마커가 아직 지도에 붙어 있으면) 아이콘 교체.
+        if (cached == null && url != null) {
+            scope.launch {
+                val bmp = loadBitmap(context, url) ?: return@launch
+                bitmapCache[url] = bmp
+                if (marker.map != null) marker.icon = MapMarkerIcons.mySpotIcon(context, isSelected, bmp)
+            }
+        }
     }
 }
 

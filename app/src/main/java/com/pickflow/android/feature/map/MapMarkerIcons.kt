@@ -48,9 +48,12 @@ object MapMarkerIcons {
     fun spotPhotoIcon(context: Context, photo: Bitmap, isSelected: Boolean = false): OverlayImage =
         OverlayImage.fromBitmap(drawSpotPhoto(context, photo, isSelected))
 
-    /** 마이스팟 단일 마커 — 56dp 흰 배경 + 검정 그라데이션 + 사진 + "MY". */
-    fun mySpotIcon(context: Context, isSelected: Boolean = false): OverlayImage =
-        OverlayImage.fromBitmap(drawMySpot(context, isSelected))
+    /**
+     * 마이스팟 단일 마커 — 56dp 흰 배경 + (사진 있으면 원형 center-crop) + 검정 그라데이션 + "MY".
+     * [photo] 가 null 이면 ic_photo 글리프로 대체. "MY" 텍스트는 사진 유무와 무관하게 항상 그린다.
+     */
+    fun mySpotIcon(context: Context, isSelected: Boolean = false, photo: Bitmap? = null): OverlayImage =
+        OverlayImage.fromBitmap(drawMySpot(context, isSelected, photo))
 
     private fun drawCluster(context: Context, count: Int, isSelected: Boolean): Bitmap {
         val density = context.resources.displayMetrics.density
@@ -94,7 +97,7 @@ object MapMarkerIcons {
         return bmp
     }
 
-    private fun drawMySpot(context: Context, isSelected: Boolean): Bitmap {
+    private fun drawMySpot(context: Context, isSelected: Boolean, photo: Bitmap?): Bitmap {
         val density = context.resources.displayMetrics.density
         val size = (56 * density).toInt().coerceAtLeast(1)
         // shadow blur(4dp) 를 위한 외곽 여유 — 좌우/상하 4dp 씩 + y offset 4dp.
@@ -114,8 +117,9 @@ object MapMarkerIcons {
         }
         canvas.drawCircle(cx, cy + (4 * density), r, shadow)
 
-        // 흰 원 + 검정 0.2 오버레이.
+        // 흰 원 + (사진 있으면 원형 center-crop) + 검정 0.2 오버레이.
         canvas.drawCircle(cx, cy, r, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE })
+        if (photo != null) drawCircularPhoto(canvas, photo, cx, cy, r, density)
         canvas.drawCircle(cx, cy, r, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x33000000 })
 
         // 검정 수직 그라데이션 (30% transparent → 100% black 0.7).
@@ -129,17 +133,19 @@ object MapMarkerIcons {
         }
         canvas.drawCircle(cx, cy, r, gradient)
 
-        // ic_photo 18dp + alpha 0.5 — iOS MyClusterPinView 의 `Image(.icPhoto).frame(18×18).opacity(0.5)` 동일.
-        // iOS 는 위쪽 padding(10) 후 하단에 "MY" 오버레이라 사진이 약간 위쪽으로 치우침.
-        drawPhotoIcon(
-            context,
-            canvas,
-            centerX = cx,
-            centerY = cy - 8f * density,
-            sizeDp = 18,
-            density = density,
-            alpha = 128,
-        )
+        // 사진이 없을 때만 ic_photo 18dp + alpha 0.5 글리프 — iOS MyClusterPinView 의
+        // `Image(.icPhoto).frame(18×18).opacity(0.5)` 동일. 위쪽 padding(10) 후 하단 "MY" 라 약간 위로 치우침.
+        if (photo == null) {
+            drawPhotoIcon(
+                context,
+                canvas,
+                centerX = cx,
+                centerY = cy - 8f * density,
+                sizeDp = 18,
+                density = density,
+                alpha = 128,
+            )
+        }
 
         val my = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
@@ -169,19 +175,7 @@ object MapMarkerIcons {
         val canvas = Canvas(bmp)
         val r = size / 2f
 
-        // 원형 클립 후 center-crop 사진 그리기.
-        val clip = android.graphics.Path().apply {
-            addCircle(r, r, r - 1f * density, android.graphics.Path.Direction.CW)
-        }
-        canvas.save()
-        canvas.clipPath(clip)
-        val srcSize = minOf(photo.width, photo.height)
-        val srcLeft = (photo.width - srcSize) / 2
-        val srcTop = (photo.height - srcSize) / 2
-        val src = Rect(srcLeft, srcTop, srcLeft + srcSize, srcTop + srcSize)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-        canvas.drawBitmap(photo, src, Rect(0, 0, size, size), paint)
-        canvas.restore()
+        drawCircularPhoto(canvas, photo, r, r, r, density)
 
         // 흰 링(2dp) — 어두운 지도 배경과 분리.
         val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -193,6 +187,23 @@ object MapMarkerIcons {
 
         if (isSelected) drawSelectionStroke(canvas, size, density)
         return bmp
+    }
+
+    /** (cx, cy) 중심 반지름 r 원 안에 사진을 center-crop 으로 그린다. 클립은 1dp 안쪽. */
+    private fun drawCircularPhoto(canvas: Canvas, photo: Bitmap, cx: Float, cy: Float, r: Float, density: Float) {
+        val clip = android.graphics.Path().apply {
+            addCircle(cx, cy, r - 1f * density, android.graphics.Path.Direction.CW)
+        }
+        canvas.save()
+        canvas.clipPath(clip)
+        val srcSize = minOf(photo.width, photo.height)
+        val srcLeft = (photo.width - srcSize) / 2
+        val srcTop = (photo.height - srcSize) / 2
+        val src = Rect(srcLeft, srcTop, srcLeft + srcSize, srcTop + srcSize)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+        val dst = Rect((cx - r).toInt(), (cy - r).toInt(), (cx + r).toInt(), (cy + r).toInt())
+        canvas.drawBitmap(photo, src, dst, paint)
+        canvas.restore()
     }
 
     /** ic_photo drawable 을 Canvas 에 px 크기로 중앙 정렬 그리기. */
