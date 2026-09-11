@@ -77,6 +77,24 @@ class MyProfileViewModelTest {
     }
 
     @Test
+    fun `load refreshes counts when returning after spot deletion`() = runTest(testDispatcher) {
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { userService.fetchMyPage() } returns home().copy(savedSpotCount = 3, recordedSpotCount = 2)
+        val viewModel = vm()
+        viewModel.load()
+        advanceUntilIdle()
+        assertEquals(2, (viewModel.myPage.value as LoadState.Loaded).value.recordedSpotCount)
+
+        coEvery { userService.fetchMyPage() } returns home().copy(savedSpotCount = 2, recordedSpotCount = 1)
+        viewModel.load()
+        advanceUntilIdle()
+
+        val refreshed = (viewModel.myPage.value as LoadState.Loaded).value
+        assertEquals(1, refreshed.recordedSpotCount)
+        assertEquals(2, refreshed.savedSpotCount)
+    }
+
+    @Test
     fun `load emits Failed on exception`() = runTest(testDispatcher) {
         coEvery { authService.isLoggedIn() } returns true
         val error = RuntimeException("boom")

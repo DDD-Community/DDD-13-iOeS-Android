@@ -1,5 +1,11 @@
 package com.pickflow.android.feature.archive
 
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertTextEquals
@@ -19,6 +25,8 @@ import com.pickflow.android.core.services.protocols.AuthService
 import com.pickflow.android.core.services.protocols.BookmarkService
 import com.pickflow.android.core.services.protocols.LocationService
 import com.pickflow.android.core.services.protocols.MySpot
+import com.pickflow.android.core.services.protocols.MySpotPage
+import com.pickflow.android.feature.spotdetail.SpotOpenActionsViewModel
 import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.SavedSpot
@@ -265,6 +273,61 @@ class ArchiveSpotOpenScreenUiTest {
         composeRule.onNodeWithTag("archive-private-$PRIVATE_SPOT_ID").assertDoesNotExist()
         composeRule.runOnIdle { assertEquals(0, detailOpenCount) }
         coVerify(exactly = 1) { bookmarkService.remove(PRIVATE_SPOT_ID.toString()) }
+    }
+
+    @Test
+    fun returning_after_successful_deletion_removes_the_cached_card() {
+        val archiveService = mockk<ArchiveService>()
+        val bookmarkService = mockk<BookmarkService>()
+        val authService = mockk<AuthService>()
+        val locationService = mockk<LocationService>()
+        val mySpotService = mockk<MySpotService>()
+        var spots = listOf(mySpot(41L, MySpotStatus.DRAFT))
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { locationService.currentLocation() } returns null
+        coEvery { archiveService.fetch() } returns Archive("나의 보관함", null)
+        coEvery { bookmarkService.savedSpots(0, null) } returns SavedSpotPage(emptyList(), 0, false)
+        coEvery { mySpotService.list(0, null) } answers { MySpotPage(spots, 0, false) }
+        coEvery { mySpotService.delete(41L) } answers { spots = emptyList() }
+        // HOME 백스택에 남는 실제 ViewModel을 화면 복귀 때도 재사용한다.
+        val viewModel = ArchiveViewModel(
+            archiveService, bookmarkService, authService, locationService, mySpotService,
+        )
+        val actions = SpotOpenActionsViewModel(mySpotService)
+        val guide = SpotOpenGuideViewModel(FakeNewFeatureGuide(active = false), SeenSpotOpenGuideStore)
+        composeRule.setContent {
+            PickflowTheme {
+                val navController = rememberNavController()
+                NavHost(navController, startDestination = "archive") {
+                    composable("archive") {
+                        ArchiveScreen(
+                            onOpenSpotDetail = {},
+                            onOpenMySpot = { navController.navigate("detail") },
+                            onRequireLogin = {},
+                            initialTab = ArchiveTab.MySpots,
+                            viewModel = viewModel,
+                            spotOpenGuideViewModel = guide,
+                        )
+                    }
+                    composable("detail") {
+                        LaunchedEffect(Unit) {
+                            actions.deleted.collect { navController.popBackStack() }
+                        }
+                        Button(onClick = { actions.delete(41L) }) { Text("삭제 확인") }
+                    }
+                }
+            }
+        }
+        composeRule.onNodeWithTag("archive-my-cell-41").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("삭제 확인").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("archive-my-cell-41").assertDoesNotExist()
+        composeRule.runOnIdle {
+            assertEquals(LoadState.Empty, viewModel.mySpots.value)
+            assertEquals(ArchiveTab.MySpots, viewModel.selectedTab.value)
+        }
+        coVerify(exactly = 1) { mySpotService.delete(41L) }
     }
 
     private companion object {

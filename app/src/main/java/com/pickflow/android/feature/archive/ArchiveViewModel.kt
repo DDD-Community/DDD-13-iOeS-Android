@@ -13,6 +13,8 @@ import com.pickflow.android.core.services.protocols.MySpotService
 import com.pickflow.android.core.services.protocols.SavedSpot
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -86,6 +88,7 @@ class ArchiveViewModel @Inject constructor(
     private var myCurrentPage: Int = 0
     private var myHasNext: Boolean = false
     private val myAccumulated = mutableListOf<MySpot>()
+    private var mySpotsJob: Job? = null
     private var currentCoordinates: com.pickflow.android.core.services.protocols.Coordinates? = null
 
     fun onAppear() {
@@ -95,6 +98,10 @@ class ArchiveViewModel @Inject constructor(
                 return@launch
             }
             currentCoordinates = runCatching { locationService.currentLocation() }.getOrNull()
+            // 상세에서 삭제·등록·상태 변경 후 돌아오면 HOME에 남아 있는 캐시도 갱신한다.
+            if (_selectedTab.value == ArchiveTab.MySpots || _mySpots.value !is LoadState.Idle) {
+                fetchMySpots()
+            }
             coroutineScope {
                 val a = async { fetchArchiveInfo() }
                 val b = async { fetchArchive() }
@@ -122,7 +129,7 @@ class ArchiveViewModel @Inject constructor(
         if (index < 0 || index < triggerIndex) return
 
         _isLoadingNextPage.value = true
-        viewModelScope.launch {
+        mySpotsJob = viewModelScope.launch {
             runCatching {
                 mySpotService.list(page = myCurrentPage + 1, coordinates = currentCoordinates)
             }.onSuccess { page ->
@@ -131,6 +138,7 @@ class ArchiveViewModel @Inject constructor(
                 myAccumulated.addAll(page.items)
                 _mySpots.value = LoadState.Loaded(myAccumulated.toList())
             }.onFailure {
+                if (it is CancellationException) throw it
                 showToast("다음 페이지를 불러오지 못했어요.")
             }
             _isLoadingNextPage.value = false
@@ -138,11 +146,14 @@ class ArchiveViewModel @Inject constructor(
     }
 
     private fun fetchMySpots() {
+        // 이전 페이지 응답이 새 목록에 삭제된 항목을 다시 붙이지 않게 한다.
+        mySpotsJob?.cancel()
+        _isLoadingNextPage.value = false
         _mySpots.value = LoadState.Loading
         myCurrentPage = 0
         myHasNext = false
         myAccumulated.clear()
-        viewModelScope.launch {
+        mySpotsJob = viewModelScope.launch {
             runCatching {
                 mySpotService.list(page = 0, coordinates = currentCoordinates)
             }.onSuccess { page ->
@@ -152,6 +163,7 @@ class ArchiveViewModel @Inject constructor(
                 _mySpots.value = if (page.items.isEmpty()) LoadState.Empty
                 else LoadState.Loaded(myAccumulated.toList())
             }.onFailure {
+                if (it is CancellationException) throw it
                 _mySpots.value = LoadState.Failed(it)
             }
         }
