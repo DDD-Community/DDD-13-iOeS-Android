@@ -33,6 +33,8 @@ data class SpotDetailResponseDto(
     /** 지도/리스트 노출 여부. 검수완료(PUBLISHED) 후의 on/off 플래그이며 비공개면 false. */
     val isReleased: Boolean = false,
     val isCurated: Boolean = false,
+    /** 이미지 출처 표기. 큐레이션 스팟은 적재된 원문(예: "ⓒ한국관광공사"), 유저 스팟은 "유저 등록" 고정. */
+    val imageCredit: String? = null,
     val likeCount: Long = 0L,
     val isLiked: Boolean = false,
     /** 추천 버튼 노출 여부. 내 스팟 등 추천 불가 대상은 false. */

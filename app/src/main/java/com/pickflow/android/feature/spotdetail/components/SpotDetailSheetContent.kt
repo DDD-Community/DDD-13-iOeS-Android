@@ -130,7 +130,7 @@ fun SpotDetailSheetContent(
                 }
             }
 
-            // 테마 · 북마크
+            // 테마 · 추천
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -138,7 +138,7 @@ fun SpotDetailSheetContent(
                 Text(spot.theme.displayName, style = PickflowTypography.bodyMedium, color = PickflowColors.gray10)
                 Dot()
                 Text(
-                    text = "북마크 ${spot.bookmarkCount}",
+                    text = "추천 ${spot.likeCount}",
                     style = PickflowTypography.bodyMedium,
                     color = PickflowColors.gray10,
                 )

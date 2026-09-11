@@ -8,16 +8,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.pickflow.android.R
 import com.pickflow.android.common.designsystem.PickflowColors
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.common.designsystem.PickflowTypography
@@ -47,12 +51,7 @@ fun SpotHeaderSection(spot: SpotDetailData, modifier: Modifier = Modifier) {
             }
         }
 
-        Text(
-            text = if (spot.isMine) spot.theme.displayName
-            else "${spot.theme.displayName} · 추천 ${spot.likeCount}",
-            style = PickflowTypography.bodySmall,
-            color = PickflowColors.gray30,
-        )
+        SpotMetaLine(spot)
 
         Text(
             text = spot.comment,
@@ -64,6 +63,44 @@ fun SpotHeaderSection(spot: SpotDetailData, modifier: Modifier = Modifier) {
                 .clip(RoundedCornerShape(12.dp))
                 .background(PickflowColors.gray90)
                 .padding(16.dp),
+        )
+    }
+}
+
+/**
+ * 제목 아래 메타 줄 — `ⓒ한국관광공사 ✓ · 윤슬 · 추천 10`.
+ *
+ * 출처(`imageCredit`) + 인증 배지는 큐레이션 스팟에만 붙는다.
+ * 유저 등록 스팟은 제목 옆 `유저 등록` 배지가 그 역할을 하므로 테마·추천 수만 남긴다.
+ */
+@Composable
+private fun SpotMetaLine(spot: SpotDetailData) {
+    val credit = spot.imageCredit?.takeIf { !spot.isMine && !spot.isUserRegistered && it.isNotBlank() }
+    val stats = if (spot.isMine) spot.theme.displayName
+    else "${spot.theme.displayName} · 추천 ${spot.likeCount}"
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (credit != null) {
+            Text(
+                text = credit,
+                style = PickflowTypography.bodySmall,
+                color = PickflowColors.gray30,
+                modifier = Modifier.testTag("detail-image-credit"),
+            )
+            Icon(
+                painter = painterResource(R.drawable.ic_verified),
+                contentDescription = null,
+                tint = PickflowColors.gray30,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+        Text(
+            text = if (credit != null) "· $stats" else stats,
+            style = PickflowTypography.bodySmall,
+            color = PickflowColors.gray30,
         )
     }
 }
