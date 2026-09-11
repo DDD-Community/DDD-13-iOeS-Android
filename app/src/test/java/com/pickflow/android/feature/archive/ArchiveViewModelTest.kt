@@ -22,6 +22,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.just
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -339,6 +340,108 @@ class ArchiveViewModelTest {
         viewModel.tabChanged(ArchiveTab.SavedSpots)
         viewModel.tabChanged(ArchiveTab.MySpots); advanceUntilIdle()
         coVerify(exactly = 1) { mySpotService.list(0, null) }
+    }
+
+    @Test
+    fun `onAppear refreshes both cached lists after deletion and restarts pagination`() = runTest(testDispatcher) {
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { bookmarkService.savedSpots(0, null) } returns SavedSpotPage(listOf(savedSpot(1)), 0, false)
+        coEvery { mySpotService.list(0, null) } returns MySpotPage(listOf(mySpot(1)), 0, true)
+        coEvery { mySpotService.list(1, null) } returns MySpotPage(listOf(mySpot(2)), 1, false)
+        val viewModel = vm()
+        viewModel.onAppear()
+        viewModel.tabChanged(ArchiveTab.MySpots)
+        advanceUntilIdle()
+        viewModel.loadNextMySpotPageIfNeeded(mySpot(1))
+        advanceUntilIdle()
+
+        coEvery { bookmarkService.savedSpots(0, null) } returns SavedSpotPage(emptyList(), 0, false)
+        coEvery { mySpotService.list(0, null) } returns MySpotPage(listOf(mySpot(2)), 0, true)
+        coEvery { mySpotService.list(1, null) } returns MySpotPage(listOf(mySpot(3)), 1, false)
+        viewModel.onAppear()
+        advanceUntilIdle()
+
+        assertEquals(ArchiveLoadState.Empty, viewModel.state.value)
+        assertEquals(LoadState.Loaded(listOf(mySpot(2))), viewModel.mySpots.value)
+        assertEquals(ArchiveTab.MySpots, viewModel.selectedTab.value)
+        viewModel.loadNextMySpotPageIfNeeded(mySpot(2))
+        advanceUntilIdle()
+        assertEquals(LoadState.Loaded(listOf(mySpot(2), mySpot(3))), viewModel.mySpots.value)
+        coVerify(exactly = 2) { mySpotService.list(1, null) }
+    }
+
+    @Test
+    fun `onAppear refreshes cached MySpots even when saved tab is selected`() = runTest(testDispatcher) {
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { mySpotService.list(0, null) } returns MySpotPage(listOf(mySpot(1)), 0, false)
+        val viewModel = vm()
+        viewModel.tabChanged(ArchiveTab.MySpots)
+        advanceUntilIdle()
+        viewModel.tabChanged(ArchiveTab.SavedSpots)
+
+        coEvery { mySpotService.list(0, null) } returns MySpotPage(emptyList(), 0, false)
+        viewModel.onAppear()
+        advanceUntilIdle()
+        viewModel.tabChanged(ArchiveTab.MySpots)
+        advanceUntilIdle()
+
+        assertEquals(LoadState.Empty, viewModel.mySpots.value)
+        assertEquals(false, viewModel.isLoadingNextPage.value)
+    }
+
+    @Test
+    fun `onAppear keeps unvisited MySpots lazy`() = runTest(testDispatcher) {
+        coEvery { authService.isLoggedIn() } returns true
+        val viewModel = vm()
+        viewModel.onAppear()
+        advanceUntilIdle()
+
+        assertEquals(LoadState.Idle, viewModel.mySpots.value)
+        coVerify(exactly = 0) { mySpotService.list(any(), any()) }
+    }
+
+    @Test
+    fun `failed refresh replaces stale MySpots and can recover on next appearance`() = runTest(testDispatcher) {
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { mySpotService.list(0, null) } returns MySpotPage(listOf(mySpot(1)), 0, false)
+        val viewModel = vm()
+        viewModel.tabChanged(ArchiveTab.MySpots)
+        advanceUntilIdle()
+
+        val error = RuntimeException("offline")
+        coEvery { mySpotService.list(0, null) } throws error
+        viewModel.onAppear()
+        advanceUntilIdle()
+        assertEquals(LoadState.Failed(error), viewModel.mySpots.value)
+
+        coEvery { mySpotService.list(0, null) } returns MySpotPage(emptyList(), 0, false)
+        viewModel.onAppear()
+        advanceUntilIdle()
+        assertEquals(LoadState.Empty, viewModel.mySpots.value)
+    }
+
+    @Test
+    fun `refresh cancels an old MySpots page so deleted items cannot reappear`() = runTest(testDispatcher) {
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { mySpotService.list(0, null) } returns MySpotPage(listOf(mySpot(1)), 0, true)
+        val oldPage = CompletableDeferred<MySpotPage>()
+        coEvery { mySpotService.list(1, null) } coAnswers { oldPage.await() }
+        val viewModel = vm()
+        viewModel.tabChanged(ArchiveTab.MySpots)
+        advanceUntilIdle()
+        viewModel.loadNextMySpotPageIfNeeded(mySpot(1))
+        runCurrent()
+        assertTrue(viewModel.isLoadingNextPage.value)
+
+        coEvery { mySpotService.list(0, null) } returns MySpotPage(emptyList(), 0, false)
+        viewModel.onAppear()
+        runCurrent()
+        oldPage.complete(MySpotPage(listOf(mySpot(1)), 1, false))
+        advanceUntilIdle()
+
+        assertEquals(LoadState.Empty, viewModel.mySpots.value)
+        assertEquals(false, viewModel.isLoadingNextPage.value)
+        assertEquals(null, viewModel.toast.value)
     }
 
     @Test

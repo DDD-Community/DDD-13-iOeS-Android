@@ -86,6 +86,7 @@ class SpotDetailOpenFlowUiTest {
     )
 
     private var revisedSpotId: Long? = null
+    private var deleteCompletionCount = 0
 
     private fun render(spot: SpotDetail) {
         val spotService = mockk<SpotService>()
@@ -106,6 +107,7 @@ class SpotDetailOpenFlowUiTest {
                 SpotDetailScreen(
                     spotId = "41",
                     onBack = {},
+                    onSpotDeleted = { deleteCompletionCount += 1 },
                     onReviseMySpot = { revisedSpotId = it },
                     viewModel = vm,
                     actionsViewModel = SpotDetailActionsViewModel(mockk(relaxed = true)),
@@ -271,6 +273,7 @@ class SpotDetailOpenFlowUiTest {
             .performSemanticsAction(SemanticsActions.OnClick)
         composeRule.waitForIdle()
         coVerify(timeout = 3_000, exactly = 1) { mySpotService.delete(41L) }
+        composeRule.runOnIdle { org.junit.Assert.assertEquals(1, deleteCompletionCount) }
     }
 
     @Test
