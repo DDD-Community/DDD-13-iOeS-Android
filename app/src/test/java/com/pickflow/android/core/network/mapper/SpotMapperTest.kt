@@ -1,6 +1,7 @@
 package com.pickflow.android.core.network.mapper
 
 import com.pickflow.android.core.network.dto.spot.SpotDetailResponseDto
+import com.pickflow.android.core.services.protocols.SpotSource
 import com.pickflow.android.core.network.dto.spot.SpotItemDto
 import com.pickflow.android.core.network.dto.spot.SpotSummaryDto
 import com.pickflow.android.core.services.protocols.SpotTheme
@@ -86,6 +87,7 @@ class SpotMapperTest {
               "isMySpot": false,
               "status": "PUBLISHED",
               "isCurated": true,
+              "imageCredit": "ⓒ한국관광공사",
               "likeCount": 7,
               "isLiked": true,
               "isLikeable": true,
@@ -97,6 +99,7 @@ class SpotMapperTest {
 
         assertEquals("PUBLISHED", dto.status)
         assertTrue(dto.isCurated)
+        assertEquals("ⓒ한국관광공사", dto.imageCredit)
         assertEquals(7L, dto.likeCount)
         assertTrue(dto.isLiked)
         assertTrue(dto.isLikeable)
@@ -135,5 +138,28 @@ class SpotMapperTest {
 
         assertTrue(released.isReleased)
         assertFalse(unreleased.isReleased)
+    }
+
+    @Test
+    fun `toSpotDetail carries imageCredit as the curated source label`() {
+        val curated = SpotDetailResponseDto(
+            spotId = 28,
+            isCurated = true,
+            imageCredit = "ⓒ한국관광공사",
+        ).toSpotDetail()
+
+        assertEquals(SpotSource.Curated("ⓒ한국관광공사"), curated.source)
+    }
+
+    @Test
+    fun `toSpotDetail ignores imageCredit for user registered spots`() {
+        // 유저 스팟은 서버가 "유저 등록" 을 내려주지만 화면은 배지로 대신한다.
+        val userSpot = SpotDetailResponseDto(
+            spotId = 95,
+            isCurated = false,
+            imageCredit = "유저 등록",
+        ).toSpotDetail()
+
+        assertEquals(SpotSource.User, userSpot.source)
     }
 }

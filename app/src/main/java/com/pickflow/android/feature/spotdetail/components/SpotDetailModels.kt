@@ -36,6 +36,11 @@ data class SpotDetailData(
     val isMine: Boolean = false,
     /** 유저가 등록한 스팟(운영 큐레이션 아님). 남의 스팟일 때 "유저 등록" 배지를 단다. */
     val isUserRegistered: Boolean = false,
+    /**
+     * 큐레이션 스팟의 이미지 출처 표기(서버 `imageCredit` 원문, 예: "ⓒ한국관광공사").
+     * 유저 등록 스팟은 `유저 등록` 배지가 대신하므로 null 이다.
+     */
+    val imageCredit: String? = null,
     val isBookmarked: Boolean = false,
     val isLiked: Boolean = false,
     /** 추천 버튼 노출 여부. 서버 `isLikeable` 그대로. */
@@ -79,6 +84,7 @@ fun SpotDetail.toDetailData(isBookmarked: Boolean, isLiked: Boolean = this.isLik
         likeCount = likeCount.toInt(),
         isMine = isMySpot,
         isUserRegistered = source is SpotSource.User,
+        imageCredit = (source as? SpotSource.Curated)?.displayName?.takeIf { it.isNotBlank() },
         isBookmarked = isBookmarked,
         isLiked = isLiked,
         isLikeable = isLikeable,

@@ -2,6 +2,7 @@ package com.pickflow.android.feature.spotdetail
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.semantics.SemanticsActions
@@ -205,6 +206,28 @@ class SpotDetailOpenFlowUiTest {
 
         composeRule.onNodeWithTag("detail-user-spot-badge", useUnmergedTree = true)
             .assertExists()
+        // 유저 스팟은 배지가 출처 역할을 하므로 메타 줄에 출처를 겹쳐 쓰지 않는다.
+        composeRule.onNodeWithTag("detail-image-credit", useUnmergedTree = true)
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun curated_spot_shows_the_image_credit_in_the_meta_line() {
+        render(fixture(status = null, isMySpot = false, source = SpotSource.Curated("ⓒ한국관광공사")))
+
+        // 서버 imageCredit 원문을 그대로 노출한다(ⓒ 를 클라이언트가 덧붙이지 않는다).
+        composeRule.onNodeWithTag("detail-image-credit", useUnmergedTree = true)
+            .assertTextEquals("ⓒ한국관광공사")
+        composeRule.onNodeWithText("· 윤슬 · 추천 0").assertIsDisplayed()
+    }
+
+    @Test
+    fun curated_spot_without_credit_keeps_the_plain_meta_line() {
+        render(fixture(status = null, isMySpot = false, source = SpotSource.Curated("")))
+
+        composeRule.onNodeWithTag("detail-image-credit", useUnmergedTree = true)
+            .assertDoesNotExist()
+        composeRule.onNodeWithText("윤슬 · 추천 0").assertIsDisplayed()
     }
 
     @Test

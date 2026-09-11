@@ -33,7 +33,7 @@
 | DTL-12 | `SpotOpenDetailContent` | `PUBLISHED`, 작성자 | 없음 | 유저 공개 출처, 추천, 오픈 취소, 삭제, 신고 표시 | 없음 | `spot-source-user`, `spot-recommendation`, `spot-action-cancel-open`, `spot-action-delete`, `detail-report` | `published_owner_renders_public_actions` |
 | DTL-13 | 공개 작성자 확인 시트 | `PUBLISHED` | 오픈 취소 확인 | 시트 닫힘 | `onCancelOpen` 1회 | `spot-cancel-open-sheet`, `spot-cancel-open-confirm` | `cancel_open_confirms_once` |
 | DTL-14 | 공개 작성자 삭제 시트 | `PUBLISHED` | 삭제 확인 | 시트 닫힘 | `onDelete` 1회 | `spot-delete-sheet`, `spot-delete-confirm` | `delete_confirms_once` |
-| DTL-15 | `SpotOpenDetailContent` | 큐레이션 공개, `한국관광공사` | 없음 | 출처명, 추천, 신고 표시; MY 상태 CTA 없음 | 없음 | `spot-source-curated`, `spot-recommendation`, `detail-report` | `curated_renders_source_recommendation_and_report` |
+| DTL-15 | `SpotHeaderSection` | 큐레이션 공개, `imageCredit="ⓒ한국관광공사"` | 없음 | 메타 줄에 출처 원문 + 인증 아이콘 (`ⓒ한국관광공사 ✓ · 윤슬 · 추천 N`); 유저 등록 배지 없음 | 없음 | `detail-image-credit` | `curated_spot_shows_the_image_credit_in_the_meta_line` |
 | DTL-16 | 추천 버튼 | 공개·미추천·로그인 | 추천 탭 | filled 상태와 count +1, 요청 중 disabled | `onToggleRecommendation` 1회 | `spot-recommendation`, `추천하지 않음` → `추천함` | `recommendation_toggles_optimistically` |
 | DTL-17 | 추천 버튼 | 공개·비로그인 | 추천 탭 | 로그인 유도 팝업 | 추천 service 0회 | `spot-recommendation`, `spot-recommendation-login` | `recommendation_logged_out_requests_login` |
 | DTL-18 | 승인 완료 모달 | 승인 결과, 최초 진입·미확인 | 닫기 | 모달 제거 후 상세 유지 | `onAcknowledgePublishedModal` 1회 | `spot-published-modal`, `spot-published-modal-confirm` | `published_modal_is_shown_once` |

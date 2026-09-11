@@ -76,7 +76,7 @@ fun SpotDetailResponseDto.toMySpotDetail(): MySpotDetail = MySpotDetail(
     recommendationCount = likeCount,
     isRecommended = isLiked,
     isMySpot = isMySpot,
-    source = if (isCurated) SpotSource.Curated(displayName = "") else SpotSource.User,
+    source = if (isCurated) SpotSource.Curated(displayName = imageCredit.orEmpty().trim()) else SpotSource.User,
 )
 
 internal fun RejectionInfoDto.toSpotRejection(): SpotRejection = SpotRejection(
