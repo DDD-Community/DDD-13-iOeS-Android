@@ -15,17 +15,16 @@ import org.junit.jupiter.api.Test
  * PV-85 로 빌드타입별 서버가 갈렸다(debug=개발, release=운영). 두 환경의 능력이 다르므로
  * 상수(`SERVER_KNOWN_THEMES`)에 의존하지 않고 **양쪽 형상을 명시적으로 주입해** 검증한다.
  *
- * 2026-08-18 실측 기준:
- * - 개발: 4종 모두 200 (`SUNLIGHT`→`SL`, `NIGHT_VIEW`→`NV`)
- * - 운영: 신규 2종은 400 C002
- * - **양쪽 다** 반복 파라미터는 200 이지만 첫 값만 적용
+ * 2026-09-11 재실측 기준:
+ * - 개발: 4종 모두 200 + **반복 파라미터 다중 필터 정상**
+ * - 운영: 신규 2종은 400 C002, 반복 파라미터는 200 이지만 첫 값만 적용
  */
 class MoodBackendCompatTest {
 
-    /** 운영 서버 형상 — 신규 2종을 모른다. */
+    /** 운영 서버 형상 — 신규 2종을 모르고 다중 필터도 못 받는다. */
     private val prod = setOf(SpotTheme.SUNSET, SpotTheme.YUNSEUL)
 
-    /** 개발 서버 형상 — 4종 모두 안다. */
+    /** 개발 서버 형상 — 4종 모두 알고 다중 필터도 처리한다. */
     private val dev = SpotTheme.entries.toSet()
 
     private fun spot(id: String, theme: SpotTheme) =
@@ -35,23 +34,64 @@ class MoodBackendCompatTest {
 
     @Test
     fun `single server-known theme is passed through`() {
-        assertEquals(setOf(SpotTheme.SUNSET), MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.SUNSET), prod))
+        assertEquals(
+            setOf(SpotTheme.SUNSET),
+            MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.SUNSET), prod, supportsMulti = false),
+        )
         // 개발 서버는 신규 2종도 그대로 위임한다.
-        assertEquals(setOf(SpotTheme.NIGHT_VIEW), MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.NIGHT_VIEW), dev))
+        assertEquals(
+            setOf(SpotTheme.NIGHT_VIEW),
+            MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.NIGHT_VIEW), dev, supportsMulti = true),
+        )
+    }
+
+    /**
+     * 다중을 지원하는 서버에는 선택 전부를 그대로 넘긴다.
+     *
+     * 회귀 방지: 이걸 안 넘기고 전체 조회 + 클라이언트 필터로 우회하면 페이지네이션 때문에
+     * 첫 페이지만 걸러져 "일부 스팟만 노출 / 정렬에 따라 개수 다름" 버그가 재발한다.
+     */
+    @Test
+    fun `multi theme selection is delegated as-is when the server supports it`() {
+        assertEquals(
+            setOf(SpotTheme.SUNSET, SpotTheme.YUNSEUL),
+            MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.SUNSET, SpotTheme.YUNSEUL), dev, supportsMulti = true),
+        )
+        assertEquals(
+            setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT_VIEW),
+            MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT_VIEW), dev, supportsMulti = true),
+        )
+        assertEquals(
+            SpotTheme.entries.toSet(),
+            MoodBackendCompat.serverQueryThemes(SpotTheme.entries.toSet(), dev, supportsMulti = true),
+        )
     }
 
     @Test
-    fun `two themes fall back to an unfiltered request on both environments`() {
-        // 반복 파라미터의 첫 값만 적용되므로, 두 개일 땐 아예 안 보내고 클라에서 거른다.
-        assertEquals(emptySet<SpotTheme>(), MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.SUNSET, SpotTheme.YUNSEUL), prod))
-        assertEquals(emptySet<SpotTheme>(), MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT_VIEW), dev))
+    fun `two themes fall back to an unfiltered request only where the server cannot filter`() {
+        // 운영은 반복 파라미터의 첫 값만 적용하므로, 두 개일 땐 아예 안 보내고 클라에서 거른다.
+        assertEquals(
+            emptySet<SpotTheme>(),
+            MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.SUNSET, SpotTheme.YUNSEUL), prod, supportsMulti = false),
+        )
     }
 
     @Test
     fun `themes the server does not know are never sent`() {
         // 운영에 SUNLIGHT/NIGHT_VIEW 를 보내면 400 C002 가 온다.
-        assertEquals(emptySet<SpotTheme>(), MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT_VIEW), prod))
-        assertEquals(setOf(SpotTheme.YUNSEUL), MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.YUNSEUL, SpotTheme.NIGHT_VIEW), prod))
+        assertEquals(
+            emptySet<SpotTheme>(),
+            MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.SUNLIGHT, SpotTheme.NIGHT_VIEW), prod, supportsMulti = false),
+        )
+        assertEquals(
+            setOf(SpotTheme.YUNSEUL),
+            MoodBackendCompat.serverQueryThemes(setOf(SpotTheme.YUNSEUL, SpotTheme.NIGHT_VIEW), prod, supportsMulti = false),
+        )
+        // 다중 지원 서버라도 모르는 값은 여전히 걸러낸다(가정상 조합).
+        assertEquals(
+            setOf(SpotTheme.SUNSET, SpotTheme.YUNSEUL),
+            MoodBackendCompat.serverQueryThemes(SpotTheme.entries.toSet(), prod, supportsMulti = true),
+        )
     }
 
     // MARK: - 네트워크 skip

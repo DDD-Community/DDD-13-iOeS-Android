@@ -13,23 +13,28 @@ import com.pickflow.android.core.services.protocols.ViewportBox
  * ## 왜 필요한가
  *
  * PV-85 로 빌드타입별 서버가 갈렸고(debug=개발, release=운영), 두 환경의 능력이 다르다.
- * 2026-08-18 실측:
+ * 2026-09-11 재실측(`/v1/spots`, `/v1/spots/viewport` 전 페이지 순회):
  *
  * | 요청 | 개발(debug) | 운영(release) |
  * |---|---|---|
  * | `?theme=SUNSET` / `?theme=YUNSEUL` | 200 | 200 |
- * | `?theme=SUNLIGHT` | **200** `{SL:6}` | **400 C002** |
- * | `?theme=NIGHT_VIEW` | **200** `{NV:2}` | **400 C002** |
- * | `?theme=A&theme=B` (반복) | **200 이지만 첫 값만 적용** | 동일 |
+ * | `?theme=SUNLIGHT` | **200** `{SL:1}` | **400 C002** |
+ * | `?theme=NIGHT_VIEW` | **200** `{}` | **400 C002** |
+ * | `?theme=A&theme=B` (반복) | **200, A∪B 정상 필터** ✅ | **200 이지만 첫 값만 적용** ⚠️ |
  * | `?theme=A,B` (CSV) | 400 | 400 |
  *
- * 즉 **신규 2종은 개발 서버에만 배포돼 있고, 다중 필터는 양쪽 다 미지원**이다.
- * 다중 쪽이 특히 위험하다 — 400이 아니라 200을 주므로 오작동을 감지할 수 없다.
+ * 즉 **개발 서버는 신규 2종과 다중 필터를 모두 지원하게 됐고, 운영 서버만 아직 옛 버전**이다.
+ * (예: dev `?theme=SUNSET&theme=SUNLIGHT` → 전 페이지 합계 30건 = SS 29 + SL 1.
+ * prod `?theme=SUNSET&theme=YUNSEUL` → 28건 전부 SS.)
+ * 운영 쪽 반복 파라미터가 특히 위험하다 — 400이 아니라 200을 주므로 오작동을 감지할 수 없다.
  *
  * ## 무엇을 하는가
  *
- * - 서버가 아는 무드(노을/윤슬)는 **실서버 응답을 그대로** 쓴다.
- * - 2개 이상 선택돼 서버가 처리 못 하면 `theme` 없이 전체를 받아 **클라이언트에서 필터**한다.
+ * - 서버가 아는 무드는 **실서버 응답을 그대로** 쓴다. 다중 필터를 지원하는 서버라면
+ *   2개 이상 선택도 그대로 위임한다([SERVER_SUPPORTS_MULTI_THEME]).
+ * - 다중을 못 받는 서버(운영)에서 2개 이상 선택되면 `theme` 없이 전체를 받아
+ *   **클라이언트에서 필터**한다. 페이지네이션과 함께 쓰면 첫 페이지만 걸러지므로
+ *   어디까지나 최후 수단이다.
  * - 서버가 모르는 무드(햇살/야경)는 [stubSpots] / [stubMarkers]로 채워 신규 UI를 볼 수 있게 한다.
  *   stub 스팟은 이름에 `[STUB]` 접두사가 붙어 실데이터와 구분된다.
  *
@@ -57,17 +62,26 @@ object MoodBackendCompat {
     val STUB_ONLY_THEMES: Set<SpotTheme> = SpotTheme.entries.toSet() - SERVER_KNOWN_THEMES
 
     /**
+     * 서버가 `theme` 반복 파라미터를 OR 필터로 제대로 처리하는가.
+     *
+     * 2026-09-11 실측으로 **개발 서버는 지원, 운영 서버는 여전히 첫 값만 적용**이다.
+     * 신규 무드 지원과 같은 배포에 묶여 있어 [SERVER_KNOWN_THEMES]와 같은 기준으로 나눈다.
+     */
+    val SERVER_SUPPORTS_MULTI_THEME: Boolean = BuildConfig.DEBUG
+
+    /**
      * 서버에 실제로 보낼 `theme` 집합.
      *
-     * 서버는 값을 1개만 처리하므로, 2개 이상이면 빈 Set(=전체 조회)을 돌려주고
-     * 걸러내는 일은 [filterServerItems]가 맡는다.
+     * 다중을 처리하는 서버면 선택된 것 전부를 그대로 보낸다. 처리하지 못하는 서버에서
+     * 2개 이상이면 빈 Set(=전체 조회)을 돌려주고 걸러내는 일은 [filterServerItems]가 맡는다.
      */
     fun serverQueryThemes(
         selected: Set<SpotTheme>,
         serverKnown: Set<SpotTheme> = SERVER_KNOWN_THEMES,
+        supportsMulti: Boolean = SERVER_SUPPORTS_MULTI_THEME,
     ): Set<SpotTheme> {
         val known = selected intersect serverKnown
-        return if (known.size == 1) known else emptySet()
+        return if (supportsMulti || known.size == 1) known else emptySet()
     }
 
     /** 서버가 아는 무드가 하나도 선택되지 않았다면 네트워크를 탈 이유가 없다. */
@@ -79,8 +93,8 @@ object MoodBackendCompat {
     /**
      * 서버 응답을 선택된 무드로 다시 거른다.
      *
-     * 서버가 1개만 필터해 준 경우엔 이미 걸러져 있어 no-op 이고,
-     * 2개 이상이라 전체를 받아온 경우엔 여기서 실제 필터링이 일어난다.
+     * 서버가 필터해 준 경우엔 이미 걸러져 있어 no-op 이고,
+     * 다중을 처리 못 해 전체를 받아온 경우엔 여기서 실제 필터링이 일어난다.
      */
     fun <T> filterServerItems(
         items: List<T>,
