@@ -24,6 +24,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
@@ -221,7 +222,7 @@ class SpotDetailViewModelTest {
         vm.reportInvalidInfo("실제 위치가 지도와 달라요"); advanceUntilIdle()
 
         assertTrue(vm.reportSubmitted.value)
-        assertEquals("제보가 접수되었습니다.", vm.toast.value)
+        assertEquals("제보가 접수되었습니다.", vm.toast.value?.message)
     }
 
     @Test
@@ -234,7 +235,7 @@ class SpotDetailViewModelTest {
         vm.reportInvalidInfo("실제 위치가 지도와 달라요"); advanceUntilIdle()
 
         assertFalse(vm.reportSubmitted.value)
-        assertEquals("제보 접수에 실패했어요.", vm.toast.value)
+        assertEquals("제보 접수에 실패했어요.", vm.toast.value?.message)
     }
 
     @Test
@@ -273,7 +274,7 @@ class SpotDetailViewModelTest {
         vm.notifyUpdateRequested()
 
         verify(exactly = 1) { analyticsLogger.log(ShareFakedoorAnalyticsEvent.NOTIFY_BUTTON_TAP) }
-        assertEquals("추후 업데이트 시, 가장 먼저 알림 보내드릴게요!", vm.toast.value)
+        assertEquals("추후 업데이트 시, 가장 먼저 알림 보내드릴게요!", vm.toast.value?.message)
     }
 
     @Test
@@ -284,6 +285,105 @@ class SpotDetailViewModelTest {
         vm.load("1"); advanceUntilIdle()
 
         assertTrue(vm.liked.value)
+    }
+
+    // MARK: - PV-143 추천 수
+
+    @Test
+    fun `likeCount seeds from the detail response`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns
+            fixture().copy(likeCount = 7L, isLiked = false, isLikeable = true)
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+
+        assertEquals(7, vm.likeCount.value)
+    }
+
+    /**
+     * 탭하는 순간 디바운스/네트워크를 기다리지 않고 +1 이 보여야 한다.
+     *
+     * `runCurrent()` 는 가상 시간을 진행시키지 않으므로 디바운스 `delay` 가 아직
+     * 걸려 있다 = **서버 요청 전**이다. 파생 StateFlow 가 재계산될 한 턴만 준다.
+     */
+    @Test
+    fun `likeCount increments optimistically before the request goes out`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns
+            fixture().copy(likeCount = 7L, isLiked = false, isLikeable = true)
+        coEvery { authService.isLoggedIn() } returns true
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+        vm.toggleLike(); runCurrent()
+
+        assertEquals(8, vm.likeCount.value)
+        coVerify(exactly = 0) { likeService.add(any()) }
+    }
+
+    /** 서버가 갱신된 수를 돌려주므로 낙관적 +1 대신 그 값이 최종이다. */
+    @Test
+    fun `likeCount takes the count returned by the server`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns
+            fixture().copy(likeCount = 7L, isLiked = false, isLikeable = true)
+        coEvery { authService.isLoggedIn() } returns true
+        // 다른 사용자의 추천이 겹쳐 서버 값이 +1 보다 클 수 있다.
+        coEvery { likeService.add("1") } returns 12L
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+        vm.toggleLike(); advanceUntilIdle()
+
+        assertEquals(12, vm.likeCount.value)
+    }
+
+    @Test
+    fun `likeCount rolls back with liked when the request fails`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns
+            fixture().copy(likeCount = 7L, isLiked = false, isLikeable = true)
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { likeService.add("1") } throws RuntimeException("net")
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+        vm.toggleLike(); advanceUntilIdle()
+
+        assertFalse(vm.liked.value)
+        assertEquals(7, vm.likeCount.value)
+    }
+
+    @Test
+    fun `likeCount decrements when the recommendation is withdrawn`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns
+            fixture().copy(likeCount = 7L, isLiked = true, isLikeable = true)
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { likeService.remove("1") } returns 6L
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+        vm.toggleLike(); advanceUntilIdle()
+
+        assertEquals(6, vm.likeCount.value)
+    }
+
+    /** 재조회 응답이 이미 추천 반영된 수를 주므로, 이전 동기화 값이 남아 이중 계산되면 안 된다. */
+    @Test
+    fun `reload does not double count an already synced like`() = runTest(testDispatcher) {
+        coEvery { spotService.spot("1") } returns
+            fixture().copy(likeCount = 7L, isLiked = false, isLikeable = true)
+        coEvery { authService.isLoggedIn() } returns true
+        coEvery { likeService.add("1") } returns 8L
+
+        val vm = vm()
+        vm.load("1"); advanceUntilIdle()
+        vm.toggleLike(); advanceUntilIdle()
+        assertEquals(8, vm.likeCount.value)
+
+        // 서버가 갱신된 상세를 준다 — 추천 여부/수가 모두 반영된 상태.
+        coEvery { spotService.spot("1") } returns
+            fixture().copy(likeCount = 8L, isLiked = true, isLikeable = true)
+        vm.load("1"); advanceUntilIdle()
+
+        assertEquals(8, vm.likeCount.value)
     }
 
     @Test
@@ -297,7 +397,9 @@ class SpotDetailViewModelTest {
         vm.toggleLike(); advanceUntilIdle()
 
         assertTrue(vm.liked.value)
-        assertEquals("이 스팟을 추천했어요.", vm.toast.value)
+        assertEquals("이 스팟을 추천했어요.", vm.toast.value?.message)
+        // PV-143 — 추천 토스트는 체크 아이콘을 달지 않는다.
+        assertEquals(false, vm.toast.value?.hasCheckIcon)
         coVerify(exactly = 1) { likeService.add("1") }
     }
 
@@ -327,7 +429,9 @@ class SpotDetailViewModelTest {
         vm.toggleLike(); advanceUntilIdle()
 
         assertFalse(vm.liked.value)
-        assertEquals("추천에 실패했어요.", vm.toast.value)
+        assertEquals("잠시 후 다시 시도해주세요.", vm.toast.value?.message)
+        // PV-143 — 추천 토스트는 체크 아이콘을 달지 않는다.
+        assertEquals(false, vm.toast.value?.hasCheckIcon)
     }
 
     @Test
@@ -344,7 +448,7 @@ class SpotDetailViewModelTest {
         advanceUntilIdle()
 
         assertTrue(vm.liked.value)
-        assertEquals("이 스팟을 추천했어요.", vm.toast.value)
+        assertEquals("이 스팟을 추천했어요.", vm.toast.value?.message)
         coVerify(exactly = 1) { likeService.add("1") }
         coVerify(exactly = 0) { likeService.remove(any()) }
     }

@@ -111,7 +111,8 @@ fun SpotDetailScreen(
     val spotState by viewModel.spot.collectAsStateWithLifecycle()
     val bookmarked by viewModel.bookmarked.collectAsStateWithLifecycle()
     val liked by viewModel.liked.collectAsStateWithLifecycle()
-    val toastMessage by viewModel.toast.collectAsStateWithLifecycle()
+    val likeCount by viewModel.likeCount.collectAsStateWithLifecycle()
+    val toast by viewModel.toast.collectAsStateWithLifecycle()
     val isLoginRequired by viewModel.isLoginRequired.collectAsStateWithLifecycle()
     val reportDraft by viewModel.reportDraft.collectAsStateWithLifecycle()
 
@@ -157,8 +158,8 @@ fun SpotDetailScreen(
             openActionsViewModel.consumeToast()
         }
     }
-    LaunchedEffect(toastMessage) {
-        if (toastMessage != null) {
+    LaunchedEffect(toast) {
+        if (toast != null) {
             toastVisible = true
             delay(3000)
             toastVisible = false
@@ -194,6 +195,7 @@ fun SpotDetailScreen(
                     spot = state.value,
                     isBookmarked = bookmarked,
                     isLiked = liked,
+                    likeCount = likeCount,
                     onRoute = { actionsViewModel.openInMap(state.value) },
                     onBookmark = viewModel::toggleBookmark,
                     onLike = viewModel::toggleLike,
@@ -221,9 +223,9 @@ fun SpotDetailScreen(
             }
         }
 
-        if (toastVisible) {
-            ReportSubmittedToast(
-                message = toastMessage ?: "제보가 접수되었습니다.",
+        toast?.takeIf { toastVisible }?.let {
+            SpotDetailToastBanner(
+                toast = it,
                 modifier = Modifier.align(Alignment.Center),
             )
         }
@@ -392,6 +394,7 @@ private fun LoadedBody(
     spot: SpotDetail,
     isBookmarked: Boolean,
     isLiked: Boolean,
+    likeCount: Int,
     onRoute: () -> Unit,
     onBookmark: () -> Unit,
     onLike: () -> Unit,
@@ -406,7 +409,7 @@ private fun LoadedBody(
     isReleased: Boolean,
     onToggleRelease: (Boolean) -> Unit,
 ) {
-    val data = spot.toDetailData(isBookmarked, isLiked)
+    val data = spot.toDetailData(isBookmarked, isLiked, likeCount)
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -561,10 +564,14 @@ private fun rejectedAtLabel(rejectedAt: String?): String {
     return listOfNotNull(date, "반려됨").joinToString(" ")
 }
 
-/** iOS `viewModel.toast`(체크 아이콘 + 텍스트, gray0 배경) 1:1. */
+/**
+ * iOS `viewModel.toast`(체크 아이콘 + 텍스트, gray0 배경) 1:1.
+ *
+ * 추천 성공/실패는 아이콘 없이 문구만 띄운다 — [SpotDetailToast.hasCheckIcon].
+ */
 @Composable
-private fun ReportSubmittedToast(
-    message: String,
+private fun SpotDetailToastBanner(
+    toast: SpotDetailToast,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -577,14 +584,18 @@ private fun ReportSubmittedToast(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Icon(
-            imageVector = Icons.Filled.CheckCircle,
-            contentDescription = null,
-            tint = PickflowColors.gray95,
-            modifier = Modifier.size(20.dp),
-        )
+        if (toast.hasCheckIcon) {
+            Icon(
+                imageVector = Icons.Filled.CheckCircle,
+                contentDescription = null,
+                tint = PickflowColors.gray95,
+                // contentDescription 이 null 이라 시맨틱에 안 잡힌다 —
+                // 아이콘 유무를 테스트에서 확인할 수 있게 태그를 남긴다.
+                modifier = Modifier.size(20.dp).testTag("spotdetail-toast-check"),
+            )
+        }
         Text(
-            text = message,
+            text = toast.message,
             style = PickflowTypography.bodyMediumBold,
             color = PickflowColors.gray95,
         )

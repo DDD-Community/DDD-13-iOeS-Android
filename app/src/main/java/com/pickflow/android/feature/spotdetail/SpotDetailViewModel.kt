@@ -21,8 +21,11 @@ import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -65,9 +68,9 @@ class SpotDetailViewModel @Inject constructor(
     private val _reportSubmitted = MutableStateFlow(false)
     val reportSubmitted: StateFlow<Boolean> = _reportSubmitted.asStateFlow()
 
-    /** 신고 결과 토스트 메시지. 1회 표시 후 [consumeToast] 로 비운다. */
-    private val _toast = MutableStateFlow<String?>(null)
-    val toast: StateFlow<String?> = _toast.asStateFlow()
+    /** 토스트. 1회 표시 후 [consumeToast] 로 비운다. */
+    private val _toast = MutableStateFlow<SpotDetailToast?>(null)
+    val toast: StateFlow<SpotDetailToast?> = _toast.asStateFlow()
 
     fun consumeToast() { _toast.value = null }
 
@@ -82,10 +85,10 @@ class SpotDetailViewModel @Inject constructor(
     fun clearReportDraft() { _reportDraft.value = "" }
 
     /** 스팟 등록 완료 직후 상세 진입 시 노출할 토스트. */
-    fun showRegisteredToast() { _toast.value = "나만의 스팟이 등록되었어요!" }
+    fun showRegisteredToast() { _toast.value = SpotDetailToast("나만의 스팟이 등록되었어요!") }
 
     /** 다른 ViewModel(오픈 상태 전이 등)이 만든 안내를 같은 토스트 자리로 흘려보낸다. */
-    fun showToast(message: String) { _toast.value = message }
+    fun showToast(message: String) { _toast.value = SpotDetailToast(message) }
 
     /**
      * iOS `SpotDetailViewModel.notifyUpdateRequested()` 1:1 fakedoor — "나만의 스팟 오픈" CTA 의
@@ -93,7 +96,7 @@ class SpotDetailViewModel @Inject constructor(
      */
     fun notifyUpdateRequested() {
         analyticsLogger.log(ShareFakedoorAnalyticsEvent.NOTIFY_BUTTON_TAP)
-        _toast.value = "추후 업데이트 시, 가장 먼저 알림 보내드릴게요!"
+        _toast.value = SpotDetailToast("추후 업데이트 시, 가장 먼저 알림 보내드릴게요!")
     }
 
     fun load(spotId: String) {
@@ -107,6 +110,8 @@ class SpotDetailViewModel @Inject constructor(
             // 서버 응답이 단일 출처. 로드 실패 시엔 알 수 없으므로 false.
             _bookmarked.value = result.getOrNull()?.isBookmarked ?: false
             _liked.value = result.getOrNull()?.isLiked ?: false
+            // 새 응답이 기준이 되므로 이전 동기화 결과는 버린다.
+            _likeSynced.value = null
         }
     }
 
@@ -114,8 +119,25 @@ class SpotDetailViewModel @Inject constructor(
     // 이전 요청은 취소되므로 "따다다닥" 눌러도 최종 상태 하나만 서버로 가고 토스트도 한 번 뜬다.
     private var likeJob: Job? = null
 
-    /** 서버에 마지막으로 반영된 값. null 이면 로드 응답의 isLiked 가 기준. */
-    private var likeSyncedValue: Boolean? = null
+    /** 서버 응답으로 확인된 추천 상태와 수. null 이면 상세 응답의 값이 기준. */
+    private data class LikeSync(val liked: Boolean, val count: Long)
+
+    private val _likeSynced = MutableStateFlow<LikeSync?>(null)
+
+    /**
+     * 헤더 "추천 N" 에 쓰는 추천 수.
+     *
+     * 기준값(상세 응답 또는 서버가 확인해 준 값)에 현재 [liked] 와의 차이를 얹는다.
+     * 그래서 탭하는 순간 +1 이 즉시 보이고, 서버 응답이 오면 서버가 준 수로 정정되며,
+     * 실패해 [liked] 가 롤백되면 수도 같이 돌아온다 — 별도 롤백 로직이 필요 없다.
+     */
+    val likeCount: StateFlow<Int> = combine(_spot, _liked, _likeSynced) { state, liked, synced ->
+        val detail = (state as? LoadState.Loaded<SpotDetail>)?.value
+        val baseCount = synced?.count ?: detail?.likeCount ?: 0L
+        val baseLiked = synced?.liked ?: detail?.isLiked ?: false
+        val delta = (if (liked) 1 else 0) - (if (baseLiked) 1 else 0)
+        (baseCount + delta).coerceAtLeast(0L).toInt()
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
     /**
      * debounce 창(ms). Robolectric UI 테스트는 viewModelScope 의 [delay] 를 진행시키지 못해
@@ -143,7 +165,7 @@ class SpotDetailViewModel @Inject constructor(
             }
             if (likeDebounceMillis > 0L) delay(likeDebounceMillis)
 
-            val baseline = likeSyncedValue ?: current.isLiked
+            val baseline = _likeSynced.value?.liked ?: current.isLiked
             val target = _liked.value
             // 연타로 원래 상태에 돌아왔으면 보낼 것도, 알릴 것도 없다.
             if (target == baseline) return@launch
@@ -151,12 +173,13 @@ class SpotDetailViewModel @Inject constructor(
             runCatching {
                 val spotId = current.id.toString()
                 if (target) likeService.add(spotId) else likeService.remove(spotId)
-            }.onSuccess {
-                likeSyncedValue = target
-                if (target) _toast.value = "이 스팟을 추천했어요."
+            }.onSuccess { serverCount ->
+                // 서버가 갱신된 추천 수를 돌려준다 — 낙관적 +1 을 서버 값으로 정정한다.
+                _likeSynced.value = LikeSync(liked = target, count = serverCount)
+                if (target) _toast.value = SpotDetailToast(LIKE_SUCCESS_TOAST, hasCheckIcon = false)
             }.onFailure {
                 _liked.value = baseline
-                _toast.value = "추천에 실패했어요."
+                _toast.value = SpotDetailToast(LIKE_FAILURE_TOAST, hasCheckIcon = false)
             }
         }
     }
@@ -188,7 +211,7 @@ class SpotDetailViewModel @Inject constructor(
                     }
                 }.onFailure {
                     _bookmarked.value = previousValue
-                    _toast.value = "북마크 변경에 실패했어요."
+                    _toast.value = SpotDetailToast("북마크 변경에 실패했어요.")
                 }
             } finally {
                 isBookmarkInFlight = false
@@ -220,14 +243,16 @@ class SpotDetailViewModel @Inject constructor(
             runCatching { spotReportService.report(current.id, content.trim()) }
                 .onSuccess {
                     _reportSubmitted.value = true
-                    _toast.value = "제보가 접수되었습니다."
+                    _toast.value = SpotDetailToast("제보가 접수되었습니다.")
                     clearReportDraft()
                 }
                 .onFailure { error ->
                     // 서버 정책 거부(예: SP002 미승인 스팟)는 사유를 그대로 노출.
-                    _toast.value = (error as? ApiException)?.message
-                        ?.takeIf { it.isNotBlank() }
-                        ?: "제보 접수에 실패했어요."
+                    _toast.value = SpotDetailToast(
+                        (error as? ApiException)?.message
+                            ?.takeIf { it.isNotBlank() }
+                            ?: "제보 접수에 실패했어요.",
+                    )
                 }
         }
     }
@@ -235,6 +260,12 @@ class SpotDetailViewModel @Inject constructor(
     companion object {
         const val REPORT_MIN_LENGTH = 5
         const val REPORT_MAX_LENGTH = 200
+
+        /** 추천 등록 성공 안내. 체크 아이콘 없는 토스트다(PV-143). */
+        const val LIKE_SUCCESS_TOAST = "이 스팟을 추천했어요."
+
+        /** 추천 실패 안내. 체크 아이콘 없는 토스트다(PV-143). */
+        const val LIKE_FAILURE_TOAST = "잠시 후 다시 시도해주세요."
 
         /** 추천 연타를 하나로 접는 시간. 이 안에 다시 누르면 이전 요청은 취소된다. */
         const val LIKE_DEBOUNCE_MS = 300L

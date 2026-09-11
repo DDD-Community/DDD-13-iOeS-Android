@@ -3,6 +3,7 @@ package com.pickflow.android.feature.spotdetail
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -251,12 +252,13 @@ class SpotDetailScreenUiTest {
         mockk<AnalyticsLogger>(relaxed = true),
     ).apply { likeDebounceMillis = 0L }
 
-    private fun render(vm: SpotDetailViewModel) {
+    private fun render(vm: SpotDetailViewModel, showRegisteredToast: Boolean = false) {
         composeRule.setContent {
             PickflowTheme {
                 SpotDetailScreen(
                     spotId = "1",
                     onBack = {},
+                    showRegisteredToast = showRegisteredToast,
                     viewModel = vm,
                     actionsViewModel = actionsViewModel(),
                     openActionsViewModel = openActionsViewModel(),
@@ -318,6 +320,84 @@ class SpotDetailScreenUiTest {
 
         composeRule.onNodeWithTag("detail-like").performClick()
         composeRule.onNodeWithTag("spotdetail-login-overlay").assertIsDisplayed()
+    }
+
+    // MARK: - PV-143
+
+    /** 추천 토스트는 체크 아이콘 없이 문구만 띄운다. */
+    @Test
+    fun like_toast_has_no_check_icon() {
+        val spotService = mockk<SpotService>()
+        coEvery { spotService.spot("1") } returns spot(isLikeable = true)
+        val likeService = mockk<LikeService>()
+        coEvery { likeService.add("1") } returns 8L
+        val authService = mockk<AuthService>(relaxed = true)
+        coEvery { authService.isLoggedIn() } returns true
+
+        render(viewModel(spotService, authService, likeService))
+
+        composeRule.onNodeWithTag("detail-like").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithTag("spotdetail-toast").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("이 스팟을 추천했어요.").assertIsDisplayed()
+        composeRule.onNodeWithTag("spotdetail-toast-check").assertDoesNotExist()
+    }
+
+    /** 반대로 제보 접수 등 기존 토스트는 체크 아이콘을 유지한다. */
+    @Test
+    fun registered_toast_keeps_the_check_icon() {
+        val spotService = mockk<SpotService>()
+        coEvery { spotService.spot("1") } returns spot(isLikeable = false)
+
+        render(viewModel(spotService, mockk(relaxed = true)), showRegisteredToast = true)
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithTag("spotdetail-toast").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("나만의 스팟이 등록되었어요!").assertIsDisplayed()
+        composeRule.onNodeWithTag("spotdetail-toast-check").assertIsDisplayed()
+    }
+
+    /** 추천을 누르면 헤더의 "추천 N" 이 바로 +1 된다(낙관적 반영). */
+    @Test
+    fun tapping_like_increments_the_header_like_count() {
+        val spotService = mockk<SpotService>()
+        coEvery { spotService.spot("1") } returns spot(isLikeable = true, likeCount = 7)
+        val likeService = mockk<LikeService>()
+        coEvery { likeService.add("1") } returns 8L
+        val authService = mockk<AuthService>(relaxed = true)
+        coEvery { authService.isLoggedIn() } returns true
+
+        render(viewModel(spotService, authService, likeService))
+
+        composeRule.onNodeWithText("노을 · 추천 7").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("detail-like").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("노을 · 추천 8").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("노을 · 추천 8").assertIsDisplayed()
+    }
+
+    /** 추천 실패 시 수도 함께 되돌아온다. */
+    @Test
+    fun failed_like_restores_the_header_like_count() {
+        val spotService = mockk<SpotService>()
+        coEvery { spotService.spot("1") } returns spot(isLikeable = true, likeCount = 7)
+        val likeService = mockk<LikeService>()
+        coEvery { likeService.add("1") } throws RuntimeException("net")
+        val authService = mockk<AuthService>(relaxed = true)
+        coEvery { authService.isLoggedIn() } returns true
+
+        render(viewModel(spotService, authService, likeService))
+
+        composeRule.onNodeWithTag("detail-like").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("잠시 후 다시 시도해주세요.").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("노을 · 추천 7").assertIsDisplayed()
+        composeRule.onNodeWithTag("spotdetail-toast-check").assertDoesNotExist()
     }
 
     @Test

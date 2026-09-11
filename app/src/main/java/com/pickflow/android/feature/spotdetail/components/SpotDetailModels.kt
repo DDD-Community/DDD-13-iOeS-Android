@@ -75,13 +75,18 @@ data class SpotDetailData(
  * iOS `SpotDetailView`가 `SpotDetail` 도메인 + `pickflowDisplayTime` 헬퍼로
  * 즉석에서 만드는 값을 동일 자리에서 한 번에 만든다.
  */
-fun SpotDetail.toDetailData(isBookmarked: Boolean, isLiked: Boolean = this.isLiked): SpotDetailData =
+fun SpotDetail.toDetailData(
+    isBookmarked: Boolean,
+    isLiked: Boolean = this.isLiked,
+    /** 추천 낙관 반영/서버 정정이 얹힌 표시용 추천 수. 기본은 상세 응답 값. */
+    likeCount: Int = this.likeCount.toInt(),
+): SpotDetailData =
     SpotDetailData(
         name = name,
         theme = theme.toDetailTheme(),
         comment = comment,
         bookmarkCount = bookmarkCount.toInt(),
-        likeCount = likeCount.toInt(),
+        likeCount = likeCount,
         isMine = isMySpot,
         isUserRegistered = source is SpotSource.User,
         imageCredit = (source as? SpotSource.Curated)?.displayName?.takeIf { it.isNotBlank() },
