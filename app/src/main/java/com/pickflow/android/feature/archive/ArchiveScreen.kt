@@ -533,8 +533,12 @@ private fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScop
                             distanceKm = saved.distanceKm,
                             imageUrl = saved.imageUrl,
                             isBookmarked = true,
+                            // 탐색 리스트와 같은 "무드 · 추천 N" 표기(PV-144).
+                            likeCount = saved.likeCount,
                         ),
                         modifier = Modifier.alpha(if (isPrivate) 0.28f else 1f),
+                        // 비공개 스팟은 셀 전체가 안내 문구로 덮이므로 토글 자리를 두지 않는다.
+                        onBookmarkClick = if (isPrivate) null else ({ onBookmarkTap(saved.id) }),
                     )
                     if (isPrivate) {
                         Box(
@@ -553,15 +557,6 @@ private fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScop
                                     .semantics { contentDescription = "비공개로 전환됨" },
                             )
                         }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .size(32.dp)
-                                .clickable { onBookmarkTap(saved.id) }
-                                .testTag("archive-bookmark-${saved.id}"),
-                        )
                     }
                 }
             }

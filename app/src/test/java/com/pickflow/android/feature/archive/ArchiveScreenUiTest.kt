@@ -13,7 +13,10 @@ import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.core.services.protocols.MySpot
 import com.pickflow.android.core.services.protocols.MySpotStatus
 import com.pickflow.android.core.services.protocols.SavedSpot
+import com.pickflow.android.core.services.protocols.SavedSpotAvailability
 import com.pickflow.android.core.services.protocols.SpotTheme
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,7 +32,11 @@ class ArchiveScreenUiTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private fun saved(id: Long) = SavedSpot(
+    private fun saved(
+        id: Long,
+        likeCount: Long = 0L,
+        availability: SavedSpotAvailability = SavedSpotAvailability.AVAILABLE,
+    ) = SavedSpot(
         id = id,
         name = "spot$id",
         theme = SpotTheme.SUNSET,
@@ -37,8 +44,10 @@ class ArchiveScreenUiTest {
         latitude = 0.0,
         longitude = 0.0,
         distanceKm = null,
+        likeCount = likeCount,
         savedAt = "2026-01-01T00:00:00Z",
         deleted = false,
+        availability = availability,
     )
 
     private fun my(id: Long, status: MySpotStatus) = MySpot(
@@ -99,6 +108,92 @@ class ArchiveScreenUiTest {
         }
         composeRule.onNodeWithTag("archive-scroll").assertIsDisplayed()
         composeRule.onNodeWithTag("archive-cell-1").assertIsDisplayed()
+    }
+
+    // MARK: - PV-144
+
+    /**
+     * 북마크 아이콘을 눌러도 셀 클릭(상세 이동)만 되던 버그.
+     *
+     * 히트영역이 썸네일 우상단의 보이지 않는 32dp Box 였는데 실제 아이콘은 메타 행에
+     * 있어 위치가 어긋나 있었다. 이제 아이콘 자체가 IconButton 이다.
+     */
+    @Test
+    fun tapping_the_bookmark_icon_toggles_instead_of_navigating() {
+        var bookmarked: Long? = null
+        var navigated: Long? = null
+        composeRule.setContent {
+            PickflowTheme {
+                ArchiveScreenContent(
+                    state = ArchiveLoadState.Loaded(items = listOf(saved(1)), hasNext = false),
+                    selectedTab = ArchiveTab.SavedSpots,
+                    archiveName = "나의 보관함",
+                    onCellClick = { navigated = it },
+                    onBookmarkTap = { bookmarked = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("spotcell-bookmark-1").performClick()
+
+        assertEquals(1L, bookmarked)
+        assertNull(navigated)
+    }
+
+    /** 셀의 다른 곳을 누르면 그대로 상세로 이동해야 한다. */
+    @Test
+    fun tapping_the_cell_body_still_navigates() {
+        var bookmarked: Long? = null
+        var navigated: Long? = null
+        composeRule.setContent {
+            PickflowTheme {
+                ArchiveScreenContent(
+                    state = ArchiveLoadState.Loaded(items = listOf(saved(1)), hasNext = false),
+                    selectedTab = ArchiveTab.SavedSpots,
+                    archiveName = "나의 보관함",
+                    onCellClick = { navigated = it },
+                    onBookmarkTap = { bookmarked = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("archive-cell-1").performClick()
+
+        assertEquals(1L, navigated)
+        assertNull(bookmarked)
+    }
+
+    /** 저장 리스트도 탐색 리스트처럼 "무드 · 추천 N" 을 보여준다. */
+    @Test
+    fun saved_cell_shows_like_count() {
+        composeRule.setContent {
+            PickflowTheme {
+                ArchiveScreenContent(
+                    state = ArchiveLoadState.Loaded(items = listOf(saved(1, likeCount = 12)), hasNext = false),
+                    selectedTab = ArchiveTab.SavedSpots,
+                    archiveName = "나의 보관함",
+                )
+            }
+        }
+        composeRule.onNodeWithText("추천 12").assertIsDisplayed()
+    }
+
+    /** 비공개 스팟 셀은 안내 문구로 덮이므로 북마크 토글 자리를 두지 않는다. */
+    @Test
+    fun private_saved_cell_has_no_bookmark_button() {
+        composeRule.setContent {
+            PickflowTheme {
+                ArchiveScreenContent(
+                    state = ArchiveLoadState.Loaded(
+                        items = listOf(saved(1, availability = SavedSpotAvailability.AUTHOR_PRIVATE)),
+                        hasNext = false,
+                    ),
+                    selectedTab = ArchiveTab.SavedSpots,
+                    archiveName = "나의 보관함",
+                )
+            }
+        }
+        composeRule.onNodeWithTag("spotcell-bookmark-1").assertDoesNotExist()
     }
 
     @Test
