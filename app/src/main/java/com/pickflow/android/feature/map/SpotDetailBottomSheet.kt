@@ -214,6 +214,7 @@ fun SpotPreview.toSpotDetailData(): SpotDetailData = SpotDetailData(
     name = name,
     theme = theme.toDetailTheme(),
     bookmarkCount = bookmarkCount.toInt(),
+    likeCount = likeCount.toInt(),
     isMine = isMySpot,
     isBookmarked = false,
     address = addressSimple.ifBlank { addressRoad ?: addressJibun ?: "주소 정보 없음" },
@@ -228,6 +229,7 @@ fun SpotPreview.toSpotDetailData(): SpotDetailData = SpotDetailData(
 fun Spot.toSpotDetailData(): SpotDetailData = SpotDetailData(
     name = name,
     theme = theme.toDetailTheme(),
+    likeCount = likeCount.toInt(),
     address = address.ifBlank { "주소 정보 없음" },
     hasImage = imageUrl != null,
     imageUrl = imageUrl,

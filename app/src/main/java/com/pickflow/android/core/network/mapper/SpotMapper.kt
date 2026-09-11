@@ -147,4 +147,5 @@ fun SpotPreviewResponseDto.toSpotPreview(): SpotPreview = SpotPreview(
     addressRoad = addressRoad?.takeIf { it.isNotBlank() },
     addressJibun = addressJibun?.takeIf { it.isNotBlank() },
     isBookmarked = isBookmarked,
+    likeCount = likeCount,
 )

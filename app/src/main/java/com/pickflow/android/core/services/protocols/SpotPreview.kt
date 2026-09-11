@@ -21,4 +21,5 @@ data class SpotPreview(
     val addressRoad: String?,
     val addressJibun: String?,
     val isBookmarked: Boolean = false,
+    val likeCount: Long = 0L,
 )
