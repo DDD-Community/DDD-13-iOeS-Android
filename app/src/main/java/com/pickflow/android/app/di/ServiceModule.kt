@@ -7,6 +7,8 @@ import com.pickflow.android.core.services.impl.DefaultLikeService
 import com.pickflow.android.core.services.impl.DefaultBookmarkService
 import com.pickflow.android.core.services.impl.DefaultMySpotAlarmService
 import com.pickflow.android.core.services.impl.DefaultMySpotService
+import com.pickflow.android.core.services.impl.DefaultSpotListService
+import com.pickflow.android.core.services.impl.DefaultSpotMapService
 import com.pickflow.android.core.services.impl.DefaultSpotReportService
 import com.pickflow.android.core.services.impl.DefaultSocialLoginService
 import com.pickflow.android.core.services.impl.DefaultUserService
@@ -22,14 +24,12 @@ import com.pickflow.android.core.services.impl.DefaultRegionCatalog
 import com.pickflow.android.core.services.impl.DefaultRegionStore
 import com.pickflow.android.core.services.impl.PrefsDevSettings
 import com.pickflow.android.core.services.impl.StatusDiffReviewResultService
-import com.pickflow.android.core.services.impl.compat.MoodCompatSpotListService
 import com.pickflow.android.core.services.impl.FirebaseAnalyticsLogger
 import com.pickflow.android.core.services.impl.AndroidExternalAppLauncher
 import com.pickflow.android.core.services.impl.AndroidShareIntentService
 import com.pickflow.android.core.services.impl.RealKakaoAuthProvider
 import com.pickflow.android.core.services.impl.DefaultAddressService
 import com.pickflow.android.core.services.impl.RealAppleAuthProvider
-import com.pickflow.android.core.services.impl.compat.MoodCompatSpotMapService
 import com.pickflow.android.core.services.impl.DefaultLocationService
 import com.pickflow.android.core.services.impl.DefaultSpotService
 import com.pickflow.android.core.services.protocols.AppleAuthProvider
@@ -143,9 +143,7 @@ abstract class ServiceModule {
     abstract fun bindDevSettings(impl: PrefsDevSettings): DevSettings
 
     @Binds
-    // PV-59 임시: 백엔드가 신규 무드/다중 theme 를 지원하면 DefaultSpotListService 로 되돌린다.
-    // docs/PV-59/backend-compat-rollback.md
-    abstract fun bindSpotListService(impl: MoodCompatSpotListService): SpotListService
+    abstract fun bindSpotListService(impl: DefaultSpotListService): SpotListService
 
     @Binds
     abstract fun bindBookmarkService(impl: DefaultBookmarkService): BookmarkService
@@ -177,8 +175,7 @@ abstract class ServiceModule {
     abstract fun bindSpotService(impl: DefaultSpotService): SpotService
 
     @Binds
-    // PV-59 임시: 위와 동일. 백엔드 완료 시 DefaultSpotMapService 로 복귀.
-    abstract fun bindSpotMapService(impl: MoodCompatSpotMapService): SpotMapService
+    abstract fun bindSpotMapService(impl: DefaultSpotMapService): SpotMapService
 
     @Binds
     abstract fun bindAddressService(impl: DefaultAddressService): AddressService
