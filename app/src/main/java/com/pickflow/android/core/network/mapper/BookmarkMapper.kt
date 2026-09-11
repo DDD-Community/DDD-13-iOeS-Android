@@ -14,6 +14,7 @@ fun SavedSpotItemDto.toSavedSpot(): SavedSpot = SavedSpot(
     latitude = latitude,
     longitude = longitude,
     distanceKm = distanceKm,
+    likeCount = likeCount,
     savedAt = savedAt,
     deleted = deleted,
     // 운영 삭제가 작성자 비공개보다 우선한다 — 둘 다면 삭제로 표시.

@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,13 +42,20 @@ fun SpotListCell(
     modifier: Modifier = Modifier,
     /** 썸네일 위 오버레이 슬롯. 나만의 스팟 탭이 좌하단 상태 배지를 여기에 얹는다. */
     thumbnailOverlay: @Composable BoxScope.() -> Unit = {},
+    /**
+     * 북마크 아이콘 탭 처리. null 이면 아이콘은 상태 표시일 뿐 눌리지 않는다.
+     *
+     * 넘기면 아이콘 자리가 [IconButton] 이 되어 셀을 감싼 클릭(상세 이동)보다 먼저
+     * 탭을 먹는다. 저장 탭이 이걸로 북마크를 토글한다(PV-144).
+     */
+    onBookmarkClick: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         ThumbnailBox(item = item, overlay = thumbnailOverlay)
-        MetaRow(item = item)
+        MetaRow(item = item, onBookmarkClick = onBookmarkClick)
     }
 }
 
@@ -121,7 +130,7 @@ private fun DistanceBadge(distanceKm: Double) {
 }
 
 @Composable
-private fun MetaRow(item: SpotListGridItem) {
+private fun MetaRow(item: SpotListGridItem, onBookmarkClick: (() -> Unit)?) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -155,15 +164,23 @@ private fun MetaRow(item: SpotListGridItem) {
             }
         }
         item.isBookmarked?.let { bookmarked ->
-            Box(modifier = Modifier.padding(10.dp)) {
+            val icon: @Composable () -> Unit = {
                 Icon(
                     painter = painterResource(
                         id = if (bookmarked) R.drawable.ic_bookmark_filled else R.drawable.ic_bookmark_border,
                     ),
-                    contentDescription = "북마크",
+                    contentDescription = if (bookmarked) "북마크 해제" else "북마크 추가",
                     tint = if (bookmarked) PickflowColors.gray0 else PickflowColors.gray30,
                     modifier = Modifier.size(24.dp),
                 )
+            }
+            if (onBookmarkClick == null) {
+                Box(modifier = Modifier.padding(10.dp)) { icon() }
+            } else {
+                IconButton(
+                    onClick = onBookmarkClick,
+                    modifier = Modifier.testTag("spotcell-bookmark-${item.spotId}"),
+                ) { icon() }
             }
         }
     }

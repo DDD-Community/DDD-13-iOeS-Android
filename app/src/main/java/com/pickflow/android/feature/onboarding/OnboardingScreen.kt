@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -45,7 +46,10 @@ import kotlin.math.roundToInt
 /**
  * 온보딩 컨테이너 — iOS `OnboardingView` 1:1 이식.
  *
- * - 화면은 상단(일러스트)·하단(패널) 두 섹션으로 **고정 분할**된다.
+ * - 화면은 상단(일러스트)·하단(패널) 두 섹션으로 나뉜다. 하단 패널은 화면의
+ *   [PANEL_MIN_HEIGHT_FRACTION]을 **최소 높이**로 잡고 콘텐츠가 그보다 크면 필요한
+ *   만큼 더 차지한다. 상단 일러스트가 남은 높이를 전부 받는다. 옛 6:4 고정 분할은
+ *   짧은 화면에서 CTA 버튼을 짓눌렀다 — 사유는 [PANEL_MIN_HEIGHT_FRACTION] 참고.
  * - 가로 드래그는 **화면 전체**(상·하단 모두)에서 받지만, 실제로 좌우로
  *   넘어가는(슬라이드되는) 것은 **상단 일러스트 영역뿐**이다. 하단 패널과
  *   PICKFLOW 워드마크는 위치 고정이며 콘텐츠만 현재 페이지에 맞춰 교체된다.
@@ -81,6 +85,9 @@ fun OnboardingScreen(
         val pageWidthPx = constraints.maxWidth.toFloat()
         val minOffset = -(pages.size - 1) * pageWidthPx
         val maxOffset = 0f
+        // Column 안에서는 ColumnScope 가 수신자라 BoxWithConstraints 의 maxHeight 에
+        // 닿지 못한다. 여기서 미리 계산해 둔다.
+        val panelMinHeight = maxHeight * PANEL_MIN_HEIGHT_FRACTION
 
         // 폭이 측정되거나 구성 변경으로 currentIndex가 복원되면 페이저 위치를 맞춘다.
         LaunchedEffect(pageWidthPx) {
@@ -133,7 +140,8 @@ fun OnboardingScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(6f)
+                    // 패널이 필요한 높이를 먼저 가져가고 남은 전부를 일러스트가 받는다.
+                    .weight(1f)
                     .clipToBounds(),
             ) {
                 pages.forEachIndexed { index, page ->
@@ -168,11 +176,37 @@ fun OnboardingScreen(
                     viewModel.next()
                     if (target <= pages.lastIndex) scope.launch { snapTo(target) }
                 },
-                modifier = Modifier.weight(4f),
+                modifier = Modifier.heightIn(min = panelMinHeight),
             )
         }
     }
 }
+
+/**
+ * 하단 패널이 차지하는 화면 높이의 **최소** 비율.
+ *
+ * 원래는 상단 6 : 하단 4 weight 고정 분할이었다. Column 의 weight 는 상한이면서
+ * 하한이라, 패널 콘텐츠(타이틀 2줄 + 서브타이틀 2줄 + 인디케이터 + 56dp CTA +
+ * 패딩 64dp + 간격 56dp ≈ 304dp)가 40% 안에 안 들어가는 순간 마지막 자식인 CTA 가
+ * 남은 높이만 받아 **납작하게 눌렸다**(PV-137).
+ *
+ * 임계점 실측(Robolectric, w411dp):
+ *
+ * | 화면 높이 | 눌린 CTA 높이 |
+ * |---|---|
+ * | 760dp+ | 56dp (정상) |
+ * | 725dp | 46dp |
+ * | 700dp | 36dp |
+ * | 640dp | 12dp |
+ *
+ * 제보 기기(Galaxy S9+, 411x846dp)는 846dp 자체로는 통과하지만 3-버튼 내비바
+ * inset 약 48dp 가 패널 콘텐츠에서 빠져나가 임계점 아래로 떨어졌다. fontScale 1.8
+ * 에서는 화면 높이와 무관하게 8dp 까지 눌렸다.
+ *
+ * 그래서 이 값은 **최소치**로만 쓰고 패널은 콘텐츠 높이만큼 커질 수 있게 둔다.
+ * 콘텐츠가 40% 안에 들어가는 기기에서는 예전과 똑같이 정확히 40% 로 잡힌다.
+ */
+private const val PANEL_MIN_HEIGHT_FRACTION = 0.4f
 
 /**
  * 정적 단일 페이지 합성(일러스트 + 패널) — 스냅샷/프리뷰 전용.
@@ -189,29 +223,32 @@ fun OnboardingScreenContent(
     onPrimaryTap: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(OnboardingPalette.panelBackground),
-    ) {
-        Box(modifier = Modifier.fillMaxWidth().weight(6f)) {
-            OnboardingIllustration(
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val panelMinHeight = maxHeight * PANEL_MIN_HEIGHT_FRACTION
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(OnboardingPalette.panelBackground),
+        ) {
+            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                OnboardingIllustration(
+                    page = page,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                OnboardingWordmark(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 16.dp, top = 12.dp),
+                )
+            }
+            OnboardingPanel(
                 page = page,
-                modifier = Modifier.fillMaxSize(),
-            )
-            OnboardingWordmark(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 16.dp, top = 12.dp),
+                currentIndex = currentIndex,
+                pageCount = pageCount,
+                onPrimaryTap = onPrimaryTap,
+                modifier = Modifier.heightIn(min = panelMinHeight),
             )
         }
-        OnboardingPanel(
-            page = page,
-            currentIndex = currentIndex,
-            pageCount = pageCount,
-            onPrimaryTap = onPrimaryTap,
-            modifier = Modifier.weight(4f),
-        )
     }
 }
 

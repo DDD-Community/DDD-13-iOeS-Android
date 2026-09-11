@@ -16,6 +16,8 @@ data class SavedSpot(
     val latitude: Double,
     val longitude: Double,
     val distanceKm: Double?,
+    /** 서버 `likeCount`(추천 수). 탐색 리스트와 같은 "추천 N" 표기용. */
+    val likeCount: Long = 0L,
     val savedAt: String,
     val deleted: Boolean,
     val availability: SavedSpotAvailability = if (deleted) {
