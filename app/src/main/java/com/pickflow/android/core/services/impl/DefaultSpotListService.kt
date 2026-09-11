@@ -39,7 +39,7 @@ internal fun Double.toSixDecimal(): Double =
  * 무드 필터 Set → `theme` 반복 쿼리 값. 빈 Set 은 null 이라 파라미터가 아예 붙지 않는다(전체 조회).
  *
  * Set 순회 순서가 아니라 [SpotTheme] 선언 순서로 정렬해 요청 URL 을 결정적으로 만든다.
- * 전송 문자열은 `name` 기반 — 값 자체는 PV-59 백엔드 확정시 변경 가능성 있음.
+ * 전송 문자열은 `name` 기반 — 서버가 받는 값과 1:1 이다.
  */
 internal fun Set<SpotTheme>.toQueryValues(): List<String>? =
     takeIf { it.isNotEmpty() }?.let { selected -> SpotTheme.entries.filter { it in selected }.map { it.name } }
