@@ -20,7 +20,7 @@ fun SavedSpotItemDto.toSavedSpot(): SavedSpot = SavedSpot(
     // 운영 삭제가 작성자 비공개보다 우선한다 — 둘 다면 삭제로 표시.
     availability = when {
         deleted -> SavedSpotAvailability.DELETED
-        isPrivate -> SavedSpotAvailability.AUTHOR_PRIVATE
+        !isReleased -> SavedSpotAvailability.AUTHOR_PRIVATE
         else -> SavedSpotAvailability.AVAILABLE
     },
 )

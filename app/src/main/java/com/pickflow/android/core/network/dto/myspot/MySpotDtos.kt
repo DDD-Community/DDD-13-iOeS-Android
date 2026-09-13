@@ -25,6 +25,8 @@ data class MySpotItemDto(
     val likeCount: Long? = null,
     /** 공개 이력. 서버 필드가 생기기 전까지 항상 false → DRAFT 는 배지 없음으로 남는다. */
     val wasPublished: Boolean = false,
+    /** 지도/리스트 노출 플래그. PUBLISHED 라도 꺼져 있으면 아무에게도 안 보인다. */
+    val isReleased: Boolean = true,
 )
 
 @Serializable

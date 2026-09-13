@@ -28,6 +28,11 @@ data class MySpot(
     val likeCount: Long? = null,
     /** 공개됐다가 비공개로 전환된 이력. DRAFT 를 "비공개" 배지로 가르는 유일한 근거다. */
     val wasPublished: Boolean = false,
+    /**
+     * 지도/리스트 노출 여부. `status` 와 독립된 플래그라 PUBLISHED 여도 꺼져 있을 수 있다.
+     * 꺼져 있으면 아무에게도 안 보이므로 배지는 "비공개" 다.
+     */
+    val isReleased: Boolean = true,
 )
 
 data class MySpotPage(
@@ -97,7 +102,7 @@ data class MySpotTransitionResult(
 ) : MySpotStatusChange
 
 /**
- * 공개 해제 응답. `previousStatus` 로 오픈 신청 철회(PENDING·RE_REVIEW_PENDING)와
+ * 공개 해제 응답. `previousStatus` 로 오픈 신청 철회(PENDING·RE_REVIEW_PENDING·REJECTED)와
  * 비공개 전환(PUBLISHED)을 구분한다. 해제 후 상태는 항상 `DRAFT` 다.
  */
 data class MySpotUnpublishResult(
@@ -105,9 +110,9 @@ data class MySpotUnpublishResult(
     val previousStatus: MySpotStatus,
     override val status: MySpotStatus,
 ) : MySpotStatusChange {
+    // REJECTED 도 오픈 신청의 결말이라 "철회" 문구를 쓴다 — 비공개 전환은 PUBLISHED 뿐이다.
     val wasOpenRequest: Boolean
-        get() = previousStatus == MySpotStatus.PENDING ||
-            previousStatus == MySpotStatus.RE_REVIEW_PENDING
+        get() = previousStatus != MySpotStatus.PUBLISHED
 }
 
 /** 나만의 스팟 수정 응답. 수정만으로는 상태가 바뀌지 않는다. */

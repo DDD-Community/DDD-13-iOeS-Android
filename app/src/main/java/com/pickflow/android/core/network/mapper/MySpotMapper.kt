@@ -33,6 +33,7 @@ fun MySpotItemDto.toMySpot(): MySpot = MySpot(
     bookmarkCount = bookmarkCount,
     likeCount = likeCount,
     wasPublished = wasPublished,
+    isReleased = isReleased,
 )
 
 fun MySpotListResponseDto.toMySpotPage(): MySpotPage = MySpotPage(

@@ -121,9 +121,6 @@ fun SpotDetailScreen(
     val openActionToast by openActionsViewModel.toast.collectAsStateWithLifecycle()
     val reviewStatus by reviewResultViewModel.status.collectAsStateWithLifecycle()
     var activeOpenSheet by remember { mutableStateOf<SpotOpenSheet?>(null) }
-    // 반려 배너 닫기는 서버 상태를 바꾸지 않는다(REJECTED 는 이미 나만보기다).
-    // 세션 한정이라 화면을 다시 열면 배너가 복귀한다. docs/PV-41/10-open-questions.md A1
-    var isRejectionDismissed by remember(spotId) { mutableStateOf(false) }
     var isReportSheetOpen by remember { mutableStateOf(false) }
     var isComingSoonSheetOpen by remember { mutableStateOf(false) }
     var toastVisible by remember { mutableStateOf(false) }
@@ -214,8 +211,7 @@ fun SpotDetailScreen(
                     isOpenActionInFlight = isOpenActionInFlight,
                     onReport = { viewModel.requestReport { isReportSheetOpen = true } },
                     onImageClick = { fullscreenImageUrl = state.value.imageUrl },
-                    isRejectionDismissed = isRejectionDismissed,
-                    onDismissRejection = { isRejectionDismissed = true },
+                    onWithdraw = { activeOpenSheet = SpotOpenSheet.WITHDRAW_REQUEST },
                     onRevise = { onReviseMySpot?.invoke(state.value.id) },
                     isReleased = isReleased,
                     onToggleRelease = { openActionsViewModel.setReleased(state.value.id, it) },
@@ -403,8 +399,7 @@ private fun LoadedBody(
     onImageClick: () -> Unit,
     onDeleteSpot: (() -> Unit)?,
     isOpenActionInFlight: Boolean,
-    isRejectionDismissed: Boolean,
-    onDismissRejection: () -> Unit,
+    onWithdraw: () -> Unit,
     onRevise: () -> Unit,
     isReleased: Boolean,
     onToggleRelease: (Boolean) -> Unit,
@@ -419,10 +414,10 @@ private fun LoadedBody(
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         // 반려 배너는 헤더보다 위 — 화면을 열자마자 사유와 다음 행동이 먼저 보여야 한다.
-        if (data.mySpotStatus == MySpotStatus.REJECTED && !isRejectionDismissed) {
+        if (data.mySpotStatus == MySpotStatus.REJECTED) {
             SpotRejectionBanner(
                 rejection = data.rejection,
-                onWithdraw = onDismissRejection,
+                onWithdraw = onWithdraw,
                 onRevise = onRevise,
             )
         }

@@ -191,15 +191,20 @@ class SpotDetailOpenFlowUiTest {
     }
 
     @Test
-    fun rejected_banner_can_be_dismissed_without_a_confirm_sheet() {
+    fun rejected_banner_withdraw_confirms_and_calls_unpublish() {
+        coEvery { mySpotService.unpublish(41L) } returns
+            MySpotUnpublishResult(41L, MySpotStatus.REJECTED, MySpotStatus.DRAFT)
         render(fixture(MySpotStatus.REJECTED))
 
         composeRule.onNodeWithTag("detail-dismiss-rejection").performScrollTo().performClick()
 
-        composeRule.onNodeWithTag("detail-rejection-banner").assertDoesNotExist()
-        // 확인 시트를 거치지 않는다 — 서버 상태를 바꾸지 않는 세션 한정 동작이다.
-        composeRule.onNodeWithTag("spot-withdraw-request-sheet").assertDoesNotExist()
-        composeRule.onNodeWithTag("spot-cancel-open-sheet").assertDoesNotExist()
+        // 검수중 철회와 같은 확인 시트를 거친다 — 배너만 닫히던 예전 동작이 아니다.
+        composeRule.onNodeWithTag("spot-withdraw-request-sheet").assertIsDisplayed()
+        composeRule.onNodeWithTag("spot-withdraw-request-confirm", useUnmergedTree = true)
+            .performSemanticsAction(SemanticsActions.OnClick)
+        composeRule.waitForIdle()
+
+        coVerify(timeout = 3_000, exactly = 1) { mySpotService.unpublish(41L) }
     }
 
     @Test

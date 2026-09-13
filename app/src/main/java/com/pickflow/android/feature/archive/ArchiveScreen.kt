@@ -430,7 +430,8 @@ private enum class MySpotBadge(
 private fun MySpot.badge(): MySpotBadge? = when (status) {
     MySpotStatus.PENDING, MySpotStatus.RE_REVIEW_PENDING -> MySpotBadge.IN_REVIEW
     MySpotStatus.REJECTED -> MySpotBadge.REJECTED
-    MySpotStatus.PUBLISHED -> MySpotBadge.PUBLIC
+    // 검수는 통과했어도 노출이 꺼져 있으면 지도/리스트에 안 뜬다 — 공개 해제와 같은 "비공개".
+    MySpotStatus.PUBLISHED -> if (isReleased) MySpotBadge.PUBLIC else MySpotBadge.PRIVATE
     // 해제 후 상태는 항상 DRAFT — 공개 이력이 있어야 "비공개"다.
     MySpotStatus.DRAFT -> MySpotBadge.PRIVATE.takeIf { wasPublished }
 }
@@ -546,7 +547,7 @@ private fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScop
                                 .align(Alignment.TopCenter)
                                 .fillMaxWidth()
                                 .aspectRatio(if (saved.id % 2L == 0L) 1f / 1.2f else 1f / 0.9f),
-                            contentAlignment = Alignment.Center,
+                            contentAlignment = Alignment.BottomCenter,
                         ) {
                             Text(
                                 text = "등록한 유저가\n비공개로 전환하였어요",
@@ -554,6 +555,7 @@ private fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScop
                                 color = PickflowColors.gray20,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier
+                                    .padding(start = 30.dp, end = 30.dp, bottom = 20.dp)
                                     .semantics { contentDescription = "비공개로 전환됨" },
                             )
                         }

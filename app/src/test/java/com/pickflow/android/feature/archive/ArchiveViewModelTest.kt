@@ -324,32 +324,37 @@ class ArchiveViewModelTest {
     // MARK: - MySpots tab
 
     @Test
-    fun `tabChanged to MySpots lazily fetches list once`() = runTest(testDispatcher) {
-        coEvery { mySpotService.list(0, null) } returns MySpotPage(
-            items = listOf(mySpot(1), mySpot(2, MySpotStatus.PENDING)),
-            page = 0,
-            hasNext = false,
-        )
-        val viewModel = vm()
+    fun `tabChanged to MySpots refetches on every entry, silently after the first`() =
+        runTest(testDispatcher) {
+            coEvery { mySpotService.list(0, null) } returns MySpotPage(
+                items = listOf(mySpot(1), mySpot(2, MySpotStatus.PENDING)),
+                page = 0,
+                hasNext = false,
+            )
+            val viewModel = vm()
 
-        viewModel.tabChanged(ArchiveTab.MySpots); advanceUntilIdle()
-        val s = viewModel.mySpots.value
-        assertTrue(s is LoadState.Loaded && s.value.map { it.id } == listOf(1L, 2L))
+            viewModel.tabChanged(ArchiveTab.MySpots); advanceUntilIdle()
+            val s = viewModel.mySpots.value
+            assertTrue(s is LoadState.Loaded && s.value.map { it.id } == listOf(1L, 2L))
 
-        // 두 번째 진입 시 재호출 없음 (이미 Loaded).
-        viewModel.tabChanged(ArchiveTab.SavedSpots)
-        viewModel.tabChanged(ArchiveTab.MySpots); advanceUntilIdle()
-        coVerify(exactly = 1) { mySpotService.list(0, null) }
-    }
+            // 남이 스팟을 내린 건 알림으로 알 수 없다 — 탭을 누를 때마다 다시 읽는다.
+            viewModel.tabChanged(ArchiveTab.SavedSpots)
+            viewModel.tabChanged(ArchiveTab.MySpots)
+            // 재진입은 Loading 을 거치지 않는다 — 이전 목록이 그대로 떠 있다(깜빡임 없음).
+            assertTrue(viewModel.mySpots.value is LoadState.Loaded)
+            advanceUntilIdle()
+            coVerify(exactly = 2) { mySpotService.list(0, null) }
+        }
 
     @Test
-    fun `onAppear refreshes both cached lists after deletion and restarts pagination`() = runTest(testDispatcher) {
+    fun `onAppear refreshes the visible tab after deletion and restarts pagination`() = runTest(testDispatcher) {
         coEvery { authService.isLoggedIn() } returns true
         coEvery { bookmarkService.savedSpots(0, null) } returns SavedSpotPage(listOf(savedSpot(1)), 0, false)
         coEvery { mySpotService.list(0, null) } returns MySpotPage(listOf(mySpot(1)), 0, true)
         coEvery { mySpotService.list(1, null) } returns MySpotPage(listOf(mySpot(2)), 1, false)
         val viewModel = vm()
         viewModel.onAppear()
+        advanceUntilIdle()
         viewModel.tabChanged(ArchiveTab.MySpots)
         advanceUntilIdle()
         viewModel.loadNextMySpotPageIfNeeded(mySpot(1))
@@ -361,17 +366,22 @@ class ArchiveViewModelTest {
         viewModel.onAppear()
         advanceUntilIdle()
 
-        assertEquals(ArchiveLoadState.Empty, viewModel.state.value)
-        assertEquals(LoadState.Loaded(listOf(mySpot(2))), viewModel.mySpots.value)
+        // 보이는 탭(MySpots)만 갱신되고 페이지네이션은 1페이지로 되감긴다.
         assertEquals(ArchiveTab.MySpots, viewModel.selectedTab.value)
+        assertEquals(LoadState.Loaded(listOf(mySpot(2))), viewModel.mySpots.value)
         viewModel.loadNextMySpotPageIfNeeded(mySpot(2))
         advanceUntilIdle()
         assertEquals(LoadState.Loaded(listOf(mySpot(2), mySpot(3))), viewModel.mySpots.value)
         coVerify(exactly = 2) { mySpotService.list(1, null) }
+
+        // 안 보이던 저장 탭은 미리 읽지 않는다 — 그 탭을 열 때 갱신된다.
+        viewModel.tabChanged(ArchiveTab.SavedSpots)
+        advanceUntilIdle()
+        assertEquals(ArchiveLoadState.Empty, viewModel.state.value)
     }
 
     @Test
-    fun `onAppear refreshes cached MySpots even when saved tab is selected`() = runTest(testDispatcher) {
+    fun `MySpots cache is refreshed when the tab is reopened`() = runTest(testDispatcher) {
         coEvery { authService.isLoggedIn() } returns true
         coEvery { mySpotService.list(0, null) } returns MySpotPage(listOf(mySpot(1)), 0, false)
         val viewModel = vm()
@@ -419,6 +429,33 @@ class ArchiveViewModelTest {
         advanceUntilIdle()
         assertEquals(LoadState.Empty, viewModel.mySpots.value)
     }
+
+    @Test
+    fun `tab spam drops the stale response instead of letting it overwrite the newest`() =
+        runTest(testDispatcher) {
+            coEvery { authService.isLoggedIn() } returns true
+            // 첫 조회는 응답이 늦다. 두 번째 조회가 먼저 끝난 뒤에야 도착한다.
+            val slow = CompletableDeferred<SavedSpotPage>()
+            coEvery { bookmarkService.savedSpots(0, null) } coAnswers { slow.await() }
+            val viewModel = vm()
+
+            viewModel.tabChanged(ArchiveTab.SavedSpots)
+            runCurrent()
+
+            // 연타 — 두 번째 조회가 직전 조회를 취소한다.
+            coEvery { bookmarkService.savedSpots(0, null) } returns
+                SavedSpotPage(listOf(savedSpot(2)), 0, false)
+            viewModel.tabChanged(ArchiveTab.SavedSpots)
+            advanceUntilIdle()
+
+            // 늦게 도착한 첫 응답은 버려진다 — 최신 결과를 덮지 않는다.
+            slow.complete(SavedSpotPage(listOf(savedSpot(1)), 0, false))
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertTrue(state is ArchiveLoadState.Loaded && state.items.map { it.id } == listOf(2L))
+            coVerify(exactly = 2) { bookmarkService.savedSpots(0, null) }
+        }
 
     @Test
     fun `refresh cancels an old MySpots page so deleted items cannot reappear`() = runTest(testDispatcher) {
