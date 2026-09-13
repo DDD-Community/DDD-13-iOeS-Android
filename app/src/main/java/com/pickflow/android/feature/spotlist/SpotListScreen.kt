@@ -400,6 +400,13 @@ private fun SpotListSortSelector(
 /** 그리드 콘텐츠 위/아래 여백 — 겹쳐 그리는 헤더 높이에 이 값이 더해진다. */
 private val GRID_VERTICAL_PADDING = 8.dp
 
+/**
+ * 하단에 떠 있는 컨트롤이 마지막 행을 가리지 않도록 확보하는 여백.
+ * HomeMapScreen 의 스팟 등록 버튼(56dp) + 바닥 여백(24dp) 이 가장 아래까지 내려온다
+ * (지도/리스트 토글은 49+24dp 로 그보다 낮다).
+ */
+private val FLOATING_CONTROLS_INSET = 80.dp
+
 // iOS 매핑: "추천 순" 의 서버 코드는 RECOMMENDED. 서버 정렬 기준은 like_count 다.
 private val SORT_OPTIONS = listOf(SpotSort.DISTANCE, SpotSort.RECOMMENDED)
 
@@ -463,7 +470,7 @@ private fun SpotMasonryGrid(
             start = 16.dp,
             end = 16.dp,
             top = topPadding + GRID_VERTICAL_PADDING,
-            bottom = GRID_VERTICAL_PADDING,
+            bottom = GRID_VERTICAL_PADDING + FLOATING_CONTROLS_INSET,
         ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalItemSpacing = 12.dp,
