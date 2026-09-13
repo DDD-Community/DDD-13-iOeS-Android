@@ -15,9 +15,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -89,6 +86,7 @@ class ArchiveViewModel @Inject constructor(
     private var myHasNext: Boolean = false
     private val myAccumulated = mutableListOf<MySpot>()
     private var mySpotsJob: Job? = null
+    private var archiveJob: Job? = null
     private var currentCoordinates: com.pickflow.android.core.services.protocols.Coordinates? = null
 
     fun onAppear() {
@@ -98,23 +96,36 @@ class ArchiveViewModel @Inject constructor(
                 return@launch
             }
             currentCoordinates = runCatching { locationService.currentLocation() }.getOrNull()
-            // 상세에서 삭제·등록·상태 변경 후 돌아오면 HOME에 남아 있는 캐시도 갱신한다.
-            if (_selectedTab.value == ArchiveTab.MySpots || _mySpots.value !is LoadState.Idle) {
-                fetchMySpots()
-            }
-            coroutineScope {
-                val a = async { fetchArchiveInfo() }
-                val b = async { fetchArchive() }
-                awaitAll(a, b)
-            }
+            // 안 보이는 탭까지 미리 읽지 않는다 — 그 탭을 누르면 그때 읽는다.
+            // 자체 job 으로 돌기 때문에 아래 헤더 조회와 자연히 병렬이다.
+            refreshSelectedTab()
+            // 헤더(보관함 이름/커버)는 탭과 무관하다.
+            fetchArchiveInfo()
         }
     }
 
+    /**
+     * 탭 전환 = 그 탭을 다시 읽는 시점. 남이 스팟을 비공개로 돌리거나 삭제한 건
+     * 내 기기 이벤트가 아니라 알림으로 알 수 없어, 이렇게 다시 읽는 수밖에 없다.
+     *
+     * 이미 목록이 떠 있으면 [silent] 로 읽어 Loading 을 거치지 않는다. 값이 그대로면
+     * StateFlow 가 equals 로 걸러 방출조차 안 하므로 리컴포지션 없이 조용히 지나간다.
+     */
     fun tabChanged(tab: ArchiveTab) {
         _selectedTab.value = tab
-        // MySpots 탭 진입 시 한 번만 lazy fetch — 이미 Loaded/Empty/Failed 면 재요청 X.
-        if (tab == ArchiveTab.MySpots && _mySpots.value is LoadState.Idle) {
-            fetchMySpots()
+        refreshSelectedTab()
+    }
+
+    private fun refreshSelectedTab() {
+        // 이미 결과가 떠 있으면 조용히 바꿔치운다. 첫 로드와 실패 후 재시도만 스켈레톤을 보인다.
+        when (_selectedTab.value) {
+            ArchiveTab.SavedSpots -> fetchArchive(
+                silent = _state.value is ArchiveLoadState.Loaded ||
+                    _state.value is ArchiveLoadState.Empty,
+            )
+            ArchiveTab.MySpots -> fetchMySpots(
+                silent = _mySpots.value is LoadState.Loaded || _mySpots.value is LoadState.Empty,
+            )
         }
     }
 
@@ -145,11 +156,12 @@ class ArchiveViewModel @Inject constructor(
         }
     }
 
-    private fun fetchMySpots() {
+    private fun fetchMySpots(silent: Boolean = false) {
         // 이전 페이지 응답이 새 목록에 삭제된 항목을 다시 붙이지 않게 한다.
+        // 탭 연타 시 늦게 온 응답이 최신 응답을 덮는 것도 이 취소가 막는다.
         mySpotsJob?.cancel()
         _isLoadingNextPage.value = false
-        _mySpots.value = LoadState.Loading
+        if (!silent) _mySpots.value = LoadState.Loading
         myCurrentPage = 0
         myHasNext = false
         myAccumulated.clear()
@@ -268,21 +280,26 @@ class ArchiveViewModel @Inject constructor(
         // 실패는 iOS와 동일하게 조용히 무시 — 기본값 유지.
     }
 
-    private suspend fun fetchArchive() {
-        _state.value = ArchiveLoadState.Loading
+    private fun fetchArchive(silent: Boolean = false) {
+        // 탭 연타 시 늦게 온 응답이 최신 응답을 덮지 않도록 직전 조회를 버린다.
+        archiveJob?.cancel()
+        if (!silent) _state.value = ArchiveLoadState.Loading
         currentPage = 0
         hasNext = false
-        runCatching {
-            bookmarkService.savedSpots(page = 0, coordinates = currentCoordinates)
-        }.onSuccess { page ->
-            currentPage = page.page
-            hasNext = page.hasNext
-            _state.value = when {
-                page.items.isEmpty() -> ArchiveLoadState.Empty
-                else -> ArchiveLoadState.Loaded(items = page.items, hasNext = page.hasNext)
+        archiveJob = viewModelScope.launch {
+            runCatching {
+                bookmarkService.savedSpots(page = 0, coordinates = currentCoordinates)
+            }.onSuccess { page ->
+                currentPage = page.page
+                hasNext = page.hasNext
+                _state.value = when {
+                    page.items.isEmpty() -> ArchiveLoadState.Empty
+                    else -> ArchiveLoadState.Loaded(items = page.items, hasNext = page.hasNext)
+                }
+            }.onFailure {
+                if (it is CancellationException) throw it
+                _state.value = ArchiveLoadState.Failed(it.message ?: "알 수 없는 오류가 발생했어요.")
             }
-        }.onFailure {
-            _state.value = ArchiveLoadState.Failed(it.message ?: "알 수 없는 오류가 발생했어요.")
         }
     }
 
