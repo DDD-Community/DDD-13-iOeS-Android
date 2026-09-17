@@ -1,8 +1,10 @@
 # assetlinks.json 배포 가이드
 
 App Links(`android:autoVerify="true"`) 검증을 위해 BE가 아래 URL에서 이 파일을 서빙해야 한다.
+신버전 서버는 공유 링크를 `api.pickflow-api.us` 로 발급하고, 구 도메인은 기존 공유 링크 호환용으로 남긴다.
 
 ```
+https://api.pickflow-api.us/.well-known/assetlinks.json
 https://pickflow-api.us/.well-known/assetlinks.json
 ```
 

@@ -58,12 +58,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- iOS Universal Link (`pickflow-api.us/{SpotIDCoder-encoded}`) 1:1 — share URL 진입.
-                 autoVerify 는 BE 가 .well-known/assetlinks.json 을 호스팅해야 활성화된다. -->
+            <!-- iOS Universal Link (`api.pickflow-api.us/{SpotIDCoder-encoded}`) 1:1 — share URL 진입.
+                 autoVerify 는 BE 가 두 host 모두에서 .well-known/assetlinks.json 을 호스팅해야 활성화된다.
+                 pickflow-api.us 는 이미 공유된 구 링크 호환용. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="api.pickflow-api.us" />
                 <data android:scheme="https" android:host="pickflow-api.us" />
             </intent-filter>
 

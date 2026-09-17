@@ -223,11 +223,11 @@ class SpotDetailViewModel @Inject constructor(
         val current = (_spot.value as? LoadState.Loaded<SpotDetail>)?.value ?: return
         analyticsLogger.log(SpotDetailAnalyticsEvent.SHARE_BUTTON_TAP)
         viewModelScope.launch {
-            // iOS `share()` 1:1 — "이름 - 코멘트\nhttps://pickflow-api.us/{SpotIdCoder.encodeSpot(id)}"
+            // iOS `share()` 1:1 — "이름 - 코멘트\nhttps://api.pickflow-api.us/{SpotIdCoder.encodeSpot(id)}"
             shareIntentService.share(
                 SharePayload(
                     title = "${current.name} - ${current.comment}",
-                    url = "https://pickflow-api.us/${SpotIdCoder.encodeSpot(current.id)}",
+                    url = "https://api.pickflow-api.us/${SpotIdCoder.encodeSpot(current.id)}",
                 )
             )
         }

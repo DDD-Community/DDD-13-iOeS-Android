@@ -251,7 +251,7 @@ class SpotDetailViewModelTest {
             shareIntentService.share(
                 SharePayload(
                     title = "Cafe - comment",
-                    url = "https://pickflow-api.us/${SpotIdCoder.encodeSpot(1L)}",
+                    url = "https://api.pickflow-api.us/${SpotIdCoder.encodeSpot(1L)}",
                 )
             )
         }

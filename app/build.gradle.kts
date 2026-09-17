@@ -37,7 +37,7 @@ val kakaoNativeAppKey: String = secrets.getProperty("KAKAO_NATIVE_APP_KEY", "")
 // CI 가 빈 값을 써 넣어도 기본 API 주소가 유지되도록 blank → 기본값 처리.
 // debug 빌드는 개발 서버, release 빌드는 운영 서버를 본다(buildTypes 에서 주입).
 val pickflowApiBaseUrl: String = secrets.getProperty("PICKFLOW_API_BASE_URL", "")
-    .ifBlank { "https://pickflow-api.us/api/" }
+    .ifBlank { "https://api.pickflow-api.us/api/" }
 val pickflowApiBaseUrlDev: String = secrets.getProperty("PICKFLOW_API_BASE_URL_DEV", "")
     .ifBlank { "https://dev-api.pickflow-api.us/api/" }
 val termsUrl: String = secrets.getProperty("TERMS_URL", "")
