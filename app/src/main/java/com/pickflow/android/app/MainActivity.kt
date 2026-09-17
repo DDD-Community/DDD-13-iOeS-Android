@@ -54,7 +54,8 @@ class MainActivity : ComponentActivity() {
     /**
      * iOS `PickflowApp.handleUniversalLink` 1:1 + 커스텀 스킴 폴백.
      *
-     * - `https://pickflow-api.us/{token}` — App Links(검증 완료 시) 직행 경로.
+     * - `https://api.pickflow-api.us/{token}` — App Links(검증 완료 시) 직행 경로.
+     *   구 도메인 `pickflow-api.us` 로 이미 공유된 링크도 같이 받는다.
      * - `pickflow://spot/{token}` — 공유 랜딩 페이지가 App Links 미검증 환경에서 여는 폴백.
      *
      * token 을 [SpotIdCoder.decodeSpot] 으로 복원해 [DeepLinkState] 에 적재.
@@ -63,7 +64,8 @@ class MainActivity : ComponentActivity() {
         val data: Uri = intent?.data ?: return
         val token = when {
             data.scheme == "pickflow" && data.host == "spot" -> data.pathSegments.firstOrNull()
-            data.host == "pickflow-api.us" -> data.pathSegments.firstOrNull()
+            data.host == "api.pickflow-api.us" || data.host == "pickflow-api.us" ->
+                data.pathSegments.firstOrNull()
             else -> null
         } ?: return
         val spotId = SpotIdCoder.decodeSpot(token) ?: return
