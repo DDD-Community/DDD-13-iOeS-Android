@@ -105,7 +105,7 @@ android {
     defaultConfig {
         applicationId = "com.pickflow.app"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         // 버전 값과 규칙은 파일 상단 appVersionCode / appVersionName 참고.
         versionCode = appVersionCode
         versionName = appVersionName

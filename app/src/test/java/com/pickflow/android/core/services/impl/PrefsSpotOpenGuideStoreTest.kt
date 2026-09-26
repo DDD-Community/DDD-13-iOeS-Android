@@ -11,12 +11,14 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * "봤음" 이 **계정별로 갈리는지** 가 핵심이다. V2 안내(기기 단위)와 헷갈리면 같은 기기를 쓰는
  * 두 사람 중 한 명이 안내를 영영 못 받는다.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class PrefsSpotOpenGuideStoreTest {
 
     private val tokenStore = FakeTokenStore()
