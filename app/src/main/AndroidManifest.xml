@@ -48,11 +48,14 @@
         <meta-data
             android:name="com.naver.maps.map.NCP_KEY_ID"
             android:value="${naverMapClientId}" />
+        <!-- adjustResize: API 29 이하는 이 모드일 때만 IME inset 이 전달돼 Compose imePadding() 이
+             동작한다. 없으면 시스템이 창 전체를 pan 해 상단바가 화면 밖으로 밀려난다. -->
         <activity
             android:name=".app.MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.Pickflow">
+            android:theme="@style/Theme.Pickflow"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
