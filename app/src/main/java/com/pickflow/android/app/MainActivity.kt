@@ -31,7 +31,9 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
         )
         super.onCreate(savedInstanceState)
-        handleDeepLink(intent)
+        // 재생성(회전·구성 변경·프로세스 복원) 때는 NavHost 가 백스택을 복원한다. 여기서 최초
+        // launch intent 를 다시 소비하면 이미 닫은 딥링크 상세가 또 push 된다.
+        if (savedInstanceState == null) handleDeepLink(intent)
         setContent {
             PickflowTheme {
                 Surface(
