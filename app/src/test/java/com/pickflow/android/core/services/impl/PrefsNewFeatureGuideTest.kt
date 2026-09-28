@@ -13,12 +13,14 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * 판정 규칙(PV-79 §2)은 iOS 와 공유하는 계약이라 여기서 못 박는다.
  * Firebase 는 [FakeProvider] 로 갈아끼우므로 네트워크도 google-services.json 도 필요 없다.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class PrefsNewFeatureGuideTest {
 
     private val provider = FakeProvider()

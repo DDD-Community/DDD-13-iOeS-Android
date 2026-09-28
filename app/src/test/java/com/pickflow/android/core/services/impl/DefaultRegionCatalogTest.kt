@@ -14,11 +14,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * `GET /v1/regions` + DataStore 캐시. 캐시가 실제로 남아 다음 실행에서 읽히는지가 요점이다.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class DefaultRegionCatalogTest {
 
     private val context = ApplicationProvider.getApplicationContext<android.content.Context>()
