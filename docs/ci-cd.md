@@ -107,6 +107,7 @@ git tag v1.0.1-2 && git push origin v1.0.1-2
 | (없음) | 1.1.0 | 1010001 | Firebase QA 배포 | 무드 필터 확장(햇살/야경 추가, 지도·리스트 다중선택·선택 공유), debug/release API 엔드포인트 분리, Firebase App Distribution 도입. Play 미업로드 — App Distribution `pickflow-qa` 그룹 전용 debug 빌드 |
 | (없음) | 1.0.4 | 1000401 | Firebase QA 배포 | Dev Mode 화면(런타임 dev/prod 전환, 환경 배지, 터치 표시). debug 빌드 전용. Play 미업로드 — App Distribution `pickflow-qa` 그룹 전용 |
 | (없음) | 1.1.0 | 1010002 | 실기기 QA | 유저 스팟 오픈(PV-41) Stub-first 구현. Dev Mode 에 Stub 시나리오 섹션 추가. **1.0.4/1000401 은 1.1.0/1010001 뒤에 기록돼 단조증가를 어겼다** — 실기기 설치가 `INSTALL_FAILED_VERSION_DOWNGRADE` 로 막혀 1.1.0 라인 위 `1010002` 로 정정했다 |
+| v1.1.1 (예정) | 1.1.1 | 1010101 | 릴리스 준비 | targetSdk 36 상향(Play 2026-11-01 요구, compileSdk 35 유지), Activity 재생성 시 딥링크 상세 중복 push 수정, API 29 이하 키보드 창 pan 수정(adjustResize). 1.1.0 QA 빌드 1010011/1010012 기록은 `docs/release-notes/` 참고 |
 
 > versionCode 는 **단조증가**가 최우선 제약이다(Play 는 직전 업로드보다 큰 값만 받는다).
 > 1.0.2 부터는 그 안에서 `XYZNN` 형태(versionName 각 자리 + 빌드 차수 2자리)로 읽는다.
