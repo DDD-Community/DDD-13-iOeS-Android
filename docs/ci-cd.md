@@ -108,7 +108,9 @@ git tag v1.0.1-2 && git push origin v1.0.1-2
 | (없음) | 1.0.4 | 1000401 | Firebase QA 배포 | Dev Mode 화면(런타임 dev/prod 전환, 환경 배지, 터치 표시). debug 빌드 전용. Play 미업로드 — App Distribution `pickflow-qa` 그룹 전용 |
 | (없음) | 1.1.0 | 1010002 | 실기기 QA | 유저 스팟 오픈(PV-41) Stub-first 구현. Dev Mode 에 Stub 시나리오 섹션 추가. **1.0.4/1000401 은 1.1.0/1010001 뒤에 기록돼 단조증가를 어겼다** — 실기기 설치가 `INSTALL_FAILED_VERSION_DOWNGRADE` 로 막혀 1.1.0 라인 위 `1010002` 로 정정했다 |
 | (없음) | 1.1.0 | 1010012 | **Play 배포됨** | 운영 서버 release 빌드. 2026-09-18 프로덕션 100% 게시(표 기록이 누락돼 있던 것을 2026-09-29 Play Console 에서 확인해 보정). 1010011 이하 빌드별 노트는 `docs/release-notes/` 참고 |
-| v1.1.1 (예정) | 1.1.1 | 1010101 | Play 프로덕션 초안 | targetSdk 36 상향(Play 2026-11-01 요구, compileSdk 35 유지), Activity 재생성 시 딥링크 상세 중복 push 수정, API 29 이하 키보드 창 pan 수정(adjustResize). 2026-09-29 프로덕션 트랙에 업로드·저장, 검토 제출 전 |
+| v1.1.1 (예정) | 1.1.1 | 1010101 | **Play 배포됨** | targetSdk 36 상향(Play 2026-11-01 요구, compileSdk 35 유지), Activity 재생성 시 딥링크 상세 중복 push 수정, API 29 이하 키보드 창 pan 수정(adjustResize). 2026-09-29 프로덕션 트랙 업로드·검토 승인, 관리형 게시로 대기하다 2026-10-01 프로덕션 100% 게시(1010012 대체) |
+| (없음) | 1.1.2 | 1010201 | 미게시 폐기 | release R8 활성화(`isMinifyEnabled`/`isShrinkResources`) 및 Kakao SDK model 필드 keep 규칙 적용. 신규 설치 크기 21.6MB(-13.1MB). 2026-10-01 프로덕션 업로드 후 심사 승인됐으나 관리형 게시에서 대기. 지도 프리뷰 상세의 내 스팟 오픈 연결 누락을 수정하기 위해 2026-10-02 승인 대기 변경사항을 철회하고 이 출시를 폐기함 |
+| v1.1.2 (예정) | 1.1.2 | 1010202 | Firebase QA 배포·Play 프로덕션 초안 | 1010201의 R8 최적화와 Kakao keep 규칙에 더해 지도 프리뷰 상세의 내 스팟 오픈을 일반 상세와 동일하게 연결하고 준비 중 알림을 제거. 2026-10-02 `pickflow-qa` 그룹에 개발 서버용 debug APK 배포, 업로드 키로 서명한 AAB를 프로덕션 트랙에 저장. 검토 제출·게시 전 |
 
 > versionCode 는 **단조증가**가 최우선 제약이다(Play 는 직전 업로드보다 큰 값만 받는다).
 > 1.0.2 부터는 그 안에서 `XYZNN` 형태(versionName 각 자리 + 빌드 차수 2자리)로 읽는다.
