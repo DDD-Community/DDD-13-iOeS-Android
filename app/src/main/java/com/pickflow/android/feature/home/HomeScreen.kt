@@ -37,6 +37,7 @@ import com.pickflow.android.feature.myprofile.MyProfileScreen
 fun HomeScreen(
     onOpenSpotDetail: (String) -> Unit,
     onOpenMySpot: (Long) -> Unit,
+    onReviseMySpot: (Long) -> Unit,
     onOpenRegistration: () -> Unit,
     onRequireLogin: () -> Unit,
     onOpenDevMode: () -> Unit,
@@ -97,6 +98,7 @@ fun HomeScreen(
             when (selectedTab) {
                 HomeTab.EXPLORE -> HomeMapScreen(
                     onOpenSpotDetail = onOpenSpotDetail,
+                    onReviseMySpot = onReviseMySpot,
                     onOpenRegistration = onOpenRegistration,
                     onRequireLogin = onRequireLogin,
                 )

@@ -202,6 +202,11 @@ class HomeMapViewModel @Inject constructor(
         lastViewport?.let { onViewportChanged(it, level) } ?: load()
     }
 
+    /** 내 스팟 삭제 후 현재 지도에서 해당 마커를 다시 조회한다. */
+    fun refreshCurrentViewport() {
+        lastViewport?.let { onViewportChanged(it, _zoom.value) } ?: load()
+    }
+
     /**
      * 무드 다중선택 토글 — 이미 선택돼 있으면 그 하나만 해제한다. 전부 해제하면 전체 조회.
      * 재조회는 [moodFilterStore] 구독(init)이 담당하므로 여기서 직접 부르지 않는다.

@@ -83,6 +83,7 @@ fun PickflowNavHost(
             HomeScreen(
                 onOpenSpotDetail = { navController.navigate(PickflowRoute.spotDetail(it)) },
                 onOpenMySpot = { navController.navigate(PickflowRoute.spotDetail(it.toString())) },
+                onReviseMySpot = { navController.navigate(PickflowRoute.spotRevision(it)) },
                 onOpenRegistration = { navController.navigate(PickflowRoute.SPOT_REGISTRATION) },
                 onRequireLogin = {
                     navController.navigate(PickflowRoute.LOGIN) {
@@ -164,8 +165,7 @@ fun PickflowNavHost(
                 spotId = spotId,
                 onBack = navController::popBackStack,
                 onRequireLogin = { navController.navigate(PickflowRoute.LOGIN) },
-                // 반려 스팟의 "다시 신청하기" — 보완 폼으로. 이 콜백이 있어야
-                // 화면이 오픈 플로우(확인 시트·삭제)를 활성화한다.
+                // 반려 스팟의 "다시 신청하기" — 보완 폼으로.
                 onReviseMySpot = { navController.navigate(PickflowRoute.spotRevision(it)) },
                 onSpotDeleted = {
                     HomeTabRequest.request(HomeTab.SAVED, ArchiveTab.MySpots)

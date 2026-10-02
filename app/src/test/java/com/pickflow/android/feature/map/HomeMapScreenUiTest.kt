@@ -74,6 +74,7 @@ class HomeMapScreenUiTest {
             PickflowTheme {
                 HomeMapScreen(
                     onOpenSpotDetail = {},
+                    onReviseMySpot = {},
                     onOpenRegistration = {},
                     viewModel = viewModel(),
                     v2NoticeViewModel = noticeViewModel(),
@@ -93,6 +94,7 @@ class HomeMapScreenUiTest {
             PickflowTheme {
                 HomeMapScreen(
                     onOpenSpotDetail = {},
+                    onReviseMySpot = {},
                     onOpenRegistration = {},
                     viewModel = viewModel(),
                     v2NoticeViewModel = noticeViewModel(),
@@ -111,6 +113,7 @@ class HomeMapScreenUiTest {
         composeRule.setContent {
             PickflowTheme {
                 HomeMapScreen(onOpenSpotDetail = {},
+                    onReviseMySpot = {},
                     onOpenRegistration = {},
                     viewModel = vm,
                     v2NoticeViewModel = noticeViewModel(),
@@ -129,6 +132,7 @@ class HomeMapScreenUiTest {
         composeRule.setContent {
             PickflowTheme {
                 HomeMapScreen(onOpenSpotDetail = {},
+                    onReviseMySpot = {},
                     onOpenRegistration = {},
                     viewModel = vm,
                     v2NoticeViewModel = noticeViewModel(),
@@ -149,6 +153,7 @@ class HomeMapScreenUiTest {
         composeRule.setContent {
             PickflowTheme {
                 HomeMapScreen(onOpenSpotDetail = {},
+                    onReviseMySpot = {},
                     onOpenRegistration = {},
                     viewModel = vm,
                     v2NoticeViewModel = noticeViewModel(),
@@ -233,6 +238,7 @@ class HomeMapScreenUiTest {
             PickflowTheme {
                 HomeMapScreen(
                     onOpenSpotDetail = {},
+                    onReviseMySpot = {},
                     onOpenRegistration = {},
                     viewModel = vm,
                     v2NoticeViewModel = noticeViewModel(),
@@ -253,6 +259,7 @@ class HomeMapScreenUiTest {
             PickflowTheme {
                 HomeMapScreen(
                     onOpenSpotDetail = {},
+                    onReviseMySpot = {},
                     onOpenRegistration = {},
                     viewModel = vm,
                     v2NoticeViewModel = noticeViewModel(),
