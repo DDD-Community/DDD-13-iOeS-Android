@@ -61,6 +61,7 @@ import com.pickflow.android.feature.map.components.RegionPickerSheet
 @Composable
 fun HomeMapScreen(
     onOpenSpotDetail: (String) -> Unit,
+    onReviseMySpot: (Long) -> Unit,
     onOpenRegistration: () -> Unit,
     onRequireLogin: () -> Unit = {},
     viewModel: HomeMapViewModel = hiltViewModel(),
@@ -289,9 +290,17 @@ fun HomeMapScreen(
                 preview = selectedPreview,
                 isBookmarked = selectedBookmarked,
                 onDismiss = viewModel::dismissCluster,
-                onOpenFullDetail = { id ->
+                onReviseMySpot = { id ->
                     viewModel.dismissCluster()
-                    onOpenSpotDetail(id)
+                    onReviseMySpot(id)
+                },
+                onSpotDeleted = {
+                    viewModel.dismissCluster()
+                    viewModel.refreshCurrentViewport()
+                },
+                onRequireLogin = {
+                    viewModel.dismissCluster()
+                    onRequireLogin()
                 },
                 onRoute = viewModel::routeToSelected,
                 onSave = viewModel::bookmarkSelected,

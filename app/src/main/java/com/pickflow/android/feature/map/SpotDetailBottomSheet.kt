@@ -45,9 +45,7 @@ import kotlinx.coroutines.launch
  * iOS `spotBottomSheet` + `SpotShellRootView`(medium/full 시트) 대응.
  *
  * - medium: preview(GET /v1/spots/{id}/preview) 요약 정보 + 길안내/저장 버튼.
- * - full: 시트를 끝까지 올리면(Expanded) 전체 상세(`SpotDetailScreen`)로 전환한다.
- *   (Material3 `ModalBottomSheet` 는 커스텀 detent 가 없어, full detent 도달 시
- *    전체 상세 화면으로 라우팅하여 "full 시 SpotDetailScreen 표시" 를 만족시킨다.)
+ * - full: 시트를 끝까지 올리면(Expanded) 같은 시트에 전체 상세(`SpotDetailScreen`)를 표시한다.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,7 +54,9 @@ fun SpotDetailBottomSheet(
     preview: LoadState<SpotPreview>,
     isBookmarked: Boolean,
     onDismiss: () -> Unit,
-    onOpenFullDetail: (String) -> Unit,
+    onReviseMySpot: (Long) -> Unit,
+    onSpotDeleted: () -> Unit,
+    onRequireLogin: () -> Unit,
     onRoute: () -> Unit,
     onSave: () -> Unit,
 ) {
@@ -115,6 +115,9 @@ fun SpotDetailBottomSheet(
             if (isFullDetail) {
                 SpotDetailScreen(
                     spotId = spotId,
+                    onReviseMySpot = onReviseMySpot,
+                    onSpotDeleted = onSpotDeleted,
+                    onRequireLogin = onRequireLogin,
                     onBack = {
                         isFullDetail = false
                         scope.launch { sheetState.partialExpand() }

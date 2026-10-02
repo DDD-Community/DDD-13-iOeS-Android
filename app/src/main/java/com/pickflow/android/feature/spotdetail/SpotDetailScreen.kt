@@ -54,7 +54,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import com.pickflow.android.core.services.protocols.SpotDetail
 import com.pickflow.android.feature.spotdetail.components.FullscreenImageViewer
 import com.pickflow.android.feature.spotdetail.components.LoginPromptPopup
-import com.pickflow.android.feature.spotdetail.components.MySpotComingSoonSheet
 import com.pickflow.android.feature.spotdetail.components.ReportButton
 import com.pickflow.android.feature.spotdetail.components.SpotActionButtons
 import com.pickflow.android.feature.spotdetail.components.SpotDetailNavBar
@@ -88,18 +87,15 @@ import kotlinx.coroutines.launch
 fun SpotDetailScreen(
     spotId: String,
     onBack: () -> Unit,
+    /** 반려된 내 스팟을 보완 폼으로 연다. 모든 상세 진입 경로에서 전달해야 한다. */
+    onReviseMySpot: (Long) -> Unit,
+    /** 삭제 완료 후 현재 상세를 닫고 상위 목록을 갱신한다. */
+    onSpotDeleted: () -> Unit,
     modifier: Modifier = Modifier,
     onRequireLogin: () -> Unit = {},
-    /**
-     * 반려 후 "다시 신청하기" — 보완 폼으로 이동한다.
-     * null 이면 오픈 플로우를 쓰지 않는 임베드 모드로 보고 기존 준비중 안내 시트를 띄운다.
-     */
-    onReviseMySpot: ((Long) -> Unit)? = null,
-    /** 삭제 완료 후 이동(보통 뒤로가기). */
-    onSpotDeleted: (() -> Unit)? = null,
     showRegisteredToast: Boolean = false,
     /**
-     * 신고/오픈알림 등 내부 모달 시트 열림 여부 통지 — 지도 바텀시트에 임베드될 때
+     * 신고 등 내부 모달 시트 열림 여부 통지 — 지도 바텀시트에 임베드될 때
      * 키보드 리사이즈로 인한 외부 시트 앵커 변동을 무시하기 위한 신호.
      */
     onOverlaySheetVisible: (Boolean) -> Unit = {},
@@ -122,13 +118,12 @@ fun SpotDetailScreen(
     val reviewStatus by reviewResultViewModel.status.collectAsStateWithLifecycle()
     var activeOpenSheet by remember { mutableStateOf<SpotOpenSheet?>(null) }
     var isReportSheetOpen by remember { mutableStateOf(false) }
-    var isComingSoonSheetOpen by remember { mutableStateOf(false) }
     var toastVisible by remember { mutableStateOf(false) }
     var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(spotId) {
         viewModel.load(spotId)
-        if (onReviseMySpot != null) reviewResultViewModel.load()
+        reviewResultViewModel.load()
     }
     LaunchedEffect(Unit) {
         if (showRegisteredToast) viewModel.showRegisteredToast()
@@ -139,15 +134,15 @@ fun SpotDetailScreen(
             openActionsViewModel.syncReleased(it.isReleased)
         }
     }
-    LaunchedEffect(isReportSheetOpen, isComingSoonSheetOpen) {
-        onOverlaySheetVisible(isReportSheetOpen || isComingSoonSheetOpen)
+    LaunchedEffect(isReportSheetOpen) {
+        onOverlaySheetVisible(isReportSheetOpen)
     }
     // 상태 전이가 끝나면 상세를 다시 읽는다 — 배지·버튼 문구가 새 상태를 따라가야 한다.
     LaunchedEffect(openActionsViewModel, spotId) {
         openActionsViewModel.statusChanges.collect { viewModel.load(spotId) }
     }
     LaunchedEffect(openActionsViewModel) {
-        openActionsViewModel.deleted.collect { onSpotDeleted?.invoke() }
+        openActionsViewModel.deleted.collect { onSpotDeleted() }
     }
     LaunchedEffect(openActionToast) {
         openActionToast?.let {
@@ -198,21 +193,18 @@ fun SpotDetailScreen(
                     onLike = viewModel::toggleLike,
                     onOpenSpot = {
                         val status = state.value.mySpotStatus
-                        when {
-                            // 오픈 플로우를 쓰지 않는 임베드 모드 — 기존 준비중 안내 유지.
-                            onReviseMySpot == null -> isComingSoonSheetOpen = true
-                            // 반려는 확인 없이 보완 폼으로 바로 보낸다.
-                            status == MySpotStatus.REJECTED -> onReviseMySpot(state.value.id)
-                            else -> activeOpenSheet = status.openActionSheet()
+                        if (status == MySpotStatus.REJECTED) {
+                            onReviseMySpot(state.value.id)
+                        } else {
+                            activeOpenSheet = status.openActionSheet()
                         }
                     },
-                    onDeleteSpot = { activeOpenSheet = SpotOpenSheet.DELETE }
-                        .takeIf { onReviseMySpot != null },
+                    onDeleteSpot = { activeOpenSheet = SpotOpenSheet.DELETE },
                     isOpenActionInFlight = isOpenActionInFlight,
                     onReport = { viewModel.requestReport { isReportSheetOpen = true } },
                     onImageClick = { fullscreenImageUrl = state.value.imageUrl },
                     onWithdraw = { activeOpenSheet = SpotOpenSheet.WITHDRAW_REQUEST },
-                    onRevise = { onReviseMySpot?.invoke(state.value.id) },
+                    onRevise = { onReviseMySpot(state.value.id) },
                     isReleased = isReleased,
                     onToggleRelease = { openActionsViewModel.setReleased(state.value.id, it) },
                 )
@@ -291,31 +283,6 @@ fun SpotDetailScreen(
             contentDescription = null,
             onDismiss = { fullscreenImageUrl = null },
         )
-    }
-
-    if (isComingSoonSheetOpen) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        val scope = rememberCoroutineScope()
-        ModalBottomSheet(
-            onDismissRequest = { isComingSoonSheetOpen = false },
-            sheetState = sheetState,
-            containerColor = PickflowColors.gray95,
-            contentColor = PickflowColors.gray0,
-        ) {
-            MySpotComingSoonSheet(
-                onCancel = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        isComingSoonSheetOpen = false
-                    }
-                },
-                onNotify = {
-                    viewModel.notifyUpdateRequested()
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        isComingSoonSheetOpen = false
-                    }
-                },
-            )
-        }
     }
 
     if (isReportSheetOpen) {

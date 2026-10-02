@@ -90,6 +90,8 @@ class SpotDetailScreenUiTest {
                 SpotDetailScreen(
                     spotId = "s1",
                     onBack = {},
+                    onReviseMySpot = {},
+                    onSpotDeleted = {},
                     viewModel = vm,
                     actionsViewModel = actionsViewModel(),
                     openActionsViewModel = openActionsViewModel(),
@@ -163,6 +165,8 @@ class SpotDetailScreenUiTest {
                 SpotDetailScreen(
                     spotId = "s1",
                     onBack = {},
+                    onReviseMySpot = {},
+                    onSpotDeleted = {},
                     viewModel = vm,
                     actionsViewModel = actionsViewModel(),
                     openActionsViewModel = openActionsViewModel(),
@@ -196,6 +200,8 @@ class SpotDetailScreenUiTest {
                 SpotDetailScreen(
                     spotId = "x",
                     onBack = {},
+                    onReviseMySpot = {},
+                    onSpotDeleted = {},
                     viewModel = vm,
                     actionsViewModel = actionsViewModel(),
                     openActionsViewModel = openActionsViewModel(),
@@ -258,6 +264,8 @@ class SpotDetailScreenUiTest {
                 SpotDetailScreen(
                     spotId = "1",
                     onBack = {},
+                    onReviseMySpot = {},
+                    onSpotDeleted = {},
                     showRegisteredToast = showRegisteredToast,
                     viewModel = vm,
                     actionsViewModel = actionsViewModel(),

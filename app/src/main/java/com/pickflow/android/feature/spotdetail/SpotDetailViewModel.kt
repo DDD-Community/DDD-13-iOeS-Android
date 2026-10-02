@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.common.util.SpotIdCoder
-import com.pickflow.android.core.analytics.events.ShareFakedoorAnalyticsEvent
 import com.pickflow.android.core.analytics.events.SpotDetailAnalyticsEvent
 import com.pickflow.android.core.network.ApiException
 import com.pickflow.android.core.services.protocols.AnalyticsLogger
@@ -89,15 +88,6 @@ class SpotDetailViewModel @Inject constructor(
 
     /** 다른 ViewModel(오픈 상태 전이 등)이 만든 안내를 같은 토스트 자리로 흘려보낸다. */
     fun showToast(message: String) { _toast.value = SpotDetailToast(message) }
-
-    /**
-     * iOS `SpotDetailViewModel.notifyUpdateRequested()` 1:1 fakedoor — "나만의 스팟 오픈" CTA 의
-     * 업데이트 알림 신청. 현재 BE 연동 없이 토스트만 띄움 (양 플랫폼 동일).
-     */
-    fun notifyUpdateRequested() {
-        analyticsLogger.log(ShareFakedoorAnalyticsEvent.NOTIFY_BUTTON_TAP)
-        _toast.value = SpotDetailToast("추후 업데이트 시, 가장 먼저 알림 보내드릴게요!")
-    }
 
     fun load(spotId: String) {
         viewModelScope.launch {

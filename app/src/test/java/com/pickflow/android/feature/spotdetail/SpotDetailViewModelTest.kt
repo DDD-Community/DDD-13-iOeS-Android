@@ -2,7 +2,6 @@ package com.pickflow.android.feature.spotdetail
 
 import com.pickflow.android.common.ui.LoadState
 import com.pickflow.android.common.util.SpotIdCoder
-import com.pickflow.android.core.analytics.events.ShareFakedoorAnalyticsEvent
 import com.pickflow.android.core.analytics.events.SpotDetailAnalyticsEvent
 import com.pickflow.android.core.services.protocols.AnalyticsLogger
 import com.pickflow.android.core.services.protocols.AuthService
@@ -266,15 +265,6 @@ class SpotDetailViewModelTest {
         vm.share(); advanceUntilIdle()
 
         verify(exactly = 1) { analyticsLogger.log(SpotDetailAnalyticsEvent.SHARE_BUTTON_TAP) }
-    }
-
-    @Test
-    fun `notifyUpdateRequested logs modal_share_fakedoor_btn_tap and shows toast`() = runTest(testDispatcher) {
-        val vm = vm()
-        vm.notifyUpdateRequested()
-
-        verify(exactly = 1) { analyticsLogger.log(ShareFakedoorAnalyticsEvent.NOTIFY_BUTTON_TAP) }
-        assertEquals("추후 업데이트 시, 가장 먼저 알림 보내드릴게요!", vm.toast.value?.message)
     }
 
     @Test
